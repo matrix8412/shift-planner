@@ -643,24 +643,16 @@ function SelectFieldControl({
   value?: string;
   fieldError?: string;
 }) {
-  const initialValue = value ?? field.defaultValue ?? "";
-  const [selectedValue, setSelectedValue] = useState(initialValue);
-
-  useEffect(() => {
-    setSelectedValue(value ?? field.defaultValue ?? "");
-  }, [field.defaultValue, value]);
-
   return (
     <label className="field">
       <span className={fieldLabelClass(field.required)}>{field.label}</span>
       <select
         name={field.name}
-        value={selectedValue}
-        onChange={(event) => setSelectedValue(event.currentTarget.value)}
+        defaultValue={value ?? field.defaultValue ?? ""}
         required={field.required}
         className="field-control"
       >
-        {field.allowEmpty ? <option value="">{field.emptyLabel ?? "Vyberte moĹľnosĹĄ"}</option> : null}
+        {field.allowEmpty ? <option value="">{field.emptyLabel ?? "Vyberte možnosť"}</option> : null}
         {field.options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
