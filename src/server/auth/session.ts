@@ -7,6 +7,7 @@ import { db } from "@/server/db/client";
 
 const SESSION_COOKIE_NAME = "pohotovosti.session";
 const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+const IS_SECURE = (process.env.APP_URL ?? "").startsWith("https");
 
 function generateToken(): string {
   return randomBytes(48).toString("hex");
@@ -27,7 +28,7 @@ export async function createSession(userId: string): Promise<string> {
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: IS_SECURE,
     sameSite: "lax",
     path: "/",
     maxAge: Math.floor(SESSION_MAX_AGE_MS / 1000),
@@ -70,7 +71,7 @@ export async function destroySession(): Promise<void> {
 
   cookieStore.set(SESSION_COOKIE_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: IS_SECURE,
     sameSite: "lax",
     path: "/",
     maxAge: 0,
