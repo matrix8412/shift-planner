@@ -48,7 +48,7 @@ ENV S3_FORCE_PATH_STYLE=$S3_FORCE_PATH_STYLE
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
-RUN npm run build
+RUN NODE_ENV=production npm run build
 
 FROM base AS runner
 ENV NODE_ENV=production
