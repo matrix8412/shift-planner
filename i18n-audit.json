@@ -1,0 +1,1118 @@
+{
+  "_meta": {
+    "description": "Comprehensive i18n audit – every hardcoded user-facing string in the codebase",
+    "generated": "manual scan of all source files",
+    "legend": {
+      "sk": "Slovak string (needs translation key)",
+      "en": "English string (needs Slovak + other translations)",
+      "mixed": "Template with embedded locale text"
+    }
+  },
+
+  "src/components/entity-module.tsx": {
+    "audit_labels": [
+      { "string": "Vytvorenie zaznamu", "context": "audit action label – record creation" },
+      { "string": "Odstranenie zaznamu", "context": "audit action label – record deletion" },
+      { "string": "Uprava zaznamu", "context": "audit action label – record update" },
+      { "string": "Audit zaznam", "context": "audit action label – generic" }
+    ],
+    "view_switcher": [
+      { "string": "Kalendár", "context": "view tab label" },
+      { "string": "Štatistiky", "context": "view tab label" },
+      { "string": "Zoznam", "context": "view tab label" },
+      { "string": "Prepnutie zobrazenia", "context": "aria-label for view toggle" }
+    ],
+    "audit_panel": [
+      { "string": "Hladat v audite...", "context": "audit search placeholder" },
+      { "string": "Ziadne audit zaznamy", "context": "empty audit heading" },
+      { "string": "Pre zadany vyraz sa nenasli ziadne zmeny ani autori.", "context": "empty audit search body" },
+      { "string": "Pole", "context": "audit diff table header" },
+      { "string": "Stara hodnota", "context": "audit diff table header" },
+      { "string": "Nova hodnota", "context": "audit diff table header" },
+      { "string": "Bez zistenych zmien.", "context": "audit diff – no changes detected" },
+      { "string": "Autor: ", "context": "audit entry prefix" }
+    ],
+    "audit_pagination": [
+      { "string": "Zobrazene {x}-{y} z {z} audit zaznamov", "context": "audit pagination summary (template)" },
+      { "string": "Strana {x} z {y}", "context": "audit page indicator (template)" }
+    ],
+    "calendar": [
+      { "string": "Predchadzajuci mesiac", "context": "calendar nav aria-label" },
+      { "string": "Dalsi mesiac", "context": "calendar nav aria-label" },
+      { "string": "Sviatok", "context": "calendar badge label" },
+      { "string": "Odomknut zaznam", "context": "calendar tooltip – unlocked" },
+      { "string": "Zamknut zaznam", "context": "calendar tooltip – locked" }
+    ],
+    "color_picker": [
+      { "string": "Použiť predvolenú farbu", "context": "color picker default button" },
+      { "string": "Vyčistiť", "context": "color picker clear button" },
+      { "string": "Vybrať farbu", "context": "color picker trigger label" }
+    ],
+    "form_select": [
+      { "string": "Vyberte možnosť", "context": "default select placeholder" }
+    ],
+    "sheet_edit": [
+      { "string": "Upravit zaznam", "context": "edit sheet default title (fallback)" },
+      { "string": "Aktualizujte vybrane udaje a ulozte zmeny.", "context": "edit sheet default description (fallback)" },
+      { "string": "Ulozit zmeny", "context": "edit sheet submit label (fallback)" },
+      { "string": "Úprava záznamu", "context": "edit sheet title" },
+      { "string": "Nový záznam", "context": "create sheet title" },
+      { "string": "Zavrieť", "context": "sheet close button" },
+      { "string": "Zrušiť", "context": "sheet cancel button" },
+      { "string": "Zavrieť formulár", "context": "sheet close aria-label" }
+    ],
+    "delete_confirm": [
+      { "string": "Naozaj chcete odstranit tento zaznam?", "context": "delete confirmation dialog" }
+    ],
+    "unsaved_changes_dialog": [
+      { "string": "Neuložené zmeny", "context": "unsaved changes dialog title" },
+      { "string": "Zavrieť formulár?", "context": "unsaved changes dialog heading" },
+      { "string": "Vo formulári sú neuložené údaje. Chcete ich zahodiť a zavrieť formulár?", "context": "unsaved changes dialog body" },
+      { "string": "Pokračovať v úprave", "context": "unsaved changes – continue editing" },
+      { "string": "Zahodiť zmeny", "context": "unsaved changes – discard" }
+    ],
+    "row_actions": [
+      { "string": "Audit log", "context": "row action menu item" },
+      { "string": "Odstranit", "context": "row action menu item – delete" },
+      { "string": "Akcie", "context": "actions column header" }
+    ],
+    "audit_sheet": [
+      { "string": "Audit záznamu", "context": "audit sheet title" },
+      { "string": "Časová os zmien uložených pre tento záznam.", "context": "audit sheet description" },
+      { "string": "Žiadne audit záznamy", "context": "audit sheet empty heading" },
+      { "string": "Tento záznam zatiaľ nemá uložené žiadne audit udalosti.", "context": "audit sheet empty body" }
+    ],
+    "table_empty": [
+      { "string": "Žiadne záznamy", "context": "empty table state heading" }
+    ],
+    "search": [
+      { "string": "Hľadať v {title}...", "context": "search placeholder (template with Slovak lowercase)" }
+    ],
+    "column_toggle": [
+      { "string": "Zobraziť/skryť stĺpce", "context": "column toggle button label" },
+      { "string": "Stĺpce", "context": "column popover heading" }
+    ],
+    "lock_cell": [
+      { "string": "Zamknute", "context": "lock cell display – locked" },
+      { "string": "Otvorene", "context": "lock cell display – unlocked" }
+    ],
+    "import_export": [
+      { "string": "Import CSV", "context": "import button label" },
+      { "string": "Export CSV", "context": "export button label" }
+    ],
+    "pagination": [
+      { "string": "Predchádzajúca strana", "context": "previous page aria-label" },
+      { "string": "Ďalšia strana", "context": "next page aria-label" }
+    ]
+  },
+
+  "src/components/app-nav.tsx": {
+    "section_labels": [
+      { "string": "Hlavné", "context": "nav section heading" },
+      { "string": "Správa", "context": "nav section heading" },
+      { "string": "Nastavenia", "context": "nav section heading" }
+    ],
+    "nav_items": [
+      { "string": "Rozvrh", "context": "nav item – schedule" },
+      { "string": "Dovolenky", "context": "nav item – vacations" },
+      { "string": "Služby", "context": "nav item – services" },
+      { "string": "Zmeny", "context": "nav item – shifts" },
+      { "string": "Podmienky", "context": "nav item – conditions" },
+      { "string": "Sviatky", "context": "nav item – holidays" },
+      { "string": "Všeobecné", "context": "nav item – settings" },
+      { "string": "Používatelia", "context": "nav item – users" },
+      { "string": "Roly", "context": "nav item – roles" }
+    ],
+    "brand": [
+      { "string": "Pohotovosti", "context": "app brand / logo text" }
+    ],
+    "theme_toggle": [
+      { "string": "Svetlý režim", "context": "theme toggle – light" },
+      { "string": "Tmavý režim", "context": "theme toggle – dark" }
+    ],
+    "auth": [
+      { "string": "Odhlásiť sa", "context": "logout link" }
+    ],
+    "aria_labels": [
+      { "string": "Prepnúť menu", "context": "mobile hamburger aria-label" },
+      { "string": "Zavrieť menu", "context": "mobile close menu aria-label" },
+      { "string": "Hlavná navigácia", "context": "nav landmark aria-label" },
+      { "string": "Prepnúť tmavý alebo svetlý režim", "context": "theme button aria-label" }
+    ]
+  },
+
+  "src/components/access-denied.tsx": {
+    "heading_and_body": [
+      { "string": "Access denied", "context": "heading (ENGLISH – needs Slovak)", "lang": "en" },
+      { "string": "You do not have permission to view this section.", "context": "body text (ENGLISH – needs Slovak)", "lang": "en" }
+    ]
+  },
+
+  "src/components/schedule-generate-action.tsx": {
+    "button": [
+      { "string": "Generovať rozvrh", "context": "trigger button label" }
+    ],
+    "notification": [
+      { "string": "Generovanie rozvrhu", "context": "toast notification title" }
+    ],
+    "dialog": [
+      { "string": "AI rozvrh", "context": "eyebrow / kicker" },
+      { "string": "Generovať rozvrh", "context": "dialog heading" },
+      { "string": "Aktívny provider je {provider}.", "context": "provider info (template)" },
+      { "string": "AI dostane používateľov s priradenými zmenami, podmienky, sviatky, schválené dovolenky a zamknuté záznamy rozvrhu.", "context": "provider description" }
+    ],
+    "overview_cards": [
+      { "string": "Rozsah", "context": "overview card label" },
+      { "string": "Pri ukladaní", "context": "overview card label" },
+      { "string": "Odomknuté záznamy sa nahradia", "context": "overview card value" },
+      { "string": "Zamknuté záznamy", "context": "overview card label" },
+      { "string": "Zostanú zachované", "context": "overview card value" },
+      { "string": "História férovosti", "context": "overview card label" },
+      { "string": "{n} dní pred začiatkom", "context": "overview card value (template)" }
+    ],
+    "form_fields": [
+      { "string": "Dátum od", "context": "date field label" },
+      { "string": "Dátum do", "context": "date field label" },
+      { "string": "Počet dní histórie pred začiatkom", "context": "field label" },
+      { "string": "Server pošle AI predchádzajúci rozvrh za zadaný počet dní pred začiatkom rozvrhu, aby AI mohla férovejšie rozdeliť zmeny.", "context": "field description" }
+    ],
+    "long_description": [
+      { "string": "AI vygeneruje rozvrh pre zvolené obdobie. Zamknuté záznamy ostanú nedotknuté. Existujúce odomknuté záznamy v rovnakom dátumovom rozsahu sa nahradia novými.", "context": "dialog body paragraph" }
+    ],
+    "actions": [
+      { "string": "Zavrieť", "context": "cancel button" },
+      { "string": "Spustiť generovanie", "context": "submit button" }
+    ],
+    "aria": [
+      { "string": "Zavrieť generovanie rozvrhu", "context": "dialog close aria-label" }
+    ]
+  },
+
+  "src/components/settings-tabs.tsx": {
+    "tabs": [
+      { "string": "System", "context": "tab label – system" },
+      { "string": "Vzhlad", "context": "tab label – appearance" },
+      { "string": "Notifikacie", "context": "tab label – notifications" },
+      { "string": "AI", "context": "tab label – AI" }
+    ],
+    "aria": [
+      { "string": "Sekcie vseobecnych nastaveni", "context": "tab list aria-label" }
+    ]
+  },
+
+  "src/components/browser-notification-settings-card.tsx": {
+    "heading": [
+      { "string": "Webove notifikacie", "context": "notification title / heading" },
+      { "string": "Globalne notifikacie v prehliadaci", "context": "subheading" }
+    ],
+    "description": [
+      { "string": "Nastavte, kde sa maju zobrazovat toast notifikacie a aka ma byt ich priehladnost.", "context": "card description" }
+    ],
+    "overview": [
+      { "string": "Umiestnenie", "context": "overview / field label" },
+      { "string": "Priehladnost", "context": "overview / field label" },
+      { "string": "Pouzitie", "context": "overview label" },
+      { "string": "Globalne akcie a formulare", "context": "overview value" }
+    ],
+    "select_options": [
+      { "string": "Vpravo hore", "context": "position option" },
+      { "string": "Vlavo hore", "context": "position option" },
+      { "string": "Vpravo dole", "context": "position option" },
+      { "string": "Vlavo dole", "context": "position option" }
+    ],
+    "field_descriptions": [
+      { "string": "Vyberte roh obrazovky, kde sa objavia notifikacie.", "context": "position field description" },
+      { "string": "Vyssia hodnota znamena menej priehladnu notifikaciu. Minimum je 0.35, maximum 1.", "context": "opacity field description" }
+    ],
+    "submit": [
+      { "string": "Ulozit nastavenia notifikacii", "context": "submit button" }
+    ]
+  },
+
+  "src/components/notification-settings-card.tsx": {
+    "template_variables": [
+      { "string": "Meno príjemcu", "context": "template variable label" },
+      { "string": "Email príjemcu", "context": "template variable label" },
+      { "string": "Nadpis", "context": "template variable label" },
+      { "string": "Správa", "context": "template variable label" },
+      { "string": "URL akcie", "context": "template variable label" },
+      { "string": "Názov appky", "context": "template variable label" },
+      { "string": "Typ entity", "context": "template variable label" },
+      { "string": "Názov entity", "context": "template variable label" },
+      { "string": "Kanál", "context": "template variable label" },
+      { "string": "Aktuálny rok", "context": "template variable label" },
+      { "string": "Accent farba", "context": "template variable label" }
+    ],
+    "preview": [
+      { "string": "Ukážková notifikácia", "context": "preview notification label" }
+    ],
+    "notification_titles": [
+      { "string": "Notifikácie", "context": "card title" },
+      { "string": "Test notifikácie", "context": "test notification heading" },
+      { "string": "PWA push", "context": "push section label" }
+    ],
+    "push_status_messages": [
+      { "string": "Tento prehliadač nepodporuje push notifikácie.", "context": "push unsupported message" },
+      { "string": "Push notifikácie sú globálne vypnuté. Zapnite ich vyššie.", "context": "push disabled message" },
+      { "string": "Najprv nastav VAPID public key v sekcii push vyššie.", "context": "missing VAPID key" },
+      { "string": "Používateľ nepovolil push notifikácie v prehliadači.", "context": "user denied push" },
+      { "string": "Toto zariadenie je prihlásené na mobilné push notifikácie.", "context": "device subscribed" },
+      { "string": "Push notifikácie boli na tomto zariadení vypnuté.", "context": "device unsubscribed" }
+    ],
+    "headings": [
+      { "string": "Robustný notifikačný systém", "context": "card main heading" },
+      { "string": "Spravujte čisté toast notifikácie, mobilné push notifikácie a profesionálne emailové šablóny z jedného miesta.", "context": "card description" }
+    ],
+    "overview_items": [
+      { "string": "Web toast", "context": "overview label" },
+      { "string": "PWA push", "context": "overview label" },
+      { "string": "Email", "context": "overview label" },
+      { "string": "Aktívne", "context": "overview status – active (feminine)" },
+      { "string": "Vypnuté", "context": "overview status – disabled (feminine)" },
+      { "string": "Aktívny", "context": "overview status – active (masculine)" },
+      { "string": "Vypnutý", "context": "overview status – disabled (masculine)" }
+    ],
+    "section_headings": [
+      { "string": "Webové notifikácie", "context": "section heading" },
+      { "string": "Mobilné push notifikácie", "context": "section heading" },
+      { "string": "Emailové šablóny", "context": "section heading" }
+    ],
+    "toast_fields": [
+      { "string": "Umiestnenie", "context": "field label" },
+      { "string": "Priehľadnosť", "context": "field label" },
+      { "string": "Trvanie (ms)", "context": "field label" },
+      { "string": "Pozadie light", "context": "field label" },
+      { "string": "Pozadie dark", "context": "field label" },
+      { "string": "Text light", "context": "field label" },
+      { "string": "Text dark", "context": "field label" },
+      { "string": "Border light", "context": "field label" },
+      { "string": "Border dark", "context": "field label" }
+    ],
+    "toast_select_options": [
+      { "string": "Vpravo hore", "context": "position option" },
+      { "string": "Vľavo hore", "context": "position option" },
+      { "string": "Vpravo dole", "context": "position option" },
+      { "string": "Vľavo dole", "context": "position option" }
+    ],
+    "push_fields": [
+      { "string": "Povoliť PWA push notifikácie", "context": "toggle label" },
+      { "string": "Odosielajú sa do nainštalovanej PWA na zariadení používateľa.", "context": "push description" },
+      { "string": "Toto zariadenie", "context": "device section heading" },
+      { "string": "Nepodporované", "context": "push not supported status" },
+      { "string": "Povoliť na zariadení", "context": "subscribe button" },
+      { "string": "Odhlásiť zariadenie", "context": "unsubscribe button" }
+    ],
+    "email_fields": [
+      { "string": "Povoliť email notifikácie", "context": "toggle label" },
+      { "string": "Na odosielanie sa používa SMTP konfigurácia zo serverových premenných.", "context": "email description" }
+    ],
+    "template_section": [
+      { "string": "Premenné šablón", "context": "section heading" },
+      { "string": "Premennú môžeš kliknúť alebo potiahnuť do editora.", "context": "template variable help" },
+      { "string": "Predmet emailu", "context": "field label" },
+      { "string": "HTML telo emailu", "context": "field label" },
+      { "string": "Textová fallback šablóna", "context": "field label" },
+      { "string": "Accent farba emailu", "context": "field label" }
+    ],
+    "submit": [
+      { "string": "Uložiť nastavenia notifikácií", "context": "submit button" }
+    ],
+    "test_section": [
+      { "string": "Testovacia notifikácia", "context": "section heading" },
+      { "string": "Odošle testovací email a/alebo push notifikáciu aktívnymi kanálmi.", "context": "test section description" },
+      { "string": "Cieľový email", "context": "field label" },
+      { "string": "Cieľové meno", "context": "field label" },
+      { "string": "Nadpis", "context": "field label" },
+      { "string": "Správa", "context": "field label" }
+    ],
+    "test_defaults": [
+      { "string": "Test notifikácie", "context": "default test title value" },
+      { "string": "Toto je test robustného notifikačného systému.", "context": "default test message value" }
+    ],
+    "test_channel_info": [
+      { "string": "Použije aktuálne emailové šablóny a odošle email na cieľovú adresu.", "context": "email channel description" },
+      { "string": "Push sa doručí na registrované zariadenia cieľového emailu.", "context": "push channel description" }
+    ],
+    "test_submit": [
+      { "string": "Odoslať testovaciu notifikáciu", "context": "test submit button" }
+    ]
+  },
+
+  "src/components/ai-settings-card.tsx": {
+    "notification": [
+      { "string": "AI konfiguracia", "context": "toast notification title" }
+    ],
+    "heading": [
+      { "string": "AI runtime", "context": "eyebrow / kicker" },
+      { "string": "AI konfiguracia", "context": "card heading" }
+    ],
+    "description": [
+      { "string": "Vyberte providera a ulozte API kluce priamo do databazy. Kluce sa nikdy neukladaju do prostredia.", "context": "card description" }
+    ],
+    "overview": [
+      { "string": "Aktivny provider", "context": "overview label" },
+      { "string": "Povinny API kluc", "context": "overview label" },
+      { "string": "Nastaveny", "context": "overview status – configured" },
+      { "string": "Chyba", "context": "overview status – missing" },
+      { "string": "Generovanie rozvrhu", "context": "overview label" },
+      { "string": "Scaffolded", "context": "overview status (ENGLISH)", "lang": "en" }
+    ],
+    "api_key_labels": [
+      { "string": "Kluc je ulozeny v DB.", "context": "API key status – set" },
+      { "string": "Kluc zatial nie je ulozeny.", "context": "API key status – not set" }
+    ],
+    "field_descriptions": [
+      { "string": "Nechajte prazdne pre ponechanie existujuceho kluca.", "context": "API key field help" }
+    ],
+    "checkboxes": [
+      { "string": "Vymazat ulozeny OpenAI kluc", "context": "checkbox label" },
+      { "string": "Vymazat ulozeny Anthropic kluc", "context": "checkbox label" },
+      { "string": "Pouzite len vtedy, ak uz tento provider nechcete pouzivat.", "context": "checkbox description" }
+    ],
+    "warning": [
+      { "string": "Aktivny provider {provider} musi mat po ulozeni dostupny API kluc, inak AI runtime zlyha pri volani.", "context": "warning note (template)" }
+    ],
+    "submit": [
+      { "string": "Ulozit AI nastavenia", "context": "submit button" }
+    ]
+  },
+
+  "src/components/settings-json-help.tsx": {
+    "trigger": [
+      { "string": "Help", "context": "button label (ENGLISH)", "lang": "en" }
+    ],
+    "dialog": [
+      { "string": "Zavriet napovedu", "context": "close dialog aria-label" },
+      { "string": "JSON help", "context": "eyebrow" },
+      { "string": "Napoveda k JSON objektom nastaveni", "context": "dialog heading" },
+      { "string": "Toto su vsetky systemove JSON objekty, ktore sa ukladaju do tabulky AppSetting pod spravovanymi klucmi.", "context": "dialog description" }
+    ],
+    "content": [
+      { "string": "Vlastne kluce", "context": "section heading" },
+      { "string": "V module Vseobecne mozete ukladat aj vlastne JSON hodnoty pod vlastnymi klucmi. Nie su spravovane cez dedickovane karty a mozete ich pouzit na konfiguracne udaje specificke pre vas deployment.", "context": "section body" },
+      { "string": "Kluce spravovane cez dedikovane karty (napr. ui.notifications, ai.runtime) nie je mozne manualne upravovat v tabulke.", "context": "section body" },
+      { "string": "Podporovane JSON typy: string, number, boolean, null, array, object.", "context": "section body" }
+    ],
+    "close": [
+      { "string": "Zavriet", "context": "close button" }
+    ]
+  },
+
+  "src/components/form-submit-button.tsx": {
+    "pending_label": [
+      { "string": "Saving...", "context": "submit button pending state (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/components/module-placeholder.tsx": {
+    "eyebrow": [
+      { "string": "Module", "context": "eyebrow / kicker (ENGLISH)", "lang": "en" }
+    ],
+    "heading": [
+      { "string": "Next implementation steps", "context": "heading (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/components/browser-notification-provider.tsx": {
+    "toast_titles": [
+      { "string": "Uspech", "context": "success notification title" },
+      { "string": "Chyba", "context": "error notification title" },
+      { "string": "Informacia", "context": "info notification title" }
+    ],
+    "aria": [
+      { "string": "Zavriet notifikaciu", "context": "close notification aria-label" }
+    ]
+  },
+
+  "src/app/layout.tsx": {
+    "metadata": [
+      { "string": "Pohotovosti", "context": "page title (metadata)" },
+      { "string": "Clean rewrite of the on-call scheduling system without Firebase.", "context": "page description (ENGLISH)", "lang": "en" }
+    ],
+    "html_lang": [
+      { "string": "sk", "context": "html lang attribute – not a translatable string but locale setting" }
+    ]
+  },
+
+  "src/app/manifest.ts": {
+    "pwa_manifest": [
+      { "string": "Pohotovosti", "context": "PWA name" },
+      { "string": "Pohotovosti", "context": "PWA short_name" },
+      { "string": "On-call scheduling system with PostgreSQL-backed records and mobile-friendly workflows.", "context": "PWA description (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/app/page.tsx": {
+    "kicker": [
+      { "string": "prehľad systému", "context": "page kicker / eyebrow" }
+    ],
+    "headings": [
+      { "string": "Čo je už pripravené", "context": "section heading" },
+      { "string": "Ďalší smer", "context": "section heading" },
+      { "string": "Najbližšie kroky", "context": "section heading" }
+    ],
+    "body_text": [
+      { "string": "Aplikácia už beží v Dockeri, používa PostgreSQL, má server actions, worker proces a základné evidencie napojené na databázu.", "context": "paragraph" },
+      { "string": "Ďalšia vrstva je dokončenie oprávnení, väzieb medzi evidenciami a hlbšie workflow pre plánovanie služieb.", "context": "paragraph" }
+    ],
+    "pillars": [
+      { "string": "Serverové dáta", "context": "pillar card title" },
+      { "string": "Zápisy idú cez server actions a Prisma, takže klient nepristupuje priamo na databázu.", "context": "pillar card body" },
+      { "string": "PostgreSQL jadro", "context": "pillar card title" },
+      { "string": "Nová schéma pokrýva používateľov, rozvrhy, dovolenky, sviatky, nastavenia aj worker joby.", "context": "pillar card body" },
+      { "string": "Pripravené na AI", "context": "pillar card title" },
+      { "string": "AI provideri sú schovaní za lokálnou vrstvou, takže sa nepretláčajú priamo do UI ani doménovej logiky.", "context": "pillar card body" }
+    ],
+    "next_steps": [
+      { "string": "dokončiť editáciu a mazanie v CRUD moduloch", "context": "list item" },
+      { "string": "prepojiť role a oprávnenia s reálnym prihlásením", "context": "list item" },
+      { "string": "doplnit worker flow pre pripomienky a synchronizáciu sviatkov", "context": "list item" },
+      { "string": "rozšíriť kalendárne zobrazenia o ďalšie filtre a navigáciu", "context": "list item" }
+    ],
+    "cta_buttons": [
+      { "string": "Otvoriť rozvrh", "context": "CTA link button" },
+      { "string": "Otvoriť používateľov", "context": "CTA link button" }
+    ]
+  },
+
+  "src/app/login/page.tsx": {
+    "heading": [
+      { "string": "Prihlásenie", "context": "page heading" }
+    ],
+    "description": [
+      { "string": "Zadajte svoje prihlasovacie údaje", "context": "page description" }
+    ],
+    "form_fields": [
+      { "string": "Email", "context": "field label" },
+      { "string": "vas@email.sk", "context": "email placeholder" },
+      { "string": "Heslo", "context": "field label" },
+      { "string": "Zabudnuté heslo?", "context": "forgot password link" }
+    ]
+  },
+
+  "src/app/login/login-submit-button.tsx": {
+    "labels": [
+      { "string": "Prihlásiť sa", "context": "default submit label" },
+      { "string": "Prihlasujem...", "context": "pending submit label" }
+    ]
+  },
+
+  "src/app/login/forgot-password/page.tsx": {
+    "heading": [
+      { "string": "Zabudnuté heslo", "context": "page heading" }
+    ],
+    "description": [
+      { "string": "Zadajte svoj email a pošleme vám odkaz na obnovenie hesla", "context": "page description" }
+    ],
+    "form": [
+      { "string": "Email", "context": "field label" },
+      { "string": "vas@email.sk", "context": "email placeholder" },
+      { "string": "Odoslať odkaz", "context": "submit button" },
+      { "string": "Odosielam...", "context": "pending submit label" },
+      { "string": "Späť na prihlásenie", "context": "back link" }
+    ]
+  },
+
+  "src/app/login/reset-password/page.tsx": {
+    "invalid_token": [
+      { "string": "Neplatný odkaz", "context": "heading – invalid/missing token" },
+      { "string": "Tento odkaz na obnovenie hesla je neplatný alebo chýba token.", "context": "body – invalid token" },
+      { "string": "Požiadať o nový odkaz", "context": "link to forgot-password" }
+    ],
+    "heading": [
+      { "string": "Nové heslo", "context": "page heading" }
+    ],
+    "description": [
+      { "string": "Zadajte svoje nové heslo", "context": "page description" }
+    ],
+    "form": [
+      { "string": "Nové heslo", "context": "field label" },
+      { "string": "Minimálne 8 znakov", "context": "password placeholder" },
+      { "string": "Potvrdiť heslo", "context": "field label" },
+      { "string": "Zopakujte heslo", "context": "confirm password placeholder" },
+      { "string": "Nastaviť heslo", "context": "submit button" },
+      { "string": "Ukladám...", "context": "pending submit label" },
+      { "string": "Späť na prihlásenie", "context": "back link" }
+    ]
+  },
+
+  "src/app/offline/page.tsx": {
+    "all_english": [
+      { "string": "offline mode", "context": "eyebrow / kicker (ENGLISH)", "lang": "en" },
+      { "string": "Connection unavailable", "context": "heading (ENGLISH)", "lang": "en" },
+      { "string": "The app shell is installed, but this screen needs a network connection or cached data to continue.", "context": "body (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/server/actions/auth.ts": {
+    "zod_messages": [
+      { "string": "Zadajte platný email.", "context": "Zod – invalid email" },
+      { "string": "Zadajte heslo.", "context": "Zod – empty password" },
+      { "string": "Heslo musí mať aspoň 8 znakov.", "context": "Zod – password min length" },
+      { "string": "Potvrďte heslo.", "context": "Zod – empty confirm password" }
+    ],
+    "error_messages": [
+      { "string": "Neplatný email alebo heslo.", "context": "login error" },
+      { "string": "Nepodarilo sa odoslať email. Skúste to znova neskôr.", "context": "forgot-password email send failure" },
+      { "string": "Odkaz na obnovenie hesla je neplatný alebo vypršal. Požiadajte o nový.", "context": "reset-password invalid token" },
+      { "string": "Tento účet je deaktivovaný.", "context": "reset-password deactivated account" },
+      { "string": "Heslá sa nezhodujú.", "context": "reset-password mismatch" }
+    ],
+    "success_messages": [
+      { "string": "Ak existuje účet s touto emailovou adresou, odoslali sme vám odkaz na obnovenie hesla.", "context": "forgot-password success" },
+      { "string": "Heslo bolo úspešne zmenené. Teraz sa môžete prihlásiť.", "context": "reset-password success" }
+    ],
+    "email_content": [
+      { "string": "Obnovenie hesla | Pohotovosti", "context": "email subject" },
+      { "string": "Obnovenie hesla", "context": "email heading" },
+      { "string": "Ahoj {firstName},", "context": "email greeting (template)" },
+      { "string": "Prijali sme žiadosť o obnovenie hesla pre váš účet. Kliknite na tlačidlo nižšie pre nastavenie nového hesla.", "context": "email body" },
+      { "string": "Nastaviť nové heslo", "context": "email CTA button text" },
+      { "string": "Tento odkaz je platný 15 minút. Ak ste o obnovenie hesla nežiadali, tento email môžete ignorovať.", "context": "email footer note" }
+    ]
+  },
+
+  "src/server/actions/records.ts": {
+    "zod_validation_english": [
+      { "string": "Enter a valid email address.", "context": "Zod – email (ENGLISH)", "lang": "en" },
+      { "string": "First name is required.", "context": "Zod – user firstName (ENGLISH)", "lang": "en" },
+      { "string": "Last name is required.", "context": "Zod – user lastName (ENGLISH)", "lang": "en" },
+      { "string": "Code is required.", "context": "Zod – role/service/shift code (ENGLISH)", "lang": "en" },
+      { "string": "Name is required.", "context": "Zod – role/service/shift name (ENGLISH)", "lang": "en" },
+      { "string": "Password must be at least 8 characters.", "context": "Zod – user password (ENGLISH)", "lang": "en" },
+      { "string": "Start date is required.", "context": "Zod – vacation/schedule startDate (ENGLISH)", "lang": "en" },
+      { "string": "End date is required.", "context": "Zod – vacation endDate (ENGLISH)", "lang": "en" },
+      { "string": "Start time is required.", "context": "Zod – shift start (ENGLISH)", "lang": "en" },
+      { "string": "End time is required.", "context": "Zod – shift end (ENGLISH)", "lang": "en" },
+      { "string": "Use HH:MM format.", "context": "Zod – shift time format (ENGLISH)", "lang": "en" },
+      { "string": "Type is required.", "context": "Zod – condition type (ENGLISH)", "lang": "en" },
+      { "string": "Date is required.", "context": "Zod – holiday/schedule date (ENGLISH)", "lang": "en" },
+      { "string": "Country code is required.", "context": "Zod – holiday country (ENGLISH)", "lang": "en" },
+      { "string": "Use YYYY-MM-DD format.", "context": "Zod – date format (ENGLISH)", "lang": "en" },
+      { "string": "Key is required.", "context": "Zod – setting key (ENGLISH)", "lang": "en" },
+      { "string": "Description is required.", "context": "Zod – condition description (ENGLISH)", "lang": "en" },
+      { "string": "User is required.", "context": "Zod – schedule/vacation userId (ENGLISH)", "lang": "en" },
+      { "string": "Shift type is required.", "context": "Zod – schedule shiftTypeId (ENGLISH)", "lang": "en" },
+      { "string": "Title is required.", "context": "Zod – condition title (ENGLISH)", "lang": "en" }
+    ],
+    "generic_error_messages_english": [
+      { "string": "Review the highlighted fields.", "context": "Zod validation failure fallback (ENGLISH)", "lang": "en" },
+      { "string": "Missing record id.", "context": "missing id error (ENGLISH)", "lang": "en" },
+      { "string": "Value must be valid JSON.", "context": "setting value validation (ENGLISH)", "lang": "en" },
+      { "string": "A record with the same unique value already exists.", "context": "Prisma unique conflict (ENGLISH)", "lang": "en" },
+      { "string": "Cannot delete: other records depend on this one.", "context": "Prisma FK constraint (ENGLISH)", "lang": "en" }
+    ],
+    "create_success_messages": [
+      { "string": "Pouzivatel bol vytvoreny.", "context": "user create success" },
+      { "string": "Rola bola vytvorena.", "context": "role create success" },
+      { "string": "Sluzba bola vytvorena.", "context": "service create success" },
+      { "string": "Typ zmeny bol vytvoreny.", "context": "shift create success" },
+      { "string": "Dovolenka bola vytvorena.", "context": "vacation create success" },
+      { "string": "Podmienka bola vytvorena.", "context": "condition create success" },
+      { "string": "Sviatok bol vytvoreny.", "context": "holiday create success" },
+      { "string": "Nastavenie bolo vytvorene.", "context": "setting create success" },
+      { "string": "Zaznam rozvrhu bol vytvoreny.", "context": "schedule entry create success" }
+    ],
+    "update_success_messages": [
+      { "string": "Pouzivatel bol upraveny.", "context": "user update success" },
+      { "string": "Rola bola upravena.", "context": "role update success" },
+      { "string": "Sluzba bola upravena.", "context": "service update success" },
+      { "string": "Typ zmeny bol upraveny.", "context": "shift update success" },
+      { "string": "Dovolenka bola upravena.", "context": "vacation update success" },
+      { "string": "Podmienka bola upravena.", "context": "condition update success" },
+      { "string": "Sviatok bol upraveny.", "context": "holiday update success" },
+      { "string": "Nastavenie bolo upravene.", "context": "setting update success" },
+      { "string": "Zaznam rozvrhu bol upraveny.", "context": "schedule entry update success" }
+    ],
+    "delete_success_messages": [
+      { "string": "Pouzivatel bol odstraneny.", "context": "user delete success" },
+      { "string": "Rola bola odstranena.", "context": "role delete success" },
+      { "string": "Sluzba bola odstranena.", "context": "service delete success" },
+      { "string": "Typ zmeny bol odstraneny.", "context": "shift delete success" },
+      { "string": "Dovolenka bola odstranena.", "context": "vacation delete success" },
+      { "string": "Podmienka bola odstranena.", "context": "condition delete success" },
+      { "string": "Sviatok bol odstraneny.", "context": "holiday delete success" },
+      { "string": "Nastavenie bolo odstranene.", "context": "setting delete success" },
+      { "string": "Zaznam rozvrhu bol odstraneny.", "context": "schedule entry delete success" }
+    ],
+    "lock_messages": [
+      { "string": "Zamok dovolenky bol aktualizovany.", "context": "vacation lock toggle success" },
+      { "string": "Zamok zaznamu rozvrhu bol aktualizovany.", "context": "schedule lock toggle success" }
+    ],
+    "locked_record_errors": [
+      { "string": "{entityLabel} je zamknuty. Pre odomknutie pouzite ikonku zamku na zazname.", "context": "locked record error (template)" },
+      { "string": "Zaznam dovolenky je zamknuty. Pre odomknutie pouzite ikonku zamku na zazname.", "context": "locked vacation error" },
+      { "string": "Zaznam rozvrhu je zamknuty. Pre odomknutie pouzite ikonku zamku na zazname.", "context": "locked schedule error" }
+    ],
+    "import_success_messages": [
+      { "string": "Importovanych {n} pouzivatelov ({created} novych, {updated} aktualizovanych).", "context": "users import success (template)" },
+      { "string": "Importovanych {n} roli ({created} novych, {updated} aktualizovanych).", "context": "roles import success (template)" },
+      { "string": "Importovanych {n} sluzieb ({created} novych, {updated} aktualizovanych).", "context": "services import success (template)" },
+      { "string": "Importovanych {n} typov zmien ({created} novych, {updated} aktualizovanych).", "context": "shifts import success (template)" },
+      { "string": "Importovanych {n} dovoleniek ({created} novych, {updated} aktualizovanych).", "context": "vacations import success (template)" },
+      { "string": "Importovanych {n} podmienok ({created} novych, {updated} aktualizovanych).", "context": "conditions import success (template)" },
+      { "string": "Importovanych {n} sviatkov ({created} novych, {updated} aktualizovanych).", "context": "holidays import success (template)" },
+      { "string": "Importovanych {n} nastaveni ({created} novych, {updated} aktualizovanych).", "context": "settings import success (template)" },
+      { "string": "Importovanych {n} zaznamov rozvrhu ({created} novych, {updated} aktualizovanych).", "context": "schedule import success (template)" }
+    ],
+    "settings_actions": [
+      { "string": "Nastavenia notifikacii boli ulozene.", "context": "notification settings save success" },
+      { "string": "AI nastavenia boli ulozene.", "context": "AI settings save success" },
+      { "string": "Testovacia notifikacia bola odoslana.", "context": "test notification send success" }
+    ],
+    "push_error": [
+      { "string": "Push notifikácie vyžadujú VAPID public aj private key.", "context": "VAPID key missing error" }
+    ],
+    "ai_generation": [
+      { "string": "AI nevygenerovalo ziadne zaznamy pre zadane obdobie.", "context": "empty AI result error" },
+      { "string": "AI vygenerovalo a ulozilo {n} zaznamov rozvrhu.", "context": "AI generation success (template)" }
+    ],
+    "notification_messages": [
+      { "string": "AI rozvrh bol vygenerovaný", "context": "notification title – AI schedule" },
+      { "string": "AI vám naplánovala {n} zmien od {start} do {end}.", "context": "notification body – AI schedule (template)" },
+      { "string": "Nová zmena v rozvrhu", "context": "notification title – new schedule entry" },
+      { "string": "Bola vám pridaná zmena {shiftName} na {date}.", "context": "notification body – new entry (template)" },
+      { "string": "Zmena v rozvrhu bola upravená", "context": "notification title – updated schedule entry" },
+      { "string": "Vaša zmena {shiftName} na {date} bola aktualizovaná.", "context": "notification body – updated entry (template)" }
+    ]
+  },
+
+  "src/server/read-models/modules.ts": {
+    "audit_field_labels": [
+      { "string": "Email", "context": "audit label" },
+      { "string": "Meno", "context": "audit label – first name" },
+      { "string": "Priezvisko", "context": "audit label – last name" },
+      { "string": "Rola", "context": "audit label" },
+      { "string": "Typy zmien", "context": "audit label" },
+      { "string": "Notifikacie", "context": "audit label" },
+      { "string": "Pocet dni notifikacii", "context": "audit label" },
+      { "string": "Tema", "context": "audit label – theme" },
+      { "string": "Kod", "context": "audit label – code" },
+      { "string": "Nazov", "context": "audit label – name" },
+      { "string": "Popis", "context": "audit label – description" },
+      { "string": "Aktivna", "context": "audit label – active (feminine)" },
+      { "string": "Svetle pozadie", "context": "audit label – light background" },
+      { "string": "Svetly text", "context": "audit label" },
+      { "string": "Svetly okraj", "context": "audit label" },
+      { "string": "Tmave pozadie", "context": "audit label" },
+      { "string": "Tmavy text", "context": "audit label" },
+      { "string": "Tmavy okraj", "context": "audit label" },
+      { "string": "Typ sluzby", "context": "audit label – service type" },
+      { "string": "Zaciatok", "context": "audit label – start time" },
+      { "string": "Koniec", "context": "audit label – end time" },
+      { "string": "Prechod cez polnoc", "context": "audit label" },
+      { "string": "Platnost", "context": "audit label – validity" },
+      { "string": "Pouzivatel", "context": "audit label – user" },
+      { "string": "Zaciatok dovolenky", "context": "audit label" },
+      { "string": "Koniec dovolenky", "context": "audit label" },
+      { "string": "Zamknuty", "context": "audit label – locked" },
+      { "string": "Stav", "context": "audit label – status" },
+      { "string": "Poznamka", "context": "audit label – note" },
+      { "string": "Typ", "context": "audit label – type" },
+      { "string": "Nadpis", "context": "audit label – title" },
+      { "string": "Priorita", "context": "audit label – priority" },
+      { "string": "Datum", "context": "audit label – date" },
+      { "string": "Krajina", "context": "audit label – country" },
+      { "string": "Nazov EN", "context": "audit label – name English" },
+      { "string": "Nazov SK", "context": "audit label – name Slovak" },
+      { "string": "Kluc", "context": "audit label – key" },
+      { "string": "Hodnota", "context": "audit label – value" },
+      { "string": "Zmena", "context": "audit label – shift" },
+      { "string": "Sluzba", "context": "audit label – service" },
+      { "string": "Zdroj", "context": "audit label – source" }
+    ],
+    "vacation_statuses": [
+      { "string": "Schvalena", "context": "vacation status – approved (no diacritics)" },
+      { "string": "Zamietnuta", "context": "vacation status – rejected (no diacritics)" },
+      { "string": "Caka na schvalenie", "context": "vacation status – pending (no diacritics)" },
+      { "string": "Schválená", "context": "vacation status – approved (with diacritics)" },
+      { "string": "Zamietnutá", "context": "vacation status – rejected (with diacritics)" },
+      { "string": "Čaká na schválenie", "context": "vacation status – pending (with diacritics)" },
+      { "string": "Čaká", "context": "vacation status – pending short" }
+    ],
+    "schedule_sources": [
+      { "string": "AI", "context": "schedule source" },
+      { "string": "Import", "context": "schedule source" },
+      { "string": "Manualne", "context": "schedule source – manual (no diacritics)" },
+      { "string": "Manuálne", "context": "schedule source – manual (with diacritics)" }
+    ],
+    "boolean_cells": [
+      { "string": "Active", "context": "active boolean label (ENGLISH)", "lang": "en" },
+      { "string": "Inactive", "context": "inactive boolean label (ENGLISH)", "lang": "en" },
+      { "string": "Aktívna", "context": "active boolean label – Slovak (feminine)" },
+      { "string": "Neaktívna", "context": "inactive boolean label – Slovak (feminine)" }
+    ],
+    "lock_cells": [
+      { "string": "Zamknute", "context": "locked status" },
+      { "string": "Otvorene", "context": "unlocked status" }
+    ],
+    "users_module": [
+      { "string": "Používatelia", "context": "module title" },
+      { "string": "Spravujte profily používateľov, ich roly a prístupy k službám a zmenám.", "context": "module summary" },
+      { "string": "Meno", "context": "column label" },
+      { "string": "Email", "context": "column label" },
+      { "string": "Rola", "context": "column label" },
+      { "string": "Prava", "context": "column label – permissions count" },
+      { "string": "Typy sluzieb", "context": "column label" },
+      { "string": "Typy zmien", "context": "column label" },
+      { "string": "Bez roly", "context": "user with no role fallback" },
+      { "string": "Bez priradenia", "context": "user with no assignments fallback" },
+      { "string": "Pridať nového", "context": "add button label" },
+      { "string": "Hľadať v používateľoch...", "context": "search placeholder" }
+    ],
+    "roles_module": [
+      { "string": "Roly", "context": "module title" },
+      { "string": "Pridať novú", "context": "add button label" },
+      { "string": "Hľadať v rolách...", "context": "search placeholder" }
+    ],
+    "services_module": [
+      { "string": "Typy služieb", "context": "module title" },
+      { "string": "Kód", "context": "column label" },
+      { "string": "Názov", "context": "column label" },
+      { "string": "Stav", "context": "column label" },
+      { "string": "Farby (svetlý režim)", "context": "column label" },
+      { "string": "Farby (tmavý režim)", "context": "column label" },
+      { "string": "Pridať novú", "context": "add button label" },
+      { "string": "Hľadať v službách...", "context": "search placeholder" }
+    ],
+    "shifts_module": [
+      { "string": "Typy zmien", "context": "module title" },
+      { "string": "Kód", "context": "column label" },
+      { "string": "Názov", "context": "column label" },
+      { "string": "Typ služby", "context": "column label" },
+      { "string": "Čas", "context": "column label" },
+      { "string": "Platnosť", "context": "column label" },
+      { "string": "Platí pre {day}", "context": "shift validity label (template)" },
+      { "string": "Pridať nový", "context": "add button label" },
+      { "string": "Hľadať v zmenách...", "context": "search placeholder" }
+    ],
+    "vacations_module": [
+      { "string": "Dovolenky", "context": "module title" },
+      { "string": "Používateľ", "context": "column label" },
+      { "string": "Obdobie", "context": "column label" },
+      { "string": "Zámok", "context": "column label" },
+      { "string": "Stav", "context": "column label" },
+      { "string": "Poznámka", "context": "column label" },
+      { "string": "Pridať novú", "context": "add button label" },
+      { "string": "Hľadať v dovolenkách...", "context": "search placeholder" }
+    ],
+    "conditions_module": [
+      { "string": "Podmienky", "context": "module title" },
+      { "string": "Typ", "context": "column label" },
+      { "string": "Popis", "context": "column label" },
+      { "string": "Priorita", "context": "column label" },
+      { "string": "Stav", "context": "column label" },
+      { "string": "Detail", "context": "column label" },
+      { "string": "Pridať novú", "context": "add button label" },
+      { "string": "Hľadať v podmienkach...", "context": "search placeholder" }
+    ],
+    "holidays_module": [
+      { "string": "Štátne sviatky", "context": "module title" },
+      { "string": "Dátum", "context": "column label" },
+      { "string": "Krajina", "context": "column label" },
+      { "string": "Názov (anglicky)", "context": "column label" },
+      { "string": "Názov (slovensky)", "context": "column label" },
+      { "string": "Pridať nový", "context": "add button label" },
+      { "string": "Hľadať v sviatkoch...", "context": "search placeholder" }
+    ],
+    "settings_module": [
+      { "string": "Všeobecné", "context": "module title" },
+      { "string": "Kľúč", "context": "column label" },
+      { "string": "Hodnota", "context": "column label" },
+      { "string": "Aktualizované", "context": "column label – updated at" },
+      { "string": "Pridať nové", "context": "add button label" },
+      { "string": "Hľadať v nastaveniach...", "context": "search placeholder" }
+    ],
+    "schedule_module": [
+      { "string": "Rozvrh", "context": "module title" },
+      { "string": "Dátum", "context": "column label" },
+      { "string": "Používateľ", "context": "column label" },
+      { "string": "Služba", "context": "column label" },
+      { "string": "Zmena", "context": "column label" },
+      { "string": "Zdroj", "context": "column label" },
+      { "string": "Stav", "context": "column label – lock status" },
+      { "string": "Poznámka", "context": "column label" },
+      { "string": "Pridať nový", "context": "add button label" },
+      { "string": "Hľadať v rozvrhu...", "context": "search placeholder" }
+    ],
+    "disabled_reasons": [
+      { "string": "Najprv vytvorte aspoň jedného používateľa.", "context": "createDisabledReason – no users" },
+      { "string": "Najprv vytvorte aspoň jednu službu.", "context": "createDisabledReason – no services" },
+      { "string": "Najprv vytvorte aspoň jeden typ zmeny.", "context": "createDisabledReason – no shifts" },
+      { "string": "Najprv vytvorte používateľov a typy zmien.", "context": "createDisabledReason – no users/shifts for schedule" }
+    ],
+    "sheet_labels": [
+      { "string": "Nový používateľ", "context": "sheet title – users" },
+      { "string": "Vyplňte údaje nového používateľa.", "context": "sheet description – users" },
+      { "string": "Vytvoriť používateľa", "context": "sheet submit – users" },
+      { "string": "Nová rola", "context": "sheet title – roles" },
+      { "string": "Zadajte názov a kód novej roly.", "context": "sheet description – roles" },
+      { "string": "Vytvoriť rolu", "context": "sheet submit – roles" },
+      { "string": "Nová služba", "context": "sheet title – services" },
+      { "string": "Zadajte kód, názov a farby novej služby.", "context": "sheet description – services" },
+      { "string": "Vytvoriť službu", "context": "sheet submit – services" },
+      { "string": "Nový typ zmeny", "context": "sheet title – shifts" },
+      { "string": "Zadajte kód, názov, čas a platnosť novej zmeny.", "context": "sheet description – shifts" },
+      { "string": "Vytvoriť zmenu", "context": "sheet submit – shifts" },
+      { "string": "Nová dovolenka", "context": "sheet title – vacations" },
+      { "string": "Zadajte obdobie a používateľa pre novú dovolenku.", "context": "sheet description – vacations" },
+      { "string": "Vytvoriť dovolenku", "context": "sheet submit – vacations" },
+      { "string": "Nová podmienka", "context": "sheet title – conditions" },
+      { "string": "Popíšte typ a detail novej podmienky.", "context": "sheet description – conditions" },
+      { "string": "Vytvoriť podmienku", "context": "sheet submit – conditions" },
+      { "string": "Nový sviatok", "context": "sheet title – holidays" },
+      { "string": "Zadajte dátum a názov nového sviatku.", "context": "sheet description – holidays" },
+      { "string": "Vytvoriť sviatok", "context": "sheet submit – holidays" },
+      { "string": "Nové nastavenie", "context": "sheet title – settings" },
+      { "string": "Zadajte kľúč a JSON hodnotu nového nastavenia.", "context": "sheet description – settings" },
+      { "string": "Vytvoriť nastavenie", "context": "sheet submit – settings" },
+      { "string": "Nový záznam rozvrhu", "context": "sheet title – schedule" },
+      { "string": "Pridajte manuálny záznam do rozvrhu.", "context": "sheet description – schedule" },
+      { "string": "Vytvoriť záznam", "context": "sheet submit – schedule" }
+    ],
+    "empty_states": [
+      { "string": "Žiadni používatelia", "context": "empty state – users" },
+      { "string": "Zatiaľ nie sú evidovaní žiadni používatelia.", "context": "empty state body – users" },
+      { "string": "Žiadne roly", "context": "empty state – roles" },
+      { "string": "Zatiaľ nie sú definované žiadne roly.", "context": "empty state body – roles" },
+      { "string": "Žiadne služby", "context": "empty state – services" },
+      { "string": "Zatiaľ nie sú vytvorené žiadne typy služieb.", "context": "empty state body – services" },
+      { "string": "Žiadne zmeny", "context": "empty state – shifts" },
+      { "string": "Zatiaľ nie sú definované žiadne typy zmien.", "context": "empty state body – shifts" },
+      { "string": "Žiadne dovolenky", "context": "empty state – vacations" },
+      { "string": "Zatiaľ nie sú evidované žiadne dovolenky.", "context": "empty state body – vacations" },
+      { "string": "Žiadne podmienky", "context": "empty state – conditions" },
+      { "string": "Zatiaľ nie sú definované žiadne podmienky.", "context": "empty state body – conditions" },
+      { "string": "Žiadne sviatky", "context": "empty state – holidays" },
+      { "string": "Zatiaľ nie sú evidované žiadne sviatky.", "context": "empty state body – holidays" },
+      { "string": "Žiadne nastavenia", "context": "empty state – settings" },
+      { "string": "Zatiaľ nie sú uložené žiadne vlastné nastavenia.", "context": "empty state body – settings" },
+      { "string": "Žiadne záznamy", "context": "empty state – schedule" },
+      { "string": "Zatiaľ nie sú v rozvrhu žiadne záznamy.", "context": "empty state body – schedule" }
+    ],
+    "form_field_labels": [
+      { "string": "Meno", "context": "form field label" },
+      { "string": "Priezvisko", "context": "form field label" },
+      { "string": "Email", "context": "form field label" },
+      { "string": "Heslo", "context": "form field label" },
+      { "string": "Rola", "context": "form field label" },
+      { "string": "Typy zmien", "context": "form field label" },
+      { "string": "Kód", "context": "form field label" },
+      { "string": "Názov", "context": "form field label" },
+      { "string": "Popis", "context": "form field label" },
+      { "string": "Aktívna", "context": "form field label / checkbox" },
+      { "string": "Typ služby", "context": "form field label" },
+      { "string": "Začiatok", "context": "form field label" },
+      { "string": "Koniec", "context": "form field label" },
+      { "string": "Prechádza cez polnoc", "context": "form checkbox label" },
+      { "string": "Používateľ", "context": "form field label" },
+      { "string": "Dátum od", "context": "form field label" },
+      { "string": "Dátum do", "context": "form field label" },
+      { "string": "Poznámka", "context": "form field label" },
+      { "string": "Typ", "context": "form field label" },
+      { "string": "Nadpis", "context": "form field label" },
+      { "string": "Priorita", "context": "form field label" },
+      { "string": "Dátum", "context": "form field label" },
+      { "string": "Krajina", "context": "form field label" },
+      { "string": "Názov (anglicky)", "context": "form field label" },
+      { "string": "Názov (slovensky)", "context": "form field label" },
+      { "string": "Kľúč", "context": "form field label" },
+      { "string": "Hodnota (JSON)", "context": "form field label" },
+      { "string": "Zmena", "context": "form field label – shift type" },
+      { "string": "Zdroj", "context": "form field label – source" }
+    ],
+    "stats_labels": [
+      { "string": "Celkom", "context": "stats label – total count" },
+      { "string": "S rolou", "context": "stats label – users with role" },
+      { "string": "Bez roly", "context": "stats label – users without role" },
+      { "string": "Aktívne", "context": "stats label – active count" },
+      { "string": "Neaktívne", "context": "stats label – inactive count" },
+      { "string": "Schválené", "context": "stats label – approved vacations" },
+      { "string": "Čakajúce", "context": "stats label – pending vacations" },
+      { "string": "Zamknuté", "context": "stats label – locked" },
+      { "string": "Krajiny", "context": "stats label – countries" }
+    ],
+    "no_changes": [
+      { "string": "Bez zistenych zmien.", "context": "audit diff – no changes" }
+    ]
+  },
+
+  "src/server/auth/permissions.ts": {
+    "module_labels_english": [
+      { "string": "Schedule", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Vacations", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Service types", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Change types", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Conditions", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Holidays", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Settings", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Users", "context": "permission module label (ENGLISH)", "lang": "en" },
+      { "string": "Roles", "context": "permission module label (ENGLISH)", "lang": "en" }
+    ],
+    "action_labels_english": [
+      { "string": "View", "context": "permission action label (ENGLISH)", "lang": "en" },
+      { "string": "Edit records", "context": "permission action label (ENGLISH)", "lang": "en" },
+      { "string": "Add a manual record", "context": "permission action label (ENGLISH)", "lang": "en" },
+      { "string": "Delete a record", "context": "permission action label (ENGLISH)", "lang": "en" },
+      { "string": "Generate a schedule", "context": "permission action label (ENGLISH)", "lang": "en" },
+      { "string": "Import / Export", "context": "permission action label (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/server/config/app-shell.ts": {
+    "fallbacks": [
+      { "string": "Lokálny používateľ", "context": "fallback user name for bootstrap user" },
+      { "string": "local@pohotovosti.sk", "context": "fallback email for bootstrap user" }
+    ]
+  },
+
+  "src/server/scheduling/shift-validity.ts": {
+    "day_labels": [
+      { "string": "Po", "context": "day abbreviation – Monday" },
+      { "string": "Ut", "context": "day abbreviation – Tuesday" },
+      { "string": "St", "context": "day abbreviation – Wednesday" },
+      { "string": "Stv", "context": "day abbreviation – Thursday" },
+      { "string": "Pi", "context": "day abbreviation – Friday" },
+      { "string": "So", "context": "day abbreviation – Saturday" },
+      { "string": "Ne", "context": "day abbreviation – Sunday" },
+      { "string": "Sviatok", "context": "day type label – holiday" }
+    ],
+    "day_type_identifier": [
+      { "string": "sviatok", "context": "day type string used in logic" }
+    ]
+  },
+
+  "src/server/ai/schedule-generation.ts": {
+    "system_prompt_english": [
+      { "string": "You generate employee shift schedules.", "context": "AI system prompt line (ENGLISH)", "lang": "en" },
+      { "string": "Always obey these hard constraints:", "context": "AI system prompt line (ENGLISH)", "lang": "en" },
+      { "string": "Return JSON only with keys summary and events.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "Every event must contain date, userId and shiftTypeId.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "Use only user ids and shift type ids present in the input.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "A generated shift type must be assigned to the selected user.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "Respect shift validity day types, holiday dates, approved vacations and locked entries.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "Locked entries are fixed and must not be changed or duplicated.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "Prefer balanced distribution across users when the conditions do not say otherwise.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "Use historicalAssignments as fairness context so recent similar shifts are distributed more fairly.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" },
+      { "string": "Do not invent missing users, shifts, services, rules or dates.", "context": "AI system prompt constraint (ENGLISH)", "lang": "en" }
+    ],
+    "generation_prompt_english": [
+      { "string": "Generate a shift schedule for the requested period.", "context": "AI generation prompt (ENGLISH)", "lang": "en" },
+      { "string": "If some dates cannot be assigned while respecting hard constraints, omit those events and mention the gap in summary.", "context": "AI generation prompt (ENGLISH)", "lang": "en" },
+      { "string": "The field fairnessLookbackDays tells you how many days before startDate are included in historicalAssignments for fair scheduling.", "context": "AI generation prompt (ENGLISH)", "lang": "en" }
+    ],
+    "error_messages_english": [
+      { "string": "AI response did not contain valid JSON.", "context": "parse error (ENGLISH)", "lang": "en" },
+      { "string": "AI response has an invalid schedule structure.", "context": "validation error (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/server/ai/contracts.ts": {
+    "zod_messages_english": [
+      { "string": "Use YYYY-MM-DD format.", "context": "Zod – date format (ENGLISH)", "lang": "en" },
+      { "string": "User id is required.", "context": "Zod – userId (ENGLISH)", "lang": "en" },
+      { "string": "Shift type id is required.", "context": "Zod – shiftTypeId (ENGLISH)", "lang": "en" },
+      { "string": "Note is too long.", "context": "Zod – note max length (ENGLISH)", "lang": "en" },
+      { "string": "Summary is too long.", "context": "Zod – summary max length (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/server/ai/index.ts": {
+    "error_messages_english": [
+      { "string": "ANTHROPIC_API_KEY is missing.", "context": "AI provider error (ENGLISH)", "lang": "en" },
+      { "string": "OPENAI_API_KEY is missing.", "context": "AI provider error (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/server/notifications/template.ts": {
+    "defaults": [
+      { "string": "Pohotovosti", "context": "default app_name in template" }
+    ]
+  },
+
+  "src/server/notifications/email.ts": {
+    "error_english": [
+      { "string": "SMTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER and SMTP_PASSWORD.", "context": "SMTP missing error (ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "src/server/notifications/index.ts": {
+    "defaults": [
+      { "string": "Používateľ", "context": "default recipient name fallback" },
+      { "string": "Pohotovosti", "context": "default appName" }
+    ]
+  },
+
+  "src/server/notifications/push.ts": {
+    "error_english": [
+      { "string": "Push notifications require VAPID public and private keys.", "context": "VAPID error (ENGLISH)", "lang": "en" }
+    ],
+    "defaults": [
+      { "string": "mailto:noreply@pohotovosti.sk", "context": "VAPID subject fallback" }
+    ]
+  },
+
+  "src/server/config/notification-settings.ts": {
+    "email_defaults": [
+      { "string": "Pohotovosti", "context": "default fromName" },
+      { "string": "noreply@pohotovosti.sk", "context": "default fromEmail" },
+      { "string": "{{notification_title}} | {{app_name}}", "context": "default email subject template" },
+      { "string": "Ahoj {{recipient_name}},", "context": "default email greeting (Slovak)" },
+      { "string": "Otvorit v {{app_name}}", "context": "default email CTA text (Slovak)" },
+      { "string": "Otvorit: {{action_url}}", "context": "default text email CTA (Slovak)" }
+    ]
+  },
+
+  "src/server/auth/access.ts": {
+    "error_english": [
+      { "string": "Missing permission: {permission}", "context": "permission check error (template, ENGLISH)", "lang": "en" }
+    ]
+  },
+
+  "_files_with_no_hardcoded_strings": [
+    "src/app/schedule/page.tsx",
+    "src/app/users/page.tsx",
+    "src/app/roles/page.tsx",
+    "src/app/services/page.tsx",
+    "src/app/shifts/page.tsx",
+    "src/app/vacations/page.tsx",
+    "src/app/conditions/page.tsx",
+    "src/app/holidays/page.tsx",
+    "src/app/settings/page.tsx",
+    "src/app/login/layout.tsx",
+    "src/server/actions/column-preferences.ts",
+    "src/server/auth/module-access.ts",
+    "src/server/auth/password.ts",
+    "src/server/auth/index.ts",
+    "src/server/config/env.ts",
+    "src/server/config/managed-settings.ts",
+    "src/server/config/browser-notifications.ts",
+    "src/server/db/client.ts",
+    "src/server/jobs/reminders.ts",
+    "src/server/jobs/holiday-sync.ts",
+    "src/components/summary-card.tsx",
+    "src/components/entity-module.types.ts",
+    "src/middleware.ts"
+  ],
+
+  "_summary": {
+    "total_files_scanned": 58,
+    "files_with_hardcoded_strings": 30,
+    "files_without_hardcoded_strings": 23,
+    "approximate_unique_strings": 450,
+    "languages_found": {
+      "slovak": "~75% of UI-facing strings",
+      "english": "~25% – mostly Zod validation messages, permission labels, AI prompts, some developer-facing defaults"
+    },
+    "notable_issues": [
+      "Many Slovak strings are missing diacritics (e.g. 'Pouzivatel' instead of 'Používateľ') – inconsistent spelling",
+      "Entity CRUD success/error messages in records.ts lack diacritics while modules.ts has proper diacritics",
+      "Permission labels in permissions.ts are all English",
+      "AI system prompts and generation prompts are all English (intentional for LLM quality)",
+      "Zod validation messages in records.ts are English while auth.ts Zod messages are Slovak",
+      "form-submit-button.tsx and module-placeholder.tsx have English fallbacks",
+      "access-denied.tsx is entirely English",
+      "offline/page.tsx is entirely English"
+    ]
+  }
+}
