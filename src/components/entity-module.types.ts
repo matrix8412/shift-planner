@@ -168,6 +168,7 @@ export type PermissionMatrixField = BaseField & {
   sections: PermissionMatrixSection[];
   defaultValue?: string[];
   readOnly?: boolean;
+  triState?: boolean;
 };
 
 export type FormField = TextField | RangeField | ColorField | TextAreaField | SelectField | MultiSelectField | CheckboxField | PermissionMatrixField;

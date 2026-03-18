@@ -751,6 +751,26 @@ function MultiSelectFieldControl({
   );
 }
 
+type TriStateValue = "grant" | "deny" | "unset";
+
+function parseTriStateInitialValues(values: string[]): Map<string, TriStateValue> {
+  const map = new Map<string, TriStateValue>();
+  for (const value of values) {
+    if (value.startsWith("!")) {
+      map.set(value.slice(1), "deny");
+    } else {
+      map.set(value, "grant");
+    }
+  }
+  return map;
+}
+
+function cycleTriState(current: TriStateValue): TriStateValue {
+  if (current === "unset") return "grant";
+  if (current === "grant") return "deny";
+  return "unset";
+}
+
 function PermissionMatrixFieldControl({
   field,
   value,
@@ -763,7 +783,15 @@ function PermissionMatrixFieldControl({
   const { t } = useI18n();
   const initialSelectedValues = Array.isArray(value) ? value : Array.isArray(field.defaultValue) ? field.defaultValue : [];
   const selectedKey = initialSelectedValues.join("\u0000");
+
+  // Binary mode state
   const [selectedValues, setSelectedValues] = useState<string[]>(initialSelectedValues);
+
+  // Tri-state mode state
+  const [triStateValues, setTriStateValues] = useState<Map<string, TriStateValue>>(() =>
+    field.triState ? parseTriStateInitialValues(initialSelectedValues) : new Map(),
+  );
+
   const permissionColumns = useMemo(
     () => [
       { id: "view", action: "view", label: t("perm.view") },
@@ -778,14 +806,27 @@ function PermissionMatrixFieldControl({
   );
 
   useEffect(() => {
-    setSelectedValues(initialSelectedValues);
-  }, [selectedKey]);
+    if (field.triState) {
+      setTriStateValues(parseTriStateInitialValues(initialSelectedValues));
+    } else {
+      setSelectedValues(initialSelectedValues);
+    }
+  }, [selectedKey, field.triState]);
 
   return (
     <div className="field permission-matrix-field">
       <span className={fieldLabelClass(field.required)}>{field.label}</span>
       {field.description ? <span className="field-description">{field.description}</span> : null}
       {!field.readOnly ? <input type="hidden" name={`__field_present__${field.name}`} value="1" /> : null}
+      {field.triState && !field.readOnly
+        ? Array.from(triStateValues.entries()).map(([code, state]) =>
+            state === "grant" ? (
+              <input key={code} type="hidden" name={field.name} value={code} />
+            ) : state === "deny" ? (
+              <input key={code} type="hidden" name={`${field.name}__denied`} value={code} />
+            ) : null,
+          )
+        : null}
       <div className="permission-matrix-table-shell">
         <table className="permission-matrix-table">
           <thead>
@@ -813,6 +854,42 @@ function PermissionMatrixFieldControl({
                     return (
                       <td key={`${section.key}-${column.id}`} className="permission-matrix-cell empty">
                         <span className="permission-matrix-empty">-</span>
+                      </td>
+                    );
+                  }
+
+                  if (field.triState) {
+                    const state = triStateValues.get(permission.code) ?? "unset";
+                    const cellClass = state === "grant" ? "checked" : state === "deny" ? "unchecked" : "unset";
+
+                    return (
+                      <td
+                        key={`${permission.code}-${column.id}`}
+                        className={`permission-matrix-cell ${cellClass}${field.readOnly ? " readonly" : ""}`}
+                        title={permission.description ?? `${section.label}: ${permission.label}`}
+                      >
+                        <button
+                          type="button"
+                          disabled={field.readOnly}
+                          onClick={() => {
+                            if (field.readOnly) return;
+                            setTriStateValues((current) => {
+                              const next = new Map(current);
+                              const currentState = next.get(permission.code) ?? "unset";
+                              const nextState = cycleTriState(currentState);
+                              if (nextState === "unset") {
+                                next.delete(permission.code);
+                              } else {
+                                next.set(permission.code, nextState);
+                              }
+                              return next;
+                            });
+                          }}
+                          className="permission-matrix-tristate-btn"
+                          aria-label={`${section.label}: ${permission.label} (${state})`}
+                        >
+                          {state === "grant" ? "✓" : state === "deny" ? "✕" : "–"}
+                        </button>
                       </td>
                     );
                   }

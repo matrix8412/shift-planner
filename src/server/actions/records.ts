@@ -65,10 +65,12 @@ type ParsedPermissionSelection =
   | {
       present: false;
       codes: [];
+      deniedCodes: [];
     }
   | {
       present: true;
       codes: PermissionCode[];
+      deniedCodes: PermissionCode[];
     };
 
 function parsePermissionSelection(formData: FormData, name = "permissionCodes"): ParsedPermissionSelection {
@@ -78,6 +80,7 @@ function parsePermissionSelection(formData: FormData, name = "permissionCodes"):
     return {
       present: false,
       codes: [],
+      deniedCodes: [],
     };
   }
 
@@ -88,9 +91,17 @@ function parsePermissionSelection(formData: FormData, name = "permissionCodes"):
     throw new Error(`Unknown permission codes: ${invalidCodes.join(", ")}.`);
   }
 
+  const deniedCodes = parseStringArray(formData, `${name}__denied`);
+  const invalidDeniedCodes = deniedCodes.filter((code) => !permissionCatalog.includes(code as PermissionCode));
+
+  if (invalidDeniedCodes.length > 0) {
+    throw new Error(`Unknown denied permission codes: ${invalidDeniedCodes.join(", ")}.`);
+  }
+
   return {
     present: true,
     codes: codes as PermissionCode[],
+    deniedCodes: deniedCodes as PermissionCode[],
   };
 }
 
@@ -220,6 +231,7 @@ async function replaceUserPermissionOverrides(
     userId: string;
     rolePermissionCodes: PermissionCode[];
     selectedPermissionCodes: PermissionCode[];
+    deniedPermissionCodes?: PermissionCode[];
   },
 ) {
   await tx.userPermissionOverride.deleteMany({
@@ -229,8 +241,25 @@ async function replaceUserPermissionOverrides(
   });
 
   const rolePermissionSet = new Set(parameters.rolePermissionCodes);
-  const selectedPermissionSet = new Set(parameters.selectedPermissionCodes);
-  const overrideCodes = permissionCatalog.filter((code) => rolePermissionSet.has(code) !== selectedPermissionSet.has(code));
+  const grantedSet = new Set(parameters.selectedPermissionCodes);
+  const deniedSet = new Set(parameters.deniedPermissionCodes ?? []);
+
+  // Tri-state mode is active when deniedPermissionCodes is explicitly provided (even if empty).
+  // In tri-state: only explicit grant/deny become overrides, everything else inherits from role.
+  const isTriState = parameters.deniedPermissionCodes !== undefined;
+  let overrideCodes: PermissionCode[];
+
+  if (isTriState) {
+    overrideCodes = permissionCatalog.filter((code) => {
+      const inRole = rolePermissionSet.has(code);
+      if (grantedSet.has(code) && !inRole) return true; // grant override
+      if (deniedSet.has(code) && inRole) return true; // deny override
+      return false;
+    });
+  } else {
+    // Binary mode (roles page): override when role state differs from selected state
+    overrideCodes = permissionCatalog.filter((code) => rolePermissionSet.has(code) !== grantedSet.has(code));
+  }
 
   if (overrideCodes.length === 0) {
     return;
@@ -242,7 +271,7 @@ async function replaceUserPermissionOverrides(
     data: permissions.map((permission) => ({
       userId: parameters.userId,
       permissionId: permission.id,
-      enabled: selectedPermissionSet.has(permission.code as PermissionCode),
+      enabled: grantedSet.has(permission.code as PermissionCode),
     })),
   });
 }
@@ -801,6 +830,7 @@ export async function createUserAction(_: ActionState, formData: FormData): Prom
           userId: user.id,
           rolePermissionCodes,
           selectedPermissionCodes: permissionSelection.codes,
+          deniedPermissionCodes: permissionSelection.deniedCodes,
         });
       }
 
@@ -1230,6 +1260,7 @@ export async function updateUserAction(_: ActionState, formData: FormData): Prom
           userId: user.id,
           rolePermissionCodes,
           selectedPermissionCodes: permissionSelection.codes,
+          deniedPermissionCodes: permissionSelection.deniedCodes,
         });
       }
 

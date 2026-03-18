@@ -792,6 +792,10 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
         rolePermissionCodes: user.role?.permissions.map((assignment) => assignment.permission.code) ?? [],
         userOverrideValues,
       });
+      // Encode tri-state: granted overrides as "code", denied overrides as "!code"
+      const triStatePermissionCodes = Object.entries(userOverrideValues).map(([code, enabled]) =>
+        enabled ? code : `!${code}`,
+      );
 
       return {
         id: user.id,
@@ -825,7 +829,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
           preferredTheme: user.preferredTheme ?? undefined,
           notificationsEnabled: user.notificationsEnabled,
           notificationDays: user.notificationDays,
-          permissionCodes: effectivePermissionCodes,
+          permissionCodes: triStatePermissionCodes,
           effectivePermissionCodes,
         },
       };
@@ -971,6 +975,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
             name: "permissionCodes",
             label: tr(d, "users.permEditLabel"),
             sections: permissionSections,
+            triState: true,
           },
         ],
       },

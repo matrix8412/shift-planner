@@ -1854,6 +1854,10 @@ ul {
   background: transparent;
 }
 
+.permission-matrix-cell.unset {
+  background: rgba(180, 190, 200, 0.18);
+}
+
 .permission-matrix-cell.readonly {
   cursor: default;
 }
@@ -1862,6 +1866,38 @@ ul {
   margin: 0;
   width: 15px;
   height: 15px;
+}
+
+.permission-matrix-tristate-btn {
+  all: unset;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  user-select: none;
+}
+
+.permission-matrix-cell.checked .permission-matrix-tristate-btn {
+  color: #217a3e;
+}
+
+.permission-matrix-cell.unchecked .permission-matrix-tristate-btn {
+  color: #a93a2f;
+}
+
+.permission-matrix-cell.unset .permission-matrix-tristate-btn {
+  color: var(--muted);
+}
+
+.permission-matrix-tristate-btn:disabled {
+  cursor: default;
+  opacity: 0.6;
 }
 
 .permission-matrix-empty {
@@ -2551,6 +2587,22 @@ ul {
 
 :root[data-theme="dark"] .permission-matrix-cell.unchecked {
   background: rgba(126, 58, 51, 0.34);
+}
+
+:root[data-theme="dark"] .permission-matrix-cell.unset {
+  background: rgba(100, 110, 120, 0.2);
+}
+
+:root[data-theme="dark"] .permission-matrix-cell.checked .permission-matrix-tristate-btn {
+  color: #5ec97e;
+}
+
+:root[data-theme="dark"] .permission-matrix-cell.unchecked .permission-matrix-tristate-btn {
+  color: #e87060;
+}
+
+:root[data-theme="dark"] .permission-matrix-cell.unset .permission-matrix-tristate-btn {
+  color: var(--muted);
 }
 
 @keyframes fade-in {
