@@ -1,6 +1,7 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 
@@ -134,7 +135,11 @@ export async function forgotPasswordAction(_prev: AuthActionState, formData: For
     },
   });
 
-  const resetUrl = `${env.APP_URL}/login/reset-password?token=${token}`;
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "https";
+  const host = h.get("host") ?? new URL(env.APP_URL).host;
+  const baseUrl = `${proto}://${host}`;
+  const resetUrl = `${baseUrl}/login/reset-password?token=${token}`;
 
   try {
     const settings = await getNotificationSettings();

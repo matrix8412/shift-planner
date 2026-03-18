@@ -10,10 +10,10 @@ const fallbackProfile: ShellProfile = {
   email: "local@pohotovosti.sk",
 };
 
-export async function getShellProfile(): Promise<ShellProfile> {
+export async function getShellProfile(userId: string): Promise<ShellProfile> {
   try {
-    const user = await db.user.findFirst({
-      orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
+    const user = await db.user.findUnique({
+      where: { id: userId },
       select: {
         firstName: true,
         lastName: true,

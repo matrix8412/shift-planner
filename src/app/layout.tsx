@@ -75,7 +75,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     );
   }
 
-  const [browserNotificationSettings, shellProfile] = await Promise.all([getBrowserNotificationSettings(), getShellProfile()]);
+  const [browserNotificationSettings, shellProfile] = await Promise.all([getBrowserNotificationSettings(), getShellProfile(currentUser.id)]);
   const allowedRoutes = getVisibleRoutes(currentUser);
 
   return (
