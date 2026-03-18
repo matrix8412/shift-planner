@@ -23,12 +23,12 @@ import { getSettingsModule } from "@/server/read-models/modules";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [moduleConfig, notificationSettings, aiSettings, shellProfile, currentUser] = await Promise.all([
+  const currentUser = await getCurrentUser();
+  const [moduleConfig, notificationSettings, aiSettings, shellProfile] = await Promise.all([
     getSettingsModule(),
     getNotificationSettings(),
     getAiSettings(),
-    getShellProfile(),
-    getCurrentUser(),
+    getShellProfile(currentUser!.id),
   ]);
   const access = getModuleAccess(currentUser, "settings");
 
