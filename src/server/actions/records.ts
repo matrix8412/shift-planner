@@ -2658,12 +2658,6 @@ export async function importUsersCsvAction(_: ActionState, formData: FormData): 
       "email",
       "firstName",
       "lastName",
-      "roleId",
-      "shiftTypeIds",
-      "preferredTheme",
-      "notificationsEnabled",
-      "notificationDays",
-      "permissionCodes",
     ]);
     let created = 0;
     let updated = 0;
