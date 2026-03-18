@@ -557,6 +557,14 @@ function getRequiredCsvValue(record: CsvRecord, key: string) {
 
 function parseCsvContent(content: string) {
   const normalized = content.replace(/^\uFEFF/, "");
+
+  // Auto-detect delimiter from the first line: if semicolons appear more than commas, use semicolon.
+  const firstLineEnd = normalized.search(/[\r\n]/);
+  const firstLine = firstLineEnd === -1 ? normalized : normalized.slice(0, firstLineEnd);
+  const semicolonCount = (firstLine.match(/;/g) ?? []).length;
+  const commaCount = (firstLine.match(/,/g) ?? []).length;
+  const delimiter = semicolonCount > commaCount ? ";" : ",";
+
   const rows: string[][] = [];
   let row: string[] = [];
   let value = "";
@@ -585,7 +593,7 @@ function parseCsvContent(content: string) {
       continue;
     }
 
-    if (character === ",") {
+    if (character === delimiter) {
       row.push(value);
       value = "";
       continue;

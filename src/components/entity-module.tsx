@@ -1883,11 +1883,11 @@ export function EntityModule({
 
     const headerNames = csvFieldNames ?? allSheetFields.filter((field) => field.type !== "permission-matrix").map((field) => field.name);
     const csvLines = [
-      headerNames.map(escapeCsvValue).join(","),
+      headerNames.map(escapeCsvValue).join(";"),
       ...rows.map((row) =>
         headerNames
           .map((fieldName) => escapeCsvValue(serializeCsvValue(getFieldDefaultValue(row, fieldName))))
-          .join(","),
+          .join(";"),
       ),
     ];
     const csvContent = csvLines.join("\r\n");
