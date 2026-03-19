@@ -44,6 +44,8 @@ export type EntityCell =
 export type EntityRow = {
   id: string;
   label?: string;
+  avatarUrl?: string;
+  subtitle?: string;
   cells: Record<string, EntityCell>;
   auditEntries?: AuditEntry[];
   formValues?: Record<string, string | number | boolean | string[] | undefined>;
@@ -173,7 +175,12 @@ export type PermissionMatrixField = BaseField & {
   triState?: boolean;
 };
 
-export type FormField = TextField | RangeField | ColorField | TextAreaField | SelectField | MultiSelectField | CheckboxField | PermissionMatrixField;
+export type AvatarField = BaseField & {
+  type: "avatar";
+  uploadUrl: string;
+};
+
+export type FormField = TextField | RangeField | ColorField | TextAreaField | SelectField | MultiSelectField | CheckboxField | PermissionMatrixField | AvatarField;
 
 export type SheetTab = {
   id: string;

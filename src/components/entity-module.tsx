@@ -171,6 +171,15 @@ function getCellText(cell: EntityCell) {
   return typeof cell === "string" ? cell : cell.text;
 }
 
+function initialsFromName(name: string) {
+  return name
+    .split(/[\s,]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
+}
+
 function isSortableNumericString(value: string) {
   return /^-?\d+(?:[.,]\d+)?$/.test(value.trim());
 }
@@ -577,6 +586,87 @@ function RangeFieldControl({
       {field.description ? <span className="field-description">{field.description}</span> : null}
       {fieldError ? <span className="field-error">{fieldError}</span> : null}
     </label>
+  );
+}
+
+function AvatarFieldControl({
+  field,
+  value,
+  recordId,
+  fieldError,
+}: {
+  field: Extract<FormField, { type: "avatar" }>;
+  value?: string;
+  recordId?: string;
+  fieldError?: string;
+}) {
+  const { t } = useI18n();
+  const [preview, setPreview] = useState<string | null>(value ?? null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    setPreview(value ?? null);
+  }, [value]);
+
+  async function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !recordId) return;
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("file", file);
+      formData.set("userId", recordId);
+
+      const response = await fetch(field.uploadUrl, { method: "POST", body: formData });
+      const result = await response.json();
+
+      if (response.ok && result.avatarUrl) {
+        setPreview(result.avatarUrl);
+      }
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  }
+
+  return (
+    <div className="field avatar-field">
+      <span className={fieldLabelClass(false)}>{field.label}</span>
+      <div className="avatar-upload-row">
+        <div className="avatar-preview-large">
+          {preview ? (
+            <img src={preview} alt="" className="avatar-preview-img" />
+          ) : (
+            <span className="avatar-preview-placeholder">{t("profile.noPhoto")}</span>
+          )}
+        </div>
+        <div className="avatar-upload-actions">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="user"
+            hidden
+            onChange={handleFileChange}
+          />
+          <button
+            type="button"
+            className="button secondary"
+            disabled={uploading || !recordId}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? t("profile.uploading") : t("profile.uploadPhoto")}
+          </button>
+        </div>
+      </div>
+      {!recordId ? <span className="field-description">{t("profile.avatarSaveFirst")}</span> : null}
+      {field.description ? <span className="field-description">{field.description}</span> : null}
+      {fieldError ? <span className="field-error">{fieldError}</span> : null}
+    </div>
   );
 }
 
@@ -2159,6 +2249,18 @@ export function EntityModule({
       return <ColorFieldControl key={field.name} field={field} value={currentValue as string | undefined} fieldError={fieldError} />;
     }
 
+    if (field.type === "avatar") {
+      return (
+        <AvatarFieldControl
+          key={fieldRenderKey}
+          field={field}
+          value={currentValue as string | undefined}
+          recordId={editingRow?.id}
+          fieldError={fieldError}
+        />
+      );
+    }
+
     if (field.type === "range") {
       return <RangeFieldControl key={field.name} field={field} value={currentValue as string | number | undefined} fieldError={fieldError} />;
     }
@@ -2588,32 +2690,52 @@ export function EntityModule({
                             />
                           </td>
                         ) : null}
-                        {visibleColumns.map((column) => {
+                        {visibleColumns.map((column, columnIndex) => {
                           const cell = row.cells[column.key];
                           const toneClass = getCellToneClass(cell);
                           const cellClassName = getCellClassName(cell);
                           const colorTokens = getCellColorTokens(cell);
+                          const isFirstColumn = columnIndex === 0;
+                          const showRowAvatar = isFirstColumn && (row.avatarUrl !== undefined || row.subtitle !== undefined);
 
                           return (
                             <td key={column.key} data-label={column.label}>
-                              {toneClass ? <span className={toneClass}>{getCellText(cell)}</span> : null}
-                              {!toneClass && colorTokens.length > 0 ? (
-                                <span className="color-token-list">
-                                  {colorTokens.map((token) => (
-                                    <span
-                                      key={`${token.color ?? token.backgroundColor ?? "text"}-${token.label}`}
-                                      className={`color-token-item${token.variant === "pill" ? " color-token-pill" : ""}`}
-                                      style={getColorTokenStyle(token)}
-                                    >
-                                      {token.variant !== "pill" && token.color ? (
-                                        <span className="color-token-dot" style={{ backgroundColor: token.color }} aria-hidden="true" />
-                                      ) : null}
-                                      <span className={token.mono ? "mono-text" : undefined}>{token.label}</span>
+                              {showRowAvatar ? (
+                                <div className="row-identity">
+                                  <div className="row-avatar">
+                                    {row.avatarUrl ? (
+                                      <img src={row.avatarUrl} alt="" className="row-avatar-img" />
+                                    ) : (
+                                      <span className="row-avatar-initials">{initialsFromName(getCellText(cell))}</span>
+                                    )}
+                                  </div>
+                                  <div className="row-identity-text">
+                                    <span>{getCellText(cell)}</span>
+                                    {row.subtitle ? <span className="row-identity-subtitle">{row.subtitle}</span> : null}
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  {toneClass ? <span className={toneClass}>{getCellText(cell)}</span> : null}
+                                  {!toneClass && colorTokens.length > 0 ? (
+                                    <span className="color-token-list">
+                                      {colorTokens.map((token) => (
+                                        <span
+                                          key={`${token.color ?? token.backgroundColor ?? "text"}-${token.label}`}
+                                          className={`color-token-item${token.variant === "pill" ? " color-token-pill" : ""}`}
+                                          style={getColorTokenStyle(token)}
+                                        >
+                                          {token.variant !== "pill" && token.color ? (
+                                            <span className="color-token-dot" style={{ backgroundColor: token.color }} aria-hidden="true" />
+                                          ) : null}
+                                          <span className={token.mono ? "mono-text" : undefined}>{token.label}</span>
+                                        </span>
+                                      ))}
                                     </span>
-                                  ))}
-                                </span>
-                              ) : null}
-                              {!toneClass && colorTokens.length === 0 ? <span className={cellClassName}>{getCellText(cell)}</span> : null}
+                                  ) : null}
+                                  {!toneClass && colorTokens.length === 0 ? <span className={cellClassName}>{getCellText(cell)}</span> : null}
+                                </>
+                              )}
                             </td>
                           );
                         })}

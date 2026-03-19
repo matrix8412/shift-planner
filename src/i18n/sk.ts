@@ -514,8 +514,12 @@ const sk: TranslationDictionary = {
   "users.fieldRoleEmpty": "Bez roly",
   "users.fieldShiftTypes": "Typy zmien",
   "users.fieldShiftTypesHint": "Vyberte zmeny, ktoré môže tento používateľ vykonávať.",
+  "users.fieldAvatar": "Fotka",
   "users.fieldTheme": "Preferovaná téma",
   "users.fieldThemePlaceholder": "light",
+  "users.fieldThemeAuto": "Auto",
+  "users.fieldThemeLight": "Svetlá",
+  "users.fieldThemeDark": "Tmavá",
   "users.fieldNotifications": "Povoliť notifikácie",
   "users.fieldNotificationsHint": "Určuje, či má používateľ dostávať pripomienkové emaily.",
   "users.fieldNotificationDays": "Počet dní vopred",
@@ -983,6 +987,30 @@ const sk: TranslationDictionary = {
   /* ──────────────────── Notifications (server) ──────────────────── */
   "notif.fallbackRecipient": "Používateľ",
   "notif.appName": "Pohotovosti",
+
+  /* ──────────────────── Profil ──────────────────── */
+  "profile.editProfile": "Upraviť profil",
+  "profile.title": "Môj profil",
+  "profile.description": "Upravte si osobné nastavenia uložené v databáze.",
+  "profile.close": "Zavrieť profil",
+  "profile.save": "Uložiť profil",
+  "profile.fieldFirstName": "Meno",
+  "profile.fieldLastName": "Priezvisko",
+  "profile.fieldTheme": "Preferovaná téma",
+  "profile.fieldLocale": "Jazyk",
+  "profile.themeAuto": "Auto (systém)",
+  "profile.themeLight": "Svetlá",
+  "profile.themeDark": "Tmavá",
+  "profile.localeAuto": "Auto",
+  "profile.uploadPhoto": "Nahrať fotku",
+  "profile.uploading": "Nahrávam...",
+  "profile.updated": "Profil bol aktualizovaný.",
+  "profile.updateError": "Nepodarilo sa aktualizovať profil.",
+  "profile.nameRequired": "Meno a priezvisko sú povinné.",
+  "profile.noPhoto": "Žiadna fotka",
+
+  /* ──────────────────── Auth (extra) ──────────────────── */
+  "auth.unauthorized": "Nie ste autorizovaný.",
 
   /* ──────────────────── Module placeholder ──────────────────── */
   "placeholder.module": "Modul",

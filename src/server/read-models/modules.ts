@@ -800,8 +800,10 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
       return {
         id: user.id,
         label: `${user.firstName} ${user.lastName}`,
+        avatarUrl: user.avatarUrl ?? undefined,
+        subtitle: user.email,
         cells: {
-          name: `${user.firstName} ${user.lastName}`,
+          name: `${user.lastName}, ${user.firstName}`,
           email: user.email,
           role: user.role?.name ?? tr(d, "users.noRole"),
           permissions: String(effectivePermissionCodes.length),
@@ -825,6 +827,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          avatarUrl: user.avatarUrl ?? undefined,
           roleId: user.roleId ?? undefined,
           shiftTypeIds: user.shiftTypes.map((assignment) => assignment.shiftTypeId),
           preferredTheme: user.preferredTheme ?? undefined,
@@ -888,7 +891,17 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
         description: tr(d, "users.fieldShiftTypesHint"),
         variant: "checkbox-list",
       },
-      { type: "text", name: "preferredTheme", label: tr(d, "users.fieldTheme"), placeholder: tr(d, "users.fieldThemePlaceholder") },
+      {
+        type: "select",
+        name: "preferredTheme",
+        label: tr(d, "users.fieldTheme"),
+        allowEmpty: true,
+        emptyLabel: tr(d, "users.fieldThemeAuto"),
+        options: [
+          { value: "light", label: tr(d, "users.fieldThemeLight") },
+          { value: "dark", label: tr(d, "users.fieldThemeDark") },
+        ],
+      },
       {
         type: "checkbox",
         name: "notificationsEnabled",
@@ -910,6 +923,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
         id: "general",
         label: tr(d, "users.tabGeneral"),
         fields: [
+          { type: "avatar", name: "avatarUrl", label: tr(d, "users.fieldAvatar"), uploadUrl: "/api/avatars/upload" },
           { type: "email", name: "email", label: tr(d, "users.fieldEmail"), required: true, autoComplete: "email", placeholder: tr(d, "users.fieldEmailPlaceholder") },
           { type: "text", name: "firstName", label: tr(d, "users.fieldFirstName"), required: true, autoComplete: "given-name" },
           { type: "text", name: "lastName", label: tr(d, "users.fieldLastName"), required: true, autoComplete: "family-name" },
@@ -934,7 +948,17 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
             description: tr(d, "users.fieldShiftTypesHint"),
             variant: "checkbox-list",
           },
-          { type: "text", name: "preferredTheme", label: tr(d, "users.fieldTheme"), placeholder: tr(d, "users.fieldThemePlaceholder") },
+          {
+            type: "select",
+            name: "preferredTheme",
+            label: tr(d, "users.fieldTheme"),
+            allowEmpty: true,
+            emptyLabel: tr(d, "users.fieldThemeAuto"),
+            options: [
+              { value: "light", label: tr(d, "users.fieldThemeLight") },
+              { value: "dark", label: tr(d, "users.fieldThemeDark") },
+            ],
+          },
           {
             type: "checkbox",
             name: "notificationsEnabled",

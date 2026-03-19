@@ -45,6 +45,7 @@ model User {
   passwordHash         String?
   firstName            String
   lastName             String
+  avatarUrl            String?
   isActive             Boolean         @default(true)
   preferredTheme       String?
   notificationsEnabled Boolean         @default(false)

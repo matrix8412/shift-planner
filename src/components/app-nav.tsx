@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
+  Camera,
   Cog,
   Languages,
   LogOut,
   Menu,
   Moon,
+  Pencil,
   Plane,
   ShieldCheck,
   SlidersHorizontal,
@@ -21,11 +23,19 @@ import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/context";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/types";
 import type { Locale } from "@/i18n/types";
+import { updateProfileAction } from "@/server/actions/auth";
+import type { AuthActionState } from "@/server/actions/auth";
 
 type AppNavProps = {
   profile: {
+    id: string;
     name: string;
+    firstName: string;
+    lastName: string;
     email: string;
+    avatarUrl: string | null;
+    preferredTheme: string | null;
+    preferredLocale: string | null;
   };
   allowedRoutes?: string[];
 };
@@ -98,7 +108,14 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [theme, setTheme] = useState<AppTheme>("light");
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(profile.avatarUrl);
+  const [uploading, setUploading] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const { t, locale, setLocale } = useI18n();
+  const [profileState, profileAction, profilePending] = useActionState<AuthActionState, FormData>(updateProfileAction, {});
   const visibleRouteSet = new Set(allowedRoutes ?? sectionDefs.flatMap((section) => section.items.map((item) => item.href)));
   const visibleSections = sectionDefs
     .map((section) => ({
@@ -118,12 +135,43 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
     applyTheme(initialTheme);
   }, []);
 
+  // Close profile menu on outside click
+  useEffect(() => {
+    if (!profileMenuOpen) return;
+    function handleClick(e: MouseEvent) {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(e.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [profileMenuOpen]);
+
   function toggleTheme() {
     const nextTheme: AppTheme = theme === "dark" ? "light" : "dark";
 
     setTheme(nextTheme);
     applyTheme(nextTheme);
     window.localStorage.setItem(themeStorageKey, nextTheme);
+  }
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("userId", profile.id);
+      const res = await fetch("/api/avatars/upload", { method: "POST", body: fd });
+      if (res.ok) {
+        const data = await res.json();
+        setAvatarPreview(data.avatarUrl);
+      }
+    } finally {
+      setUploading(false);
+      if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
   }
 
   return (
@@ -189,22 +237,143 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
             ))}
           </div>
 
-          <div className="profile-card">
-            <div className="profile-avatar">{initialsFromName(profile.name)}</div>
-            <div className="stack-tight">
-              <strong>{profile.name}</strong>
-              <span>{profile.email}</span>
-            </div>
-          </div>
-
-          <form action="/api/auth/logout" method="POST">
-            <button type="submit" className="theme-toggle" style={{ width: "100%" }}>
-              <LogOut size={18} />
-              {t("nav.logout")}
+          <div className="profile-card-wrapper" ref={profileMenuRef}>
+            <button type="button" className="profile-card" onClick={() => setProfileMenuOpen((v) => !v)}>
+              <div className="profile-avatar">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="" className="profile-avatar-img" />
+                ) : (
+                  initialsFromName(profile.name)
+                )}
+              </div>
+              <div className="stack-tight">
+                <strong>{profile.name}</strong>
+                <span>{profile.email}</span>
+              </div>
             </button>
-          </form>
+
+            {profileMenuOpen ? (
+              <div className="profile-menu" role="menu">
+                <button
+                  type="button"
+                  className="profile-menu-item"
+                  role="menuitem"
+                  onClick={() => {
+                    setProfileMenuOpen(false);
+                    setProfileSheetOpen(true);
+                  }}
+                >
+                  <Pencil size={16} />
+                  {t("profile.editProfile")}
+                </button>
+                <form action="/api/auth/logout" method="POST">
+                  <button type="submit" className="profile-menu-item" role="menuitem">
+                    <LogOut size={16} />
+                    {t("nav.logout")}
+                  </button>
+                </form>
+              </div>
+            ) : null}
+          </div>
         </div>
       </aside>
+
+      {profileSheetOpen ? (
+        <div className="sheet-layer" role="presentation">
+          <button type="button" className="sheet-backdrop" aria-label={t("profile.close")} onClick={() => setProfileSheetOpen(false)} />
+          <aside className="sheet-panel profile-sheet" aria-modal="true" role="dialog" aria-labelledby="profile-sheet-title">
+            <div className="sheet-header">
+              <div className="stack-tight">
+                <p className="eyebrow">{t("profile.title")}</p>
+                <h2 id="profile-sheet-title">{profile.name}</h2>
+                <p className="muted">{t("profile.description")}</p>
+              </div>
+              <button type="button" className="sheet-close" onClick={() => setProfileSheetOpen(false)}>
+                {t("entity.close")}
+              </button>
+            </div>
+
+            <div className="profile-sheet-avatar-section">
+              <div className="profile-avatar profile-avatar-lg">
+                {avatarPreview ? (
+                  <img src={avatarPreview} alt="" className="profile-avatar-img" />
+                ) : (
+                  initialsFromName(profile.name)
+                )}
+              </div>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                capture="user"
+                hidden
+                onChange={handleAvatarChange}
+              />
+              <button
+                type="button"
+                className="button secondary"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploading}
+              >
+                <Camera size={16} />
+                {uploading ? t("profile.uploading") : t("profile.uploadPhoto")}
+              </button>
+            </div>
+
+            {profileState.error ? <p className="field-error">{profileState.error}</p> : null}
+            {profileState.success ? <p className="field-success">{profileState.success}</p> : null}
+
+            <form action={profileAction} className="sheet-form">
+              <label className="field">
+                <span className="field-label">{t("profile.fieldFirstName")}</span>
+                <input
+                  name="firstName"
+                  type="text"
+                  className="field-control"
+                  defaultValue={profile.firstName}
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span className="field-label">{t("profile.fieldLastName")}</span>
+                <input
+                  name="lastName"
+                  type="text"
+                  className="field-control"
+                  defaultValue={profile.lastName}
+                  required
+                />
+              </label>
+
+              <label className="field">
+                <span className="field-label">{t("profile.fieldTheme")}</span>
+                <select name="preferredTheme" className="field-control" defaultValue={profile.preferredTheme ?? ""}>
+                  <option value="">{t("profile.themeAuto")}</option>
+                  <option value="light">{t("profile.themeLight")}</option>
+                  <option value="dark">{t("profile.themeDark")}</option>
+                </select>
+              </label>
+
+              <label className="field">
+                <span className="field-label">{t("profile.fieldLocale")}</span>
+                <select name="preferredLocale" className="field-control" defaultValue={profile.preferredLocale ?? ""}>
+                  <option value="">{t("profile.localeAuto")}</option>
+                  {LOCALES.map((loc) => (
+                    <option key={loc} value={loc}>
+                      {LOCALE_LABELS[loc as Locale]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <button type="submit" className="button" disabled={profilePending}>
+                {profilePending ? t("entity.saving") : t("profile.save")}
+              </button>
+            </form>
+          </aside>
+        </div>
+      ) : null}
     </>
   );
 }

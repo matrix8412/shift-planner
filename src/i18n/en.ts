@@ -514,8 +514,12 @@ const en: TranslationDictionary = {
   "users.fieldRoleEmpty": "No role",
   "users.fieldShiftTypes": "Shift types",
   "users.fieldShiftTypesHint": "Select shifts this user can perform.",
+  "users.fieldAvatar": "Photo",
   "users.fieldTheme": "Preferred theme",
   "users.fieldThemePlaceholder": "light",
+  "users.fieldThemeAuto": "Auto",
+  "users.fieldThemeLight": "Light",
+  "users.fieldThemeDark": "Dark",
   "users.fieldNotifications": "Enable notifications",
   "users.fieldNotificationsHint": "Determines whether the user receives reminder emails.",
   "users.fieldNotificationDays": "Days in advance",
@@ -983,6 +987,30 @@ const en: TranslationDictionary = {
   /* ──────────────────── Notifications (server) ──────────────────── */
   "notif.fallbackRecipient": "User",
   "notif.appName": "Pohotovosti",
+
+  /* ──────────────────── Profile ──────────────────── */
+  "profile.editProfile": "Edit profile",
+  "profile.title": "My profile",
+  "profile.description": "Edit your personal settings stored in the database.",
+  "profile.close": "Close profile",
+  "profile.save": "Save profile",
+  "profile.fieldFirstName": "First name",
+  "profile.fieldLastName": "Last name",
+  "profile.fieldTheme": "Preferred theme",
+  "profile.fieldLocale": "Language",
+  "profile.themeAuto": "Auto (system)",
+  "profile.themeLight": "Light",
+  "profile.themeDark": "Dark",
+  "profile.localeAuto": "Auto",
+  "profile.uploadPhoto": "Upload photo",
+  "profile.uploading": "Uploading...",
+  "profile.updated": "Profile updated.",
+  "profile.updateError": "Failed to update the profile.",
+  "profile.nameRequired": "First name and last name are required.",
+  "profile.noPhoto": "No photo",
+
+  /* ──────────────────── Auth (extra) ──────────────────── */
+  "auth.unauthorized": "You are not authorized.",
 
   /* ──────────────────── Module placeholder ──────────────────── */
   "placeholder.module": "Module",

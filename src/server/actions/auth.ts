@@ -238,3 +238,39 @@ export async function resetPasswordAction(_prev: AuthActionState, formData: Form
 
   return { success: tr(d, "auth.resetSuccess") };
 }
+
+export async function updateProfileAction(_prev: AuthActionState, formData: FormData): Promise<AuthActionState> {
+  const locale = await getServerLocale();
+  const d = getDictionary(locale);
+  const { getCurrentUser } = await import("@/server/auth");
+  const currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    return { error: tr(d, "auth.unauthorized") };
+  }
+
+  const firstName = (formData.get("firstName") as string)?.trim();
+  const lastName = (formData.get("lastName") as string)?.trim();
+  const preferredTheme = (formData.get("preferredTheme") as string) || null;
+  const preferredLocale = (formData.get("preferredLocale") as string) || null;
+
+  if (!firstName || !lastName) {
+    return { error: tr(d, "profile.nameRequired") };
+  }
+
+  try {
+    await db.user.update({
+      where: { id: currentUser.id },
+      data: {
+        firstName,
+        lastName,
+        preferredTheme,
+        preferredLocale,
+      },
+    });
+
+    return { success: tr(d, "profile.updated") };
+  } catch {
+    return { error: tr(d, "profile.updateError") };
+  }
+}
