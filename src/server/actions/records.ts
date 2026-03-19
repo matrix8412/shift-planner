@@ -21,7 +21,7 @@ import type { TranslationDictionary } from "@/i18n/types";
 const timePattern = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 function successState(message: string, path: string): ActionState {
-  revalidatePath(path);
+  revalidatePath(path, "layout");
 
   return {
     status: "success",

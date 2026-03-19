@@ -1463,7 +1463,9 @@ export function EntityModule({
       if (importInputRef.current) {
         importInputRef.current.value = "";
       }
-      router.refresh();
+      startTransition(() => {
+        router.refresh();
+      });
     }
 
     handledActionStatesRef.current.create = createState;
