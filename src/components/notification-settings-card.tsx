@@ -125,7 +125,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
       setPushPermission(Notification.permission);
 
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
 
         if (!ignore) {
@@ -208,7 +208,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
         throw new Error(t("push.notAllowed"));
       }
 
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.ready;
       const existingSubscription = await registration.pushManager.getSubscription();
       const subscription =
         existingSubscription ??
@@ -254,7 +254,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
   async function handleUnsubscribeDevice() {
     try {
       setDeviceActionPending(true);
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {

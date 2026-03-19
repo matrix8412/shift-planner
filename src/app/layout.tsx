@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 
 import { AppNav } from "@/components/app-nav";
 import { BrowserNotificationProvider } from "@/components/browser-notification-provider";
+import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { I18nProvider } from "@/i18n/context";
 import { getServerLocale } from "@/i18n";
 import { getCurrentUser } from "@/server/auth";
@@ -69,7 +70,10 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         </head>
         <body>
-          <I18nProvider locale={locale}>{children}</I18nProvider>
+          <I18nProvider locale={locale}>
+            <ServiceWorkerRegistration />
+            {children}
+          </I18nProvider>
         </body>
       </html>
     );
@@ -85,6 +89,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       </head>
       <body>
         <I18nProvider locale={locale}>
+          <ServiceWorkerRegistration />
           <BrowserNotificationProvider settings={browserNotificationSettings}>
             <div className="app-layout">
               <AppNav profile={shellProfile} allowedRoutes={allowedRoutes} />
