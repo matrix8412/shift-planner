@@ -659,6 +659,7 @@ const sk: TranslationDictionary = {
   "conditions.fieldTitle": "Title",
   "conditions.fieldTitlePlaceholder": "Weekend staffing",
   "conditions.fieldPriority": "Priority",
+  "conditions.fieldPriorityHint": "Rozsah 0 – 10 000. Nižšie číslo = vyššia priorita.",
   "conditions.fieldIsActive": "Condition is active",
   "conditions.fieldDescription": "Description",
   "conditions.fieldDescriptionPlaceholder": "Describe the rule or constraint",
