@@ -518,6 +518,7 @@ const en: TranslationDictionary = {
   "users.permPreviewLabel": "Effective permissions",
   "users.permEditTab": "Edit permissions",
   "users.permEditLabel": "Direct permissions",
+  "users.tabGeneral": "General",
 
   /* ──────────────────── Module: Roles ──────────────────── */
   "roles.title": "Roles",

@@ -907,7 +907,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
     sheetTabs: [
       {
         id: "general",
-        label: "General",
+        label: tr(d, "users.tabGeneral"),
         fields: [
           { type: "email", name: "email", label: tr(d, "users.fieldEmail"), required: true, autoComplete: "email", placeholder: tr(d, "users.fieldEmailPlaceholder") },
           { type: "text", name: "firstName", label: tr(d, "users.fieldFirstName"), required: true, autoComplete: "given-name" },
