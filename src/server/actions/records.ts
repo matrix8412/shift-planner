@@ -2267,48 +2267,64 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
     const holidayDates = new Set(holidays.map((holiday) => toIsoDate(holiday.date)));
     const lockedSignatureSet = new Set(lockedEntries.map((entry) => `${toIsoDate(entry.date)}::${entry.userId}::${entry.shiftTypeId}`));
     const generatedSignatureSet = new Set<string>();
+    const validEvents: typeof draft.events = [];
+    const skippedReasons: string[] = [];
 
     for (const event of draft.events) {
       const eventDate = parseUtcDate(event.date);
 
       if (eventDate < startDate || eventDate > endDate) {
-        return failAiRun(tr(d, "action.aiOutOfRange", { date: event.date }));
+        skippedReasons.push(tr(d, "action.aiOutOfRange", { date: event.date }));
+        continue;
       }
 
       const user = userMap.get(event.userId);
       if (!user) {
-        return failAiRun(tr(d, "action.aiUnknownUser", { userId: event.userId }));
+        skippedReasons.push(tr(d, "action.aiUnknownUser", { userId: event.userId }));
+        continue;
       }
 
       if (!user.assignedShiftTypeIds.includes(event.shiftTypeId)) {
-        return failAiRun(tr(d, "action.aiShiftNotAssigned", { shiftTypeId: event.shiftTypeId, userId: event.userId }));
+        skippedReasons.push(tr(d, "action.aiShiftNotAssigned", { shiftTypeId: event.shiftTypeId, userId: event.userId }));
+        continue;
       }
 
       const shiftType = shiftTypeMap.get(event.shiftTypeId);
       if (!shiftType) {
-        return failAiRun(tr(d, "action.aiUnknownShift", { shiftTypeId: event.shiftTypeId }));
+        skippedReasons.push(tr(d, "action.aiUnknownShift", { shiftTypeId: event.shiftTypeId }));
+        continue;
       }
 
       const validityError = getScheduleValidityError(shiftType.validityDays, eventDate, holidayDates.has(event.date), d);
       if (validityError) {
-        return failAiRun(tr(d, "action.aiInvalidShift", { date: event.date, error: validityError }));
+        skippedReasons.push(tr(d, "action.aiInvalidShift", { date: event.date, error: validityError }));
+        continue;
       }
 
       const overlapsVacation = vacations.some((vacation) => vacation.userId === event.userId && eventDate >= vacation.startDate && eventDate <= vacation.endDate);
       if (overlapsVacation) {
-        return failAiRun(tr(d, "action.aiVacationConflict", { userName: user.name, date: event.date }));
+        skippedReasons.push(tr(d, "action.aiVacationConflict", { userName: user.name, date: event.date }));
+        continue;
       }
 
       const signature = `${event.date}::${event.userId}::${event.shiftTypeId}`;
       if (generatedSignatureSet.has(signature)) {
-        return failAiRun(tr(d, "action.aiDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId }));
+        skippedReasons.push(tr(d, "action.aiDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId }));
+        continue;
       }
 
       if (lockedSignatureSet.has(signature)) {
-        return failAiRun(tr(d, "action.aiLockedDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId }));
+        skippedReasons.push(tr(d, "action.aiLockedDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId }));
+        continue;
       }
 
       generatedSignatureSet.add(signature);
+      validEvents.push(event);
+    }
+
+    if (validEvents.length === 0) {
+      const reason = skippedReasons.length > 0 ? skippedReasons[0] : tr(d, "action.aiNoResults");
+      return failAiRun(reason);
     }
 
     await db.$transaction(async (tx) => {
@@ -2322,7 +2338,7 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         },
       });
 
-      for (const event of draft.events) {
+      for (const event of validEvents) {
         const shiftType = shiftTypeMap.get(event.shiftTypeId);
 
         if (!shiftType) {
@@ -2360,11 +2376,12 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       data: {
         status: AiRunStatus.SUCCEEDED,
         output: JSON.parse(JSON.stringify(draft)) as Prisma.InputJsonValue,
+        error: skippedReasons.length > 0 ? skippedReasons.join("\n") : null,
         finishedAt: new Date(),
       },
     });
 
-    const generatedCountsByUser = draft.events.reduce<Record<string, number>>((accumulator, event) => {
+    const generatedCountsByUser = validEvents.reduce<Record<string, number>>((accumulator, event) => {
       accumulator[event.userId] = (accumulator[event.userId] ?? 0) + 1;
       return accumulator;
     }, {});
@@ -2383,7 +2400,12 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       ),
     );
 
-    return successState(tr(d, "action.aiGenSuccess", { count: String(draft.events.length) }), "/schedule");
+    let message = tr(d, "action.aiGenSuccess", { count: String(validEvents.length) });
+    if (skippedReasons.length > 0) {
+      message += " " + tr(d, "action.aiGenSkipped", { count: String(skippedReasons.length) });
+    }
+
+    return successState(message, "/schedule");
   } catch (error) {
     if (aiRunId) {
       try {

@@ -916,6 +916,7 @@ const sk: TranslationDictionary = {
   "action.aiGenTitle": "AI rozvrh bol vygenerovaný",
   "action.aiGenUserMsg": "AI vám naplánovala {count} zmien v novom rozvrhu pre zvolené obdobie.",
   "action.aiGenSuccess": "AI vygenerovalo a uložilo {count} záznamov rozvrhu.",
+  "action.aiGenSkipped": "{count} neplatných záznamov bolo preskočených.",
   "action.newScheduleEntry": "Nová zmena v rozvrhu",
   "action.newScheduleEntryMsg": "Bola vám pridaná zmena {service} / {shift} na {date}.",
   "action.scheduleEntryUpdated": "Zmena v rozvrhu bola upravená",

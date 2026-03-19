@@ -916,6 +916,7 @@ const en: TranslationDictionary = {
   "action.aiGenTitle": "AI schedule has been generated",
   "action.aiGenUserMsg": "AI scheduled {count} shifts for you in the new schedule for the selected period.",
   "action.aiGenSuccess": "AI generated and saved {count} schedule records.",
+  "action.aiGenSkipped": "{count} invalid records were skipped.",
   "action.newScheduleEntry": "New schedule entry",
   "action.newScheduleEntryMsg": "A {service} / {shift} shift on {date} has been assigned to you.",
   "action.scheduleEntryUpdated": "Schedule entry updated",
