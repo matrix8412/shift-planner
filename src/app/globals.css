@@ -265,9 +265,9 @@ ul {
 }
 
 .locale-option.active {
-  background: var(--primary);
+  background: var(--accent);
   color: #fff;
-  border-color: var(--primary);
+  border-color: var(--accent);
   cursor: default;
 }
 
