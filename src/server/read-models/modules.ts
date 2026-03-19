@@ -821,6 +821,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
               : tr(d, "users.noAssignment"),
         },
         formValues: {
+          userId: user.id,
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -841,7 +842,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
     title: tr(d, "users.title"),
     summary: tr(d, "users.summary"),
     csvFileName: "users.csv",
-    csvFieldNames: ["email", "firstName", "lastName", "roleId", "shiftTypeIds", "preferredTheme", "notificationsEnabled", "notificationDays", "permissionCodes"],
+    csvFieldNames: ["userId", "email", "firstName", "lastName", "roleId", "shiftTypeIds", "preferredTheme", "notificationsEnabled", "notificationDays", "permissionCodes"],
     stats: [
       { label: tr(d, "users.statTotal"), value: String(users.length) },
       { label: tr(d, "users.statActive"), value: String(users.filter((user) => user.isActive).length) },

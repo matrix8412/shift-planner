@@ -53,6 +53,7 @@ const sk: TranslationDictionary = {
   "entity.prevPage": "Predchádzajúca strana",
   "entity.nextPage": "Ďalšia strana",
   "entity.pageOf": "Strana {current} z {total}",
+  "entity.rowsPerPage": "Záznamov na stránke",
   "entity.closeFormSheet": "Zavrieť formulár",
   "entity.closeConfirm": "Zatvoriť upozornenie",
   "entity.closeAuditLog": "Zavrieť audit log",

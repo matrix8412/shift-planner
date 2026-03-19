@@ -53,6 +53,7 @@ const en: TranslationDictionary = {
   "entity.prevPage": "Previous page",
   "entity.nextPage": "Next page",
   "entity.pageOf": "Page {current} of {total}",
+  "entity.rowsPerPage": "Rows per page",
   "entity.closeFormSheet": "Close form",
   "entity.closeConfirm": "Close warning",
   "entity.closeAuditLog": "Close audit log",

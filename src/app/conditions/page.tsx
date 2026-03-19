@@ -4,12 +4,12 @@ import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
 import { createConditionAction, deleteConditionAction, importConditionsCsvAction, updateConditionAction } from "@/server/actions/records";
 import { getConditionsModule } from "@/server/read-models/modules";
-import { getColumnPreferences } from "@/server/actions/column-preferences";
+import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
 
 export const dynamic = "force-dynamic";
 
 export default async function ConditionsPage() {
-  const [moduleConfig, currentUser, columnPrefs] = await Promise.all([getConditionsModule(), getCurrentUser(), getColumnPreferences()]);
+  const [moduleConfig, currentUser, columnPrefs, pageSizePrefs] = await Promise.all([getConditionsModule(), getCurrentUser(), getColumnPreferences(), getPageSizePreferences()]);
   const access = getModuleAccess(currentUser, "conditions");
 
   if (!access.canView) {
@@ -21,6 +21,7 @@ export default async function ConditionsPage() {
       {...moduleConfig}
       moduleKey="conditions"
       initialHiddenColumns={columnPrefs.conditions ?? []}
+      initialPageSize={pageSizePrefs.conditions}
       action={createConditionAction}
       editAction={updateConditionAction}
       deleteAction={deleteConditionAction}

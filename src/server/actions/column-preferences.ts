@@ -9,6 +9,12 @@ import { db } from "@/server/db/client";
  */
 export type ColumnPreferencesMap = Record<string, string[]>;
 
+/**
+ * Page-size preferences stored as JSON on the User model:
+ * { [moduleKey: string]: number }   – rows-per-page per module
+ */
+export type PageSizePreferencesMap = Record<string, number>;
+
 export async function getColumnPreferences(): Promise<ColumnPreferencesMap> {
   const user = await getCurrentUser();
 
@@ -50,5 +56,53 @@ export async function saveColumnPreferences(moduleKey: string, hiddenColumns: st
   await db.user.update({
     where: { id: user.id },
     data: { columnPreferences: updatedPrefs },
+  });
+}
+
+const allowedPageSizes = [5, 10, 15, 20, 25, 50];
+
+export async function getPageSizePreferences(): Promise<PageSizePreferencesMap> {
+  const user = await getCurrentUser();
+
+  if (!user || user.isBootstrap) {
+    return {};
+  }
+
+  const dbUser = await db.user.findUnique({
+    where: { id: user.id },
+    select: { pageSizePreferences: true },
+  });
+
+  if (!dbUser?.pageSizePreferences || typeof dbUser.pageSizePreferences !== "object") {
+    return {};
+  }
+
+  return dbUser.pageSizePreferences as PageSizePreferencesMap;
+}
+
+export async function savePageSizePreference(moduleKey: string, pageSize: number): Promise<void> {
+  const user = await getCurrentUser();
+
+  if (!user || user.isBootstrap) {
+    return;
+  }
+
+  const safeSize = allowedPageSizes.includes(pageSize) ? pageSize : 10;
+
+  const existing = await db.user.findUnique({
+    where: { id: user.id },
+    select: { pageSizePreferences: true },
+  });
+
+  const currentPrefs: PageSizePreferencesMap =
+    existing?.pageSizePreferences && typeof existing.pageSizePreferences === "object"
+      ? (existing.pageSizePreferences as PageSizePreferencesMap)
+      : {};
+
+  const updatedPrefs = { ...currentPrefs, [moduleKey]: safeSize };
+
+  await db.user.update({
+    where: { id: user.id },
+    data: { pageSizePreferences: updatedPrefs },
   });
 }

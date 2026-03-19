@@ -26,7 +26,7 @@ import { useRouter } from "next/navigation";
 import { useBrowserNotifications } from "@/components/browser-notification-provider";
 import { FormSubmitButton } from "@/components/form-submit-button";
 import { useI18n } from "@/i18n/context";
-import { saveColumnPreferences } from "@/server/actions/column-preferences";
+import { saveColumnPreferences, savePageSizePreference } from "@/server/actions/column-preferences";
 import type {
   ActionState,
   AuditEntry,
@@ -47,6 +47,7 @@ const initialActionState: ActionState = {
 };
 
 const defaultRowsPerPage = 10;
+const pageSizeOptions = [5, 10, 15, 20, 25, 50];
 const defaultAuditRowsPerPage = 8;
 
 type EntityModuleProps = EntityModuleConfig & {
@@ -1263,6 +1264,7 @@ export function EntityModule({
   defaultView,
   calendar,
   monthScopeEnabled,
+  initialPageSize,
   headerActions,
   primaryAction,
   preSurfaceContent,
@@ -1282,6 +1284,7 @@ export function EntityModule({
   const [activeSheetTabId, setActiveSheetTabId] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState("");
   const [tablePage, setTablePage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(initialPageSize && pageSizeOptions.includes(initialPageSize) ? initialPageSize : defaultRowsPerPage);
   const [tableSort, setTableSort] = useState<TableSortState | null>(null);
   const [isSheetDirty, setIsSheetDirty] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
@@ -1750,12 +1753,12 @@ export function EntityModule({
       return stat;
     });
   }, [hasLockedValues, hasMonthScope, hasSourceValues, monthScopedRows, stats]);
-  const totalTablePages = Math.max(1, Math.ceil(sortedRows.length / defaultRowsPerPage));
+  const totalTablePages = Math.max(1, Math.ceil(sortedRows.length / rowsPerPage));
   const visibleTablePage = Math.min(tablePage, totalTablePages);
   const paginatedRows = useMemo(() => {
-    const startIndex = (visibleTablePage - 1) * defaultRowsPerPage;
-    return sortedRows.slice(startIndex, startIndex + defaultRowsPerPage);
-  }, [sortedRows, visibleTablePage]);
+    const startIndex = (visibleTablePage - 1) * rowsPerPage;
+    return sortedRows.slice(startIndex, startIndex + rowsPerPage);
+  }, [sortedRows, visibleTablePage, rowsPerPage]);
   const paginationItems = useMemo(() => buildPaginationItems(visibleTablePage, totalTablePages), [totalTablePages, visibleTablePage]);
   const activeState = sheetMode === "edit" ? editState : createState;
   const activeFormAction = sheetMode === "edit" ? editFormAction : createFormAction;
@@ -2452,49 +2455,74 @@ export function EntityModule({
                   </table>
                 </div>
 
-                {totalTablePages > 1 ? (
+                {sortedRows.length > 0 ? (
                   <div className="table-pagination">
-                    <p className="table-pagination-summary">
-                      {t("entity.pageOf", { current: String(visibleTablePage), total: String(totalTablePages) })}
-                    </p>
-                    <div className="table-pagination-controls">
-                      <button
-                        type="button"
-                        className="icon-button"
-                        onClick={() => setTablePage((current) => Math.max(1, current - 1))}
-                        disabled={visibleTablePage <= 1}
-                        aria-label={t("entity.prevPage")}
-                      >
-                        <ChevronLeft size={18} />
-                      </button>
-                      {paginationItems.map((page, index) => {
-                        const previousPage = paginationItems[index - 1];
-                        const showGap = previousPage !== undefined && page - previousPage > 1;
-
-                        return (
-                          <div key={page} className="table-pagination-group">
-                            {showGap ? <span className="table-pagination-gap">…</span> : null}
-                            <button
-                              type="button"
-                              className={`table-pagination-button${page === visibleTablePage ? " active" : ""}`}
-                              onClick={() => setTablePage(page)}
-                              aria-current={page === visibleTablePage ? "page" : undefined}
-                            >
-                              {page}
-                            </button>
-                          </div>
-                        );
-                      })}
-                      <button
-                        type="button"
-                        className="icon-button"
-                        onClick={() => setTablePage((current) => Math.min(totalTablePages, current + 1))}
-                        disabled={visibleTablePage >= totalTablePages}
-                        aria-label={t("entity.nextPage")}
-                      >
-                        <ChevronRight size={18} />
-                      </button>
+                    <div className="table-pagination-left">
+                      <label className="table-page-size-label">
+                        {t("entity.rowsPerPage")}
+                        <select
+                          className="table-page-size-select"
+                          value={rowsPerPage}
+                          onChange={(event) => {
+                            const next = Number(event.target.value);
+                            setRowsPerPage(next);
+                            setTablePage(1);
+                            if (moduleKey) {
+                              savePageSizePreference(moduleKey, next);
+                            }
+                          }}
+                        >
+                          {pageSizeOptions.map((size) => (
+                            <option key={size} value={size}>{size}</option>
+                          ))}
+                        </select>
+                      </label>
+                      {totalTablePages > 1 ? (
+                        <p className="table-pagination-summary">
+                          {t("entity.pageOf", { current: String(visibleTablePage), total: String(totalTablePages) })}
+                        </p>
+                      ) : null}
                     </div>
+                    {totalTablePages > 1 ? (
+                      <div className="table-pagination-controls">
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={() => setTablePage((current) => Math.max(1, current - 1))}
+                          disabled={visibleTablePage <= 1}
+                          aria-label={t("entity.prevPage")}
+                        >
+                          <ChevronLeft size={18} />
+                        </button>
+                        {paginationItems.map((page, index) => {
+                          const previousPage = paginationItems[index - 1];
+                          const showGap = previousPage !== undefined && page - previousPage > 1;
+
+                          return (
+                            <div key={page} className="table-pagination-group">
+                              {showGap ? <span className="table-pagination-gap">…</span> : null}
+                              <button
+                                type="button"
+                                className={`table-pagination-button${page === visibleTablePage ? " active" : ""}`}
+                                onClick={() => setTablePage(page)}
+                                aria-current={page === visibleTablePage ? "page" : undefined}
+                              >
+                                {page}
+                              </button>
+                            </div>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          className="icon-button"
+                          onClick={() => setTablePage((current) => Math.min(totalTablePages, current + 1))}
+                          disabled={visibleTablePage >= totalTablePages}
+                          aria-label={t("entity.nextPage")}
+                        >
+                          <ChevronRight size={18} />
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

@@ -4,12 +4,12 @@ import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
 import { createRoleAction, deleteRoleAction, importRolesCsvAction, updateRoleAction } from "@/server/actions/records";
 import { getRolesModule } from "@/server/read-models/modules";
-import { getColumnPreferences } from "@/server/actions/column-preferences";
+import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
 
 export const dynamic = "force-dynamic";
 
 export default async function RolesPage() {
-  const [moduleConfig, currentUser, columnPrefs] = await Promise.all([getRolesModule(), getCurrentUser(), getColumnPreferences()]);
+  const [moduleConfig, currentUser, columnPrefs, pageSizePrefs] = await Promise.all([getRolesModule(), getCurrentUser(), getColumnPreferences(), getPageSizePreferences()]);
   const access = getModuleAccess(currentUser, "roles");
 
   if (!access.canView) {
@@ -21,6 +21,7 @@ export default async function RolesPage() {
       {...moduleConfig}
       moduleKey="roles"
       initialHiddenColumns={columnPrefs.roles ?? []}
+      initialPageSize={pageSizePrefs.roles}
       action={createRoleAction}
       editAction={updateRoleAction}
       deleteAction={deleteRoleAction}

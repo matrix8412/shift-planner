@@ -6,12 +6,12 @@ import { getCurrentUser } from "@/server/auth";
 import { createScheduleAction, deleteScheduleAction, generateScheduleAction, importScheduleCsvAction, toggleScheduleLockAction, updateScheduleAction } from "@/server/actions/records";
 import { getAiSettings } from "@/server/config/ai-settings";
 import { getScheduleModule } from "@/server/read-models/modules";
-import { getColumnPreferences } from "@/server/actions/column-preferences";
+import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
 
 export const dynamic = "force-dynamic";
 
 export default async function SchedulePage() {
-  const [moduleConfig, aiSettings, currentUser, columnPrefs] = await Promise.all([getScheduleModule(), getAiSettings(), getCurrentUser(), getColumnPreferences()]);
+  const [moduleConfig, aiSettings, currentUser, columnPrefs, pageSizePrefs] = await Promise.all([getScheduleModule(), getAiSettings(), getCurrentUser(), getColumnPreferences(), getPageSizePreferences()]);
   const access = getModuleAccess(currentUser, "schedule");
 
   if (!access.canView) {
@@ -23,6 +23,7 @@ export default async function SchedulePage() {
       {...moduleConfig}
       moduleKey="schedule"
       initialHiddenColumns={columnPrefs.schedule ?? []}
+      initialPageSize={pageSizePrefs.schedule}
       action={createScheduleAction}
       editAction={updateScheduleAction}
       deleteAction={deleteScheduleAction}

@@ -50,6 +50,7 @@ model User {
   notificationsEnabled Boolean         @default(false)
   notificationDays     Int             @default(1)
   columnPreferences    Json?
+  pageSizePreferences  Json?
   preferredLocale      String?
   roleId               String?
   role                 Role?           @relation(fields: [roleId], references: [id], onDelete: SetNull)

@@ -210,4 +210,5 @@ export type EntityModuleConfig = {
   defaultView?: ModuleView;
   calendar?: CalendarConfig;
   monthScopeEnabled?: boolean;
+  initialPageSize?: number;
 };

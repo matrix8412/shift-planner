@@ -4,12 +4,12 @@ import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
 import { createUserAction, deleteUserAction, importUsersCsvAction, updateUserAction } from "@/server/actions/records";
 import { getUsersModule } from "@/server/read-models/modules";
-import { getColumnPreferences } from "@/server/actions/column-preferences";
+import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
 
 export const dynamic = "force-dynamic";
 
 export default async function UsersPage() {
-  const [moduleConfig, currentUser, columnPrefs] = await Promise.all([getUsersModule(), getCurrentUser(), getColumnPreferences()]);
+  const [moduleConfig, currentUser, columnPrefs, pageSizePrefs] = await Promise.all([getUsersModule(), getCurrentUser(), getColumnPreferences(), getPageSizePreferences()]);
   const access = getModuleAccess(currentUser, "users");
 
   if (!access.canView) {
@@ -21,6 +21,7 @@ export default async function UsersPage() {
       {...moduleConfig}
       moduleKey="users"
       initialHiddenColumns={columnPrefs.users ?? []}
+      initialPageSize={pageSizePrefs.users}
       action={createUserAction}
       editAction={updateUserAction}
       deleteAction={deleteUserAction}

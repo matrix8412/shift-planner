@@ -4,12 +4,12 @@ import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
 import { createHolidayAction, deleteHolidayAction, importHolidaysCsvAction, updateHolidayAction } from "@/server/actions/records";
 import { getHolidaysModule } from "@/server/read-models/modules";
-import { getColumnPreferences } from "@/server/actions/column-preferences";
+import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
 
 export const dynamic = "force-dynamic";
 
 export default async function HolidaysPage() {
-  const [moduleConfig, currentUser, columnPrefs] = await Promise.all([getHolidaysModule(), getCurrentUser(), getColumnPreferences()]);
+  const [moduleConfig, currentUser, columnPrefs, pageSizePrefs] = await Promise.all([getHolidaysModule(), getCurrentUser(), getColumnPreferences(), getPageSizePreferences()]);
   const access = getModuleAccess(currentUser, "holidays");
 
   if (!access.canView) {
@@ -21,6 +21,7 @@ export default async function HolidaysPage() {
       {...moduleConfig}
       moduleKey="holidays"
       initialHiddenColumns={columnPrefs.holidays ?? []}
+      initialPageSize={pageSizePrefs.holidays}
       action={createHolidayAction}
       editAction={updateHolidayAction}
       deleteAction={deleteHolidayAction}

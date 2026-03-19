@@ -4,12 +4,12 @@ import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
 import { createShiftAction, deleteShiftAction, importShiftsCsvAction, updateShiftAction } from "@/server/actions/records";
 import { getShiftsModule } from "@/server/read-models/modules";
-import { getColumnPreferences } from "@/server/actions/column-preferences";
+import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
 
 export const dynamic = "force-dynamic";
 
 export default async function ShiftsPage() {
-  const [moduleConfig, currentUser, columnPrefs] = await Promise.all([getShiftsModule(), getCurrentUser(), getColumnPreferences()]);
+  const [moduleConfig, currentUser, columnPrefs, pageSizePrefs] = await Promise.all([getShiftsModule(), getCurrentUser(), getColumnPreferences(), getPageSizePreferences()]);
   const access = getModuleAccess(currentUser, "shifts");
 
   if (!access.canView) {
@@ -21,6 +21,7 @@ export default async function ShiftsPage() {
       {...moduleConfig}
       moduleKey="shifts"
       initialHiddenColumns={columnPrefs.shifts ?? []}
+      initialPageSize={pageSizePrefs.shifts}
       action={createShiftAction}
       editAction={updateShiftAction}
       deleteAction={deleteShiftAction}
