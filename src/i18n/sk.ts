@@ -658,6 +658,7 @@ const sk: TranslationDictionary = {
   "conditions.search": "Hľadať v podmienkach...",
   "conditions.fieldType": "Typ",
   "conditions.fieldTypePlaceholder": "pokrytie",
+  "conditions.fieldTypeHint": "Voľný text – kategória pravidla pre AI (napr. pokrytie, fair-play, obmedzenie). AI ho používa ako kontext pri generovaní rozvrhu.",
   "conditions.fieldTitle": "Názov",
   "conditions.fieldTitlePlaceholder": "Víkendové pokrytie",
   "conditions.fieldPriority": "Priorita",

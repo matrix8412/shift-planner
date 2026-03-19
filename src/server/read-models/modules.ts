@@ -1435,7 +1435,7 @@ export async function getConditionsModule(): Promise<EntityModuleConfig> {
     submitLabel: tr(d, "conditions.submitLabel"),
     searchPlaceholder: tr(d, "conditions.search"),
     fields: [
-      { type: "text", name: "type", label: tr(d, "conditions.fieldType"), required: true, placeholder: tr(d, "conditions.fieldTypePlaceholder") },
+      { type: "text", name: "type", label: tr(d, "conditions.fieldType"), required: true, placeholder: tr(d, "conditions.fieldTypePlaceholder"), description: tr(d, "conditions.fieldTypeHint") },
       { type: "text", name: "title", label: tr(d, "conditions.fieldTitle"), required: true, placeholder: tr(d, "conditions.fieldTitlePlaceholder") },
       { type: "number", name: "priority", label: tr(d, "conditions.fieldPriority"), required: true, defaultValue: 100, min: 0, max: 10000, description: tr(d, "conditions.fieldPriorityHint") },
       { type: "checkbox", name: "isActive", label: tr(d, "conditions.fieldIsActive"), defaultChecked: true },

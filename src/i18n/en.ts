@@ -658,6 +658,7 @@ const en: TranslationDictionary = {
   "conditions.search": "Search in conditions...",
   "conditions.fieldType": "Type",
   "conditions.fieldTypePlaceholder": "coverage",
+  "conditions.fieldTypeHint": "Free text – a category label for the AI (e.g. coverage, fairness, restriction). The AI uses it as context when generating the schedule.",
   "conditions.fieldTitle": "Title",
   "conditions.fieldTitlePlaceholder": "Weekend staffing",
   "conditions.fieldPriority": "Priority",
