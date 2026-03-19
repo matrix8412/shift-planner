@@ -1199,7 +1199,10 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
       cells: {
         code: { text: shiftType.code, mono: true },
         name: shiftType.name,
-        service: shiftType.service.name,
+        service: {
+          text: shiftType.service.name,
+          colorTokens: [buildServiceBadgeToken(shiftType.service)],
+        },
         window: `${shiftType.startsAt} - ${shiftType.endsAt}${shiftType.crossesMidnight ? " (+1)" : ""}`,
         validity: buildShiftValidityCell(shiftType.validityDays),
         status: boolCell(shiftType.isActive, "Aktívna", "Neaktívna"),
