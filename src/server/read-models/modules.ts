@@ -5,7 +5,7 @@ import { getDictionary, t as tr, getServerLocale } from "@/i18n";
 import { getPermissionMatrixSections, permissionCatalog } from "@/server/auth/permissions";
 import { isManagedSettingKey } from "@/server/config/managed-settings";
 import { db } from "@/server/db/client";
-import { getShiftValidityFormValues, getShiftValidityLabels, shiftValidityDefinitions } from "@/server/scheduling/shift-validity";
+import { getShiftValidityFormValues, getShiftValidityLabels, parseShiftValidity, shiftValidityDefinitions } from "@/server/scheduling/shift-validity";
 
 const dateFormatter = new Intl.DateTimeFormat("sk-SK", {
   timeZone: "UTC",
@@ -1596,10 +1596,24 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     label: `${user.firstName} ${user.lastName}`,
   }));
   const serviceOptions = mapOptions(services);
-  const shiftOptions = shiftTypes.map((shiftType) => ({
-    value: shiftType.id,
-    label: `${shiftType.service.name} / ${shiftType.name} (${shiftType.startsAt}-${shiftType.endsAt})`,
-  }));
+  const shiftOptions = shiftTypes.map((shiftType) => {
+    const validity = parseShiftValidity(shiftType.validityDays);
+    // Map validity keys to JS Date day numbers (0=Sun, 1=Mon, ..., 6=Sat)
+    const validDays: number[] = [];
+    if (validity.mon) validDays.push(1);
+    if (validity.tue) validDays.push(2);
+    if (validity.wed) validDays.push(3);
+    if (validity.thu) validDays.push(4);
+    if (validity.fri) validDays.push(5);
+    if (validity.sat) validDays.push(6);
+    if (validity.sun) validDays.push(0);
+
+    return {
+      value: shiftType.id,
+      label: `${shiftType.service.name} / ${shiftType.name} (${shiftType.startsAt}-${shiftType.endsAt})`,
+      validDays,
+    };
+  });
   const missingDependencies = [
     users.length === 0 ? tr(d, "schedule.depUser") : null,
     services.length === 0 ? tr(d, "schedule.depService") : null,
@@ -1697,6 +1711,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         required: true,
         options: shiftOptions,
         description: tr(d, "schedule.fieldShiftTypeHint"),
+        filterByDate: "date",
       },
       {
         type: "select",

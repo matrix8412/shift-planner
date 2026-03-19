@@ -91,6 +91,7 @@ export type FieldOption = {
   backgroundColor?: string;
   textColor?: string;
   borderColor?: string;
+  validDays?: number[];
 };
 
 type BaseField = {
@@ -136,6 +137,7 @@ export type SelectField = BaseField & {
   defaultValue?: string;
   allowEmpty?: boolean;
   emptyLabel?: string;
+  filterByDate?: string;
 };
 
 export type MultiSelectField = BaseField & {

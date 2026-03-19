@@ -634,15 +634,79 @@ function ColorFieldControl({
   );
 }
 
+function getDateFieldDayOfWeek(formRef: React.RefObject<HTMLFormElement | null>, dateFieldName: string): number | null {
+  const input = formRef.current?.elements.namedItem(dateFieldName);
+  if (!(input instanceof HTMLInputElement) || !input.value) return null;
+  const date = new Date(input.value + "T00:00:00Z");
+  if (Number.isNaN(date.getTime())) return null;
+  return date.getUTCDay();
+}
+
 function SelectFieldControl({
   field,
   value,
   fieldError,
+  formRef,
 }: {
   field: Extract<EntityModuleConfig["fields"][number], { type: "select" }>;
   value?: string;
   fieldError?: string;
+  formRef?: React.RefObject<HTMLFormElement | null>;
 }) {
+  const hasDateFilter = Boolean(field.filterByDate) && field.options.some((option) => option.validDays);
+  const [filteredOptions, setFilteredOptions] = useState(field.options);
+  const [selectedValue, setSelectedValue] = useState(value ?? field.defaultValue ?? "");
+
+  useEffect(() => {
+    if (!hasDateFilter || !formRef?.current || !field.filterByDate) return;
+
+    function handleChange() {
+      const day = getDateFieldDayOfWeek(formRef!, field.filterByDate!);
+      if (day === null) {
+        setFilteredOptions(field.options);
+      } else {
+        setFilteredOptions(field.options.filter((option) => !option.validDays || option.validDays.includes(day)));
+      }
+    }
+
+    const dateInput = formRef.current.elements.namedItem(field.filterByDate);
+    if (dateInput instanceof HTMLInputElement) {
+      dateInput.addEventListener("change", handleChange);
+      handleChange();
+      return () => dateInput.removeEventListener("change", handleChange);
+    }
+  }, [hasDateFilter, formRef, field.filterByDate, field.options]);
+
+  useEffect(() => {
+    if (hasDateFilter && filteredOptions.length > 0 && !filteredOptions.some((option) => option.value === selectedValue)) {
+      setSelectedValue(filteredOptions[0].value);
+    }
+  }, [filteredOptions, hasDateFilter, selectedValue]);
+
+  if (hasDateFilter) {
+    return (
+      <label className="field">
+        <span className={fieldLabelClass(field.required)}>{field.label}</span>
+        <select
+          name={field.name}
+          value={selectedValue}
+          onChange={(event) => setSelectedValue(event.target.value)}
+          required={field.required}
+          className="field-control"
+        >
+          {field.allowEmpty ? <option value="">{field.emptyLabel ?? "Vyberte možnosť"}</option> : null}
+          {filteredOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+        {field.description ? <span className="field-description">{field.description}</span> : null}
+        {fieldError ? <span className="field-error">{fieldError}</span> : null}
+      </label>
+    );
+  }
+
   return (
     <label className="field">
       <span className={fieldLabelClass(field.required)}>{field.label}</span>
@@ -1980,6 +2044,7 @@ export function EntityModule({
           field={field}
           value={String((sheetMode === "edit" ? currentValue : (currentValue ?? field.defaultValue)) ?? "")}
           fieldError={fieldError}
+          formRef={field.filterByDate ? sheetFormRef : undefined}
         />
       );
     }
