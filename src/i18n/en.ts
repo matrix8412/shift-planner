@@ -72,6 +72,12 @@ const en: TranslationDictionary = {
   "entity.unlocked": "Unlocked",
   "entity.lockRecord": "Lock record",
   "entity.unlockRecord": "Unlock record",
+  "entity.lockAll": "Lock all",
+  "entity.unlockAll": "Unlock all",
+  "entity.deleteSelected": "Delete selected",
+  "entity.selectAll": "Select all",
+  "entity.selectRow": "Select {label}",
+  "entity.selectedCount": "Selected: {count}",
   "entity.prevMonth": "Previous month",
   "entity.nextMonth": "Next month",
   "entity.details": "Details",
@@ -866,6 +872,9 @@ const en: TranslationDictionary = {
 
   "action.vacationLockUpdated": "Vacation lock has been updated.",
   "action.scheduleLockUpdated": "Schedule record lock has been updated.",
+  "action.scheduleBulkLockUpdated": "Bulk updated {count} schedule records.",
+  "action.scheduleBulkDeleteLocked": "{count} selected records are locked. Unlock them first.",
+  "action.scheduleBulkDeleted": "Bulk deleted {count} schedule records.",
 
   "action.vacationLockedError": "Vacation record is locked. Use the lock icon on the record to unlock it.",
   "action.scheduleLockedError": "Schedule record is locked. Use the lock icon on the record to unlock it.",

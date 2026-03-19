@@ -1108,6 +1108,87 @@ ul {
   gap: 14px;
 }
 
+.selection-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  background: rgba(62, 143, 151, 0.08);
+  border-radius: 10px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+
+.selection-bar-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.selection-bar-action:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.selection-bar-action.danger {
+  color: var(--danger);
+}
+
+.selection-bar-action.danger:hover {
+  background: rgba(220, 53, 69, 0.08);
+}
+
+.select-column,
+.select-cell {
+  width: 40px;
+  text-align: center;
+}
+
+.row-select-checkbox {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--accent-strong);
+}
+
+.row-selected {
+  background: rgba(62, 143, 151, 0.06);
+}
+
+.calendar-toolbar-bulk {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-bulk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1px solid rgba(213, 229, 232, 0.92);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.calendar-bulk-btn:hover {
+  background: rgba(62, 143, 151, 0.06);
+  border-color: var(--accent-strong);
+}
+
 .table-pagination {
   display: flex;
   flex-wrap: wrap;
@@ -2330,6 +2411,27 @@ ul {
 }
 
 :root[data-theme="dark"] .records-table tbody tr:hover {
+  background: rgba(90, 176, 188, 0.12);
+}
+
+:root[data-theme="dark"] .row-selected {
+  background: rgba(90, 176, 188, 0.08);
+}
+
+:root[data-theme="dark"] .selection-bar {
+  background: rgba(90, 176, 188, 0.1);
+}
+
+:root[data-theme="dark"] .selection-bar-action:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme="dark"] .calendar-bulk-btn {
+  border-color: rgba(90, 176, 188, 0.25);
+  background: var(--surface);
+}
+
+:root[data-theme="dark"] .calendar-bulk-btn:hover {
   background: rgba(90, 176, 188, 0.12);
 }
 

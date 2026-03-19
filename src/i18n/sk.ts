@@ -72,6 +72,12 @@ const sk: TranslationDictionary = {
   "entity.unlocked": "Otvorené",
   "entity.lockRecord": "Zamknúť záznam",
   "entity.unlockRecord": "Odomknúť záznam",
+  "entity.lockAll": "Zamknúť všetky",
+  "entity.unlockAll": "Odomknúť všetky",
+  "entity.deleteSelected": "Odstrániť vybrané",
+  "entity.selectAll": "Vybrať všetky",
+  "entity.selectRow": "Vybrať {label}",
+  "entity.selectedCount": "Vybraných: {count}",
   "entity.prevMonth": "Predchádzajúci mesiac",
   "entity.nextMonth": "Ďalší mesiac",
   "entity.details": "Detaily",
@@ -866,6 +872,9 @@ const sk: TranslationDictionary = {
 
   "action.vacationLockUpdated": "Zámok dovolenky bol aktualizovaný.",
   "action.scheduleLockUpdated": "Zámok záznamu rozvrhu bol aktualizovaný.",
+  "action.scheduleBulkLockUpdated": "Hromadne aktualizovaných {count} záznamov rozvrhu.",
+  "action.scheduleBulkDeleteLocked": "{count} vybraných záznamov je zamknutých. Najprv ich odomknite.",
+  "action.scheduleBulkDeleted": "Hromadne odstránených {count} záznamov rozvrhu.",
 
   "action.vacationLockedError": "Záznam dovolenky je zamknutý. Pre odomknutie použite ikonku zámku na zázname.",
   "action.scheduleLockedError": "Záznam rozvrhu je zamknutý. Pre odomknutie použite ikonku zámku na zázname.",

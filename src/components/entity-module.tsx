@@ -5,6 +5,7 @@ import {
   ArrowUpDown,
   BarChart3,
   CalendarDays,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -19,6 +20,7 @@ import {
   Pencil,
   Plus,
   Search,
+  Trash2,
   Upload,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -56,6 +58,8 @@ type EntityModuleProps = EntityModuleConfig & {
   deleteAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   importAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   toggleLockAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  bulkLockAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  bulkDeleteAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   canCreate?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
@@ -1093,6 +1097,7 @@ function CalendarPanel({
   onDaySelect,
   onItemSelect,
   onItemLockToggle,
+  onBulkLock,
 }: {
   calendar: CalendarConfig;
   items: CalendarItem[];
@@ -1103,6 +1108,7 @@ function CalendarPanel({
   onDaySelect?: (date: string) => void;
   onItemSelect?: (recordId: string) => void;
   onItemLockToggle?: (recordId: string) => void;
+  onBulkLock?: (locked: boolean) => void;
 }) {
   const { t } = useI18n();
   const activeMonth = month || calendar.initialMonth;
@@ -1129,6 +1135,19 @@ function CalendarPanel({
     <div className="calendar-panel stack-tight">
       <div className="calendar-toolbar">
         <MonthSwitcher month={activeMonth} onMonthChange={onMonthChange} />
+
+        {onBulkLock ? (
+          <div className="calendar-toolbar-bulk">
+            <button type="button" className="calendar-bulk-btn" onClick={() => onBulkLock(true)} title={t("entity.lockAll")}>
+              <Lock size={14} />
+              <span>{t("entity.lockAll")}</span>
+            </button>
+            <button type="button" className="calendar-bulk-btn" onClick={() => onBulkLock(false)} title={t("entity.unlockAll")}>
+              <LockOpen size={14} />
+              <span>{t("entity.unlockAll")}</span>
+            </button>
+          </div>
+        ) : null}
 
         {searchControl ? <div className="calendar-toolbar-search">{searchControl}</div> : null}
         {actionsControl ? <div className="calendar-toolbar-actions">{actionsControl}</div> : null}
@@ -1251,6 +1270,8 @@ export function EntityModule({
   deleteAction,
   importAction,
   toggleLockAction,
+  bulkLockAction,
+  bulkDeleteAction,
   canCreate = true,
   canEdit: canEditProp,
   canDelete: canDeleteProp,
@@ -1290,6 +1311,7 @@ export function EntityModule({
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
   const [lockOverrides, setLockOverrides] = useState<Record<string, boolean>>({});
   const [deletedRowIds, setDeletedRowIds] = useState<Set<string>>(new Set());
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set(initialHiddenColumns ?? []));
   const [columnMenuOpen, setColumnMenuOpen] = useState(false);
   const columnMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1299,6 +1321,8 @@ export function EntityModule({
   const [deleteState, deleteFormAction] = useActionState(deleteAction ?? action, initialActionState);
   const [importState, importFormAction] = useActionState(importAction ?? action, initialActionState);
   const [toggleLockState, toggleLockFormAction] = useActionState(toggleLockAction ?? action, initialActionState);
+  const [bulkLockState, bulkLockFormAction] = useActionState(bulkLockAction ?? action, initialActionState);
+  const [bulkDeleteState, bulkDeleteFormAction] = useActionState(bulkDeleteAction ?? action, initialActionState);
   const menuHostRef = useRef<HTMLDivElement | null>(null);
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1306,6 +1330,7 @@ export function EntityModule({
   const sheetFormRef = useRef<HTMLFormElement | null>(null);
   const pendingDeleteIdRef = useRef<string | null>(null);
   const initialSheetSnapshotRef = useRef("");
+  const lockTogglePendingRef = useRef(false);
   const handledActionStatesRef = useRef({
     create: createState,
     edit: editState,
@@ -1315,6 +1340,10 @@ export function EntityModule({
     importError: importState,
     toggleLock: toggleLockState,
     toggleLockError: toggleLockState,
+    bulkLock: bulkLockState,
+    bulkLockError: bulkLockState,
+    bulkDelete: bulkDeleteState,
+    bulkDeleteError: bulkDeleteState,
   });
   const hasAuditMenu = rows.some((row) => row.auditEntries !== undefined);
   const canEdit = (canEditProp ?? Boolean(editAction)) && Boolean(editAction);
@@ -1349,7 +1378,9 @@ export function EntityModule({
   );
   const canToggleLock = (canToggleLockProp ?? Boolean(toggleLockAction)) && Boolean(toggleLockAction) && hasLockedValues;
   const canImport = (canImportProp ?? Boolean(importAction)) && Boolean(importAction);
-  const hasActionDropdown = canImport || canExport;
+  const hasActionDropdown = canImport || canExport || Boolean(bulkLockAction) || Boolean(bulkDeleteAction);
+  const canBulkLock = Boolean(bulkLockAction) && canToggleLock;
+  const canBulkDelete = Boolean(bulkDeleteAction) && canDelete;
   const hasContextMenu = canDelete || hasAuditMenu;
   const hasRowActions = canEdit || hasContextMenu;
   const activeSheetTabs = useMemo<SheetTab[]>(() => {
@@ -1426,13 +1457,17 @@ export function EntityModule({
     const hasNewDeleteSuccess = deleteState.status === "success" && handledActionStatesRef.current.delete !== deleteState;
     const hasNewImportSuccess = importState.status === "success" && handledActionStatesRef.current.import !== importState;
     const hasNewToggleSuccess = toggleLockState.status === "success" && handledActionStatesRef.current.toggleLock !== toggleLockState;
+    const hasNewBulkLockSuccess = bulkLockState.status === "success" && handledActionStatesRef.current.bulkLock !== bulkLockState;
+    const hasNewBulkDeleteSuccess = bulkDeleteState.status === "success" && handledActionStatesRef.current.bulkDelete !== bulkDeleteState;
     const nextSuccessMessage =
       (hasNewCreateSuccess ? createState.message : undefined) ??
       (hasNewEditSuccess ? editState.message : undefined) ??
       (hasNewDeleteSuccess ? deleteState.message : undefined) ??
       (hasNewImportSuccess ? importState.message : undefined) ??
-      (hasNewToggleSuccess ? toggleLockState.message : undefined);
-    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess;
+      (hasNewToggleSuccess ? toggleLockState.message : undefined) ??
+      (hasNewBulkLockSuccess ? bulkLockState.message : undefined) ??
+      (hasNewBulkDeleteSuccess ? bulkDeleteState.message : undefined);
+    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess;
 
     if (hasNewSuccess) {
       if (nextSuccessMessage) {
@@ -1457,8 +1492,11 @@ export function EntityModule({
       setCreatePrefillValues({});
       setIsSheetDirty(false);
       setIsUnsavedChangesDialogOpen(false);
-      if (!hasNewToggleSuccess) {
+      if (!hasNewToggleSuccess && !hasNewBulkLockSuccess) {
         setLockOverrides({});
+      }
+      if (hasNewBulkDeleteSuccess) {
+        setSelectedRowIds(new Set());
       }
       initialSheetSnapshotRef.current = "";
       setMenuRowId(null);
@@ -1476,7 +1514,11 @@ export function EntityModule({
     handledActionStatesRef.current.delete = deleteState;
     handledActionStatesRef.current.import = importState;
     handledActionStatesRef.current.toggleLock = toggleLockState;
+    handledActionStatesRef.current.bulkLock = bulkLockState;
+    handledActionStatesRef.current.bulkDelete = bulkDeleteState;
   }, [
+    bulkDeleteState,
+    bulkLockState,
     createState,
     deleteState,
     editState,
@@ -1527,6 +1569,37 @@ export function EntityModule({
   }, [notify, toggleLockState]);
 
   useEffect(() => {
+    const hasNewBulkLockError = bulkLockState.status === "error" && handledActionStatesRef.current.bulkLockError !== bulkLockState;
+
+    if (hasNewBulkLockError && bulkLockState.message) {
+      notify({
+        tone: "error",
+        message: bulkLockState.message,
+      });
+    }
+
+    handledActionStatesRef.current.bulkLockError = bulkLockState;
+  }, [bulkLockState, notify]);
+
+  useEffect(() => {
+    const hasNewBulkDeleteError = bulkDeleteState.status === "error" && handledActionStatesRef.current.bulkDeleteError !== bulkDeleteState;
+
+    if (hasNewBulkDeleteError && bulkDeleteState.message) {
+      notify({
+        tone: "error",
+        message: bulkDeleteState.message,
+      });
+    }
+
+    handledActionStatesRef.current.bulkDeleteError = bulkDeleteState;
+  }, [bulkDeleteState, notify]);
+
+  useEffect(() => {
+    if (lockTogglePendingRef.current) {
+      lockTogglePendingRef.current = false;
+      return;
+    }
+
     setLockOverrides((current) => {
       const overrideEntries = Object.entries(current);
 
@@ -1893,12 +1966,78 @@ export function EntityModule({
       [recordId]: !currentLocked,
     }));
 
+    lockTogglePendingRef.current = true;
+
     const formData = new FormData();
     formData.set("id", recordId);
 
     startTransition(() => {
       toggleLockFormAction(formData);
     });
+  }
+
+  function handleBulkLock(locked: boolean) {
+    if (!canBulkLock || !selectedMonth) {
+      return;
+    }
+
+    setLockOverrides({});
+
+    const formData = new FormData();
+    formData.set("month", selectedMonth);
+    formData.set("locked", String(locked));
+
+    startTransition(() => {
+      bulkLockFormAction(formData);
+    });
+  }
+
+  function handleBulkDelete() {
+    if (!canBulkDelete || selectedRowIds.size === 0) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("ids", Array.from(selectedRowIds).join(","));
+
+    startTransition(() => {
+      bulkDeleteFormAction(formData);
+    });
+  }
+
+  function toggleRowSelection(rowId: string) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowId)) {
+        next.delete(rowId);
+      } else {
+        next.add(rowId);
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    const pageRowIds = paginatedRows.map((row) => row.id);
+    const allSelected = pageRowIds.length > 0 && pageRowIds.every((id) => selectedRowIds.has(id));
+
+    if (allSelected) {
+      setSelectedRowIds((prev) => {
+        const next = new Set(prev);
+        for (const id of pageRowIds) {
+          next.delete(id);
+        }
+        return next;
+      });
+    } else {
+      setSelectedRowIds((prev) => {
+        const next = new Set(prev);
+        for (const id of pageRowIds) {
+          next.add(id);
+        }
+        return next;
+      });
+    }
   }
 
   function toggleRowMenu(row: EntityRow, trigger: HTMLButtonElement) {
@@ -2253,6 +2392,34 @@ export function EntityModule({
                         {t("entity.exportCsv")}
                       </button>
                     ) : null}
+                    {canBulkLock && selectedMonth ? (
+                      <>
+                        <button
+                          type="button"
+                          className="action-dropdown-item"
+                          role="menuitem"
+                          onClick={() => {
+                            setActionMenuOpen(false);
+                            handleBulkLock(true);
+                          }}
+                        >
+                          <Lock size={16} />
+                          {t("entity.lockAll")}
+                        </button>
+                        <button
+                          type="button"
+                          className="action-dropdown-item"
+                          role="menuitem"
+                          onClick={() => {
+                            setActionMenuOpen(false);
+                            handleBulkLock(false);
+                          }}
+                        >
+                          <LockOpen size={16} />
+                          {t("entity.unlockAll")}
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -2339,6 +2506,7 @@ export function EntityModule({
               onDaySelect={canCreate && !createDisabledReason ? handleCalendarDaySelect : undefined}
               onItemSelect={canEdit ? handleCalendarItemSelect : undefined}
               onItemLockToggle={canToggleLock ? handleCalendarItemLockToggle : undefined}
+              onBulkLock={canBulkLock ? handleBulkLock : undefined}
             />
           ) : null}
 
@@ -2362,10 +2530,30 @@ export function EntityModule({
               </div>
             ) : (
               <div className="table-stack">
+                {canBulkDelete && selectedRowIds.size > 0 ? (
+                  <div className="selection-bar">
+                    <span>{t("entity.selectedCount", { count: selectedRowIds.size })}</span>
+                    <button type="button" className="selection-bar-action danger" onClick={handleBulkDelete}>
+                      <Trash2 size={14} />
+                      <span>{t("entity.deleteSelected")}</span>
+                    </button>
+                  </div>
+                ) : null}
                 <div className="table-shell">
                   <table className="records-table">
                   <thead>
                     <tr>
+                      {canBulkDelete ? (
+                        <th className="select-column">
+                          <input
+                            type="checkbox"
+                            className="row-select-checkbox"
+                            checked={paginatedRows.length > 0 && paginatedRows.every((row) => selectedRowIds.has(row.id))}
+                            onChange={toggleSelectAll}
+                            aria-label={t("entity.selectAll")}
+                          />
+                        </th>
+                      ) : null}
                       {visibleColumns.map((column) => {
                         const isSortedColumn = tableSort?.columnKey === column.key;
                         const ariaSort = isSortedColumn ? (tableSort.direction === "asc" ? "ascending" : "descending") : "none";
@@ -2388,7 +2576,18 @@ export function EntityModule({
                   </thead>
                   <tbody>
                     {paginatedRows.map((row) => (
-                      <tr key={row.id}>
+                      <tr key={row.id} className={selectedRowIds.has(row.id) ? "row-selected" : undefined}>
+                        {canBulkDelete ? (
+                          <td className="select-cell">
+                            <input
+                              type="checkbox"
+                              className="row-select-checkbox"
+                              checked={selectedRowIds.has(row.id)}
+                              onChange={() => toggleRowSelection(row.id)}
+                              aria-label={t("entity.selectRow", { label: row.label ?? row.id })}
+                            />
+                          </td>
+                        ) : null}
                         {visibleColumns.map((column) => {
                           const cell = row.cells[column.key];
                           const toneClass = getCellToneClass(cell);

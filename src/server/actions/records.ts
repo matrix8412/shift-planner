@@ -3535,6 +3535,68 @@ export async function toggleScheduleLockAction(_: ActionState, formData: FormDat
   }
 }
 
+export async function bulkToggleScheduleLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireCurrentPermission("schedule:edit");
+  const d = await getDict();
+  const month = parseOptionalString(formData.get("month"));
+  const locked = formData.get("locked") === "true";
+
+  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+    return errorState(tr(d, "action.missingId"));
+  }
+
+  const startDate = parseUtcDate(`${month}-01`);
+  const endDate = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth() + 1, 0));
+
+  try {
+    const result = await db.scheduleEntry.updateMany({
+      where: {
+        date: { gte: startDate, lte: endDate },
+        locked: !locked,
+      },
+      data: { locked },
+    });
+
+    return successState(tr(d, "action.scheduleBulkLockUpdated", { count: String(result.count) }), "/schedule");
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
+export async function bulkDeleteScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireCurrentPermission("schedule:delete");
+  const d = await getDict();
+  const idsRaw = parseOptionalString(formData.get("ids"));
+
+  if (!idsRaw) {
+    return errorState(tr(d, "action.missingId"));
+  }
+
+  const ids = idsRaw.split(",").map((id) => id.trim()).filter((id) => id.length > 0);
+
+  if (ids.length === 0) {
+    return errorState(tr(d, "action.missingId"));
+  }
+
+  try {
+    const lockedCount = await db.scheduleEntry.count({
+      where: { id: { in: ids }, locked: true },
+    });
+
+    if (lockedCount > 0) {
+      return errorState(tr(d, "action.scheduleBulkDeleteLocked", { count: String(lockedCount) }));
+    }
+
+    const result = await db.scheduleEntry.deleteMany({
+      where: { id: { in: ids }, locked: false },
+    });
+
+    return successState(tr(d, "action.scheduleBulkDeleted", { count: String(result.count) }), "/schedule");
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
 export async function deleteUserAction(_: ActionState, formData: FormData): Promise<ActionState> {
   await requireCurrentPermission("users:delete");
   const d = await getDict();
