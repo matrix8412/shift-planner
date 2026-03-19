@@ -31,13 +31,12 @@ export default async function SchedulePage() {
       toggleLockAction={toggleScheduleLockAction}
       bulkLockAction={bulkToggleScheduleLockAction}
       bulkDeleteAction={bulkDeleteScheduleAction}
-      canCreate={access.canCreate}
       canEdit={access.canEdit}
       canDelete={access.canDelete}
       canImport={access.canImportExport}
       canExport={access.canImportExport}
       canToggleLock={access.canEdit}
-      headerActions={
+      primaryAction={
         access.canGenerate ? (
           <ScheduleGenerateAction
             action={generateScheduleAction}
