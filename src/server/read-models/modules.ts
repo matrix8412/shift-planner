@@ -1019,6 +1019,7 @@ export async function getRolesModule(): Promise<EntityModuleConfig> {
         description: role.description ?? tr(d, "roles.noDescription"),
       },
       formValues: {
+        roleId: role.id,
         code: role.code,
         name: role.name,
         description: role.description ?? undefined,
@@ -1032,7 +1033,7 @@ export async function getRolesModule(): Promise<EntityModuleConfig> {
     title: tr(d, "roles.title"),
     summary: tr(d, "roles.summary"),
     csvFileName: "roles.csv",
-    csvFieldNames: ["code", "name", "description", "permissionCodes"],
+    csvFieldNames: ["roleId", "code", "name", "description", "permissionCodes"],
     stats: [
       { label: tr(d, "roles.statTotal"), value: String(roles.length) },
       { label: tr(d, "roles.statAssigned"), value: String(roles.filter((role) => role._count.users > 0).length) },
