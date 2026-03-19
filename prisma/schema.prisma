@@ -286,17 +286,34 @@ model JobRun {
 }
 
 model AiRun {
-  id         String         @id @default(cuid())
-  provider   AiProviderKind
-  useCase    String
-  status     AiRunStatus    @default(PENDING)
-  input      Json
-  output     Json?
-  error      String?
-  startedAt  DateTime?
-  finishedAt DateTime?
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
+  id           String         @id @default(cuid())
+  provider     AiProviderKind
+  useCase      String
+  status       AiRunStatus    @default(PENDING)
+  input        Json
+  output       Json?
+  error        String?
+  startedAt    DateTime?
+  finishedAt   DateTime?
+  auditEntries AiAuditEntry[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
 
   @@index([provider, useCase, status])
+}
+
+model AiAuditEntry {
+  id            String   @id @default(cuid())
+  aiRunId       String
+  aiRun         AiRun    @relation(fields: [aiRunId], references: [id], onDelete: Cascade)
+  date          String
+  userId        String?
+  userName      String?
+  shiftTypeId   String?
+  shiftTypeName String?
+  accepted      Boolean
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  @@index([aiRunId])
 }

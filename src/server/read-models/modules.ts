@@ -99,6 +99,7 @@ const auditFieldLabels: Record<string, Record<string, string>> = {
     firstName: "Meno",
     lastName: "Priezvisko",
     roleId: "Rola",
+    isActive: "Aktivny",
     shiftTypeIds: "Typy zmien",
     notificationsEnabled: "Notifikacie",
     notificationDays: "Pocet dni notifikacii",
@@ -284,7 +285,7 @@ function formatAuditScalarValue(field: string, value: unknown, references: Audit
       return references.roles.get(value) ?? value;
     }
 
-    if (field === "serviceId") {
+    if (field === "serviceId" || field === "serviceIds") {
       return references.services.get(value) ?? value;
     }
 
@@ -821,6 +822,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
                   colorTokens: assignedShiftTypes.map((shiftType) => buildShiftTypeBadgeToken(shiftType)),
                 }
               : tr(d, "users.noAssignment"),
+          status: boolCell(user.isActive, tr(d, "users.statusActive"), tr(d, "users.statusInactive")),
         },
         formValues: {
           userId: user.id,
@@ -829,6 +831,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
           lastName: user.lastName,
           avatarUrl: user.avatarUrl ?? undefined,
           roleId: user.roleId ?? undefined,
+          isActive: user.isActive,
           shiftTypeIds: user.shiftTypes.map((assignment) => assignment.shiftTypeId),
           preferredTheme: user.preferredTheme ?? undefined,
           notificationsEnabled: user.notificationsEnabled,
@@ -845,7 +848,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
     title: tr(d, "users.title"),
     summary: tr(d, "users.summary"),
     csvFileName: "users.csv",
-    csvFieldNames: ["userId", "email", "firstName", "lastName", "roleId", "shiftTypeIds", "preferredTheme", "notificationsEnabled", "notificationDays", "permissionCodes"],
+    csvFieldNames: ["userId", "email", "firstName", "lastName", "roleId", "isActive", "shiftTypeIds", "preferredTheme", "notificationsEnabled", "notificationDays", "permissionCodes"],
     stats: [
       { label: tr(d, "users.statTotal"), value: String(users.length) },
       { label: tr(d, "users.statActive"), value: String(users.filter((user) => user.isActive).length) },
@@ -858,6 +861,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
       { key: "permissions", label: tr(d, "users.colPermissions") },
       { key: "services", label: tr(d, "users.colServiceTypes") },
       { key: "shiftTypes", label: tr(d, "users.colShiftTypes") },
+      { key: "status", label: tr(d, "users.colStatus") },
     ],
     rows,
     emptyMessage: tr(d, "users.empty"),
@@ -886,7 +890,6 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
           value: shiftType.id,
           label: shiftType.name,
           description: `${shiftType.service.name} | ${shiftType.startsAt}-${shiftType.endsAt}`,
-          ...getServiceBadgeColors(shiftType.service),
         })),
         description: tr(d, "users.fieldShiftTypesHint"),
         variant: "checkbox-list",
@@ -902,6 +905,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
           { value: "dark", label: tr(d, "users.fieldThemeDark") },
         ],
       },
+      { type: "checkbox", name: "isActive", label: tr(d, "users.fieldIsActive"), defaultChecked: true },
       {
         type: "checkbox",
         name: "notificationsEnabled",
@@ -943,7 +947,6 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
               value: shiftType.id,
               label: shiftType.name,
               description: `${shiftType.service.name} | ${shiftType.startsAt}-${shiftType.endsAt}`,
-              ...getServiceBadgeColors(shiftType.service),
             })),
             description: tr(d, "users.fieldShiftTypesHint"),
             variant: "checkbox-list",
@@ -959,6 +962,7 @@ export async function getUsersModule(): Promise<EntityModuleConfig> {
               { value: "dark", label: tr(d, "users.fieldThemeDark") },
             ],
           },
+          { type: "checkbox", name: "isActive", label: tr(d, "users.fieldIsActive"), defaultChecked: true },
           {
             type: "checkbox",
             name: "notificationsEnabled",
@@ -1601,6 +1605,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       orderBy: [{ date: "desc" }, { createdAt: "desc" }],
     }),
     db.user.findMany({
+      where: { isActive: true },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
     db.service.findMany({
@@ -1821,4 +1826,61 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         ? tr(d, "schedule.importDisabled", { dependencies: missingDependencies.join(", ") })
         : undefined,
   };
+}
+
+export type AiAuditRunSummary = {
+  id: string;
+  provider: string;
+  status: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
+  totalEvents: number;
+  acceptedEvents: number;
+  rejectedEvents: number;
+  error: string | null;
+  entries: AiAuditEntryRow[];
+};
+
+export type AiAuditEntryRow = {
+  id: string;
+  date: string;
+  userName: string | null;
+  shiftTypeName: string | null;
+  accepted: boolean;
+  reason: string | null;
+};
+
+export async function getAiAuditRuns(): Promise<AiAuditRunSummary[]> {
+  const runs = await db.aiRun.findMany({
+    where: { useCase: "schedule-generation" },
+    include: {
+      auditEntries: {
+        orderBy: [{ date: "asc" }, { createdAt: "asc" }],
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  });
+
+  return runs.map((run) => ({
+    id: run.id,
+    provider: run.provider,
+    status: run.status,
+    startedAt: run.startedAt ? formatDateTime(run.startedAt) : null,
+    finishedAt: run.finishedAt ? formatDateTime(run.finishedAt) : null,
+    createdAt: formatDateTime(run.createdAt),
+    totalEvents: run.auditEntries.length,
+    acceptedEvents: run.auditEntries.filter((e) => e.accepted).length,
+    rejectedEvents: run.auditEntries.filter((e) => !e.accepted).length,
+    error: run.error,
+    entries: run.auditEntries.map((entry) => ({
+      id: entry.id,
+      date: entry.date,
+      userName: entry.userName,
+      shiftTypeName: entry.shiftTypeName,
+      accepted: entry.accepted,
+      reason: entry.reason,
+    })),
+  }));
 }

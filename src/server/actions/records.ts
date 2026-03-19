@@ -12,6 +12,7 @@ import { ensurePermissionCatalog, permissionCatalog, type PermissionCode } from 
 import { aiSettingsSchema, defaultAiSettings, getAiSettings } from "@/server/config/ai-settings";
 import { defaultNotificationSettings, getNotificationSettings, notificationSettingsSchema } from "@/server/config/notification-settings";
 import { AI_SETTINGS_KEY, BROWSER_NOTIFICATION_SETTINGS_KEY, NOTIFICATION_SETTINGS_KEY, isManagedSettingKey } from "@/server/config/managed-settings";
+import { AI_AUDIT_RETENTION_DAYS_KEY, DEFAULT_AI_AUDIT_RETENTION_DAYS } from "@/server/config/ai-audit-retention";
 import { db } from "@/server/db/client";
 import { dispatchNotification } from "@/server/notifications";
 import { buildShiftValidityFromFieldValues, getScheduleDayType, isShiftValidForDayType, parseShiftValidity, shiftValidityDefinitions } from "@/server/scheduling/shift-validity";
@@ -152,6 +153,37 @@ async function dispatchNotificationSafely(parameters: Parameters<typeof dispatch
 
 function parseZodError(result: z.SafeParseError<unknown>) {
   return result.error.flatten().fieldErrors;
+}
+
+async function getAiAuditRetentionDays(): Promise<number> {
+  try {
+    const setting = await db.appSetting.findUnique({ where: { key: AI_AUDIT_RETENTION_DAYS_KEY } });
+    if (setting && typeof setting.value === "number" && setting.value >= 1) {
+      return Math.round(setting.value);
+    }
+  } catch { /* fallback */ }
+  return DEFAULT_AI_AUDIT_RETENTION_DAYS;
+}
+
+async function cleanupAiAuditLogs() {
+  try {
+    const retentionDays = await getAiAuditRetentionDays();
+    const cutoff = new Date();
+    cutoff.setUTCDate(cutoff.getUTCDate() - retentionDays);
+
+    const oldRuns = await db.aiRun.findMany({
+      where: { createdAt: { lt: cutoff } },
+      select: { id: true },
+    });
+
+    if (oldRuns.length === 0) return;
+
+    const oldRunIds = oldRuns.map((r) => r.id);
+    await db.aiAuditEntry.deleteMany({ where: { aiRunId: { in: oldRunIds } } });
+    await db.aiRun.deleteMany({ where: { id: { in: oldRunIds } } });
+  } catch (error) {
+    console.error("[ai-audit-cleanup]", error);
+  }
 }
 
 async function requireCurrentPermission(permission: PermissionCode) {
@@ -301,6 +333,7 @@ const userSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required."),
   lastName: z.string().trim().min(1, "Last name is required."),
   roleId: z.string().trim().optional(),
+  isActive: z.boolean(),
   preferredTheme: z.string().trim().max(40, "Theme is too long.").optional(),
   notificationsEnabled: z.boolean(),
   notificationDays: z.number().int().min(0, "Must be zero or higher.").max(365, "Must be 365 or lower."),
@@ -774,6 +807,7 @@ export async function createUserAction(_: ActionState, formData: FormData): Prom
     firstName: parseOptionalString(formData.get("firstName")) ?? "",
     lastName: parseOptionalString(formData.get("lastName")) ?? "",
     roleId: parseOptionalString(formData.get("roleId")),
+    isActive: parseBoolean(formData, "isActive"),
     preferredTheme: parseOptionalString(formData.get("preferredTheme")),
     notificationsEnabled: parseBoolean(formData, "notificationsEnabled"),
     notificationDays: Number.parseInt(parseOptionalString(formData.get("notificationDays")) ?? "1", 10),
@@ -849,6 +883,7 @@ export async function createUserAction(_: ActionState, formData: FormData): Prom
         firstName: user.firstName,
         lastName: user.lastName,
         roleId: user.roleId,
+        isActive: user.isActive,
         shiftTypeIds,
         notificationsEnabled: user.notificationsEnabled,
         notificationDays: user.notificationDays,
@@ -1193,6 +1228,7 @@ export async function updateUserAction(_: ActionState, formData: FormData): Prom
     firstName: parseOptionalString(formData.get("firstName")) ?? "",
     lastName: parseOptionalString(formData.get("lastName")) ?? "",
     roleId: parseOptionalString(formData.get("roleId")),
+    isActive: parseBoolean(formData, "isActive"),
     preferredTheme: parseOptionalString(formData.get("preferredTheme")),
     notificationsEnabled: parseBoolean(formData, "notificationsEnabled"),
     notificationDays: Number.parseInt(parseOptionalString(formData.get("notificationDays")) ?? "1", 10),
@@ -1283,6 +1319,7 @@ export async function updateUserAction(_: ActionState, formData: FormData): Prom
           firstName: user.firstName,
           lastName: user.lastName,
           roleId: user.roleId,
+          isActive: user.isActive,
           shiftTypeIds,
           notificationsEnabled: user.notificationsEnabled,
           notificationDays: user.notificationDays,
@@ -2014,6 +2051,35 @@ export async function upsertAiSettingsAction(_: ActionState, formData: FormData)
   }
 }
 
+export async function upsertAiAuditRetentionAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireCurrentPermission("settings:edit");
+  const d = await getDict();
+  const raw = Number.parseInt(parseOptionalString(formData.get("retentionDays")) ?? "", 10);
+
+  if (Number.isNaN(raw) || raw < 1 || raw > 3650) {
+    return errorState(tr(d, "action.aiAuditRetentionInvalid"), {
+      retentionDays: [tr(d, "action.aiAuditRetentionHint")],
+    });
+  }
+
+  try {
+    await db.appSetting.upsert({
+      where: { key: AI_AUDIT_RETENTION_DAYS_KEY },
+      update: { value: raw },
+      create: { key: AI_AUDIT_RETENTION_DAYS_KEY, value: raw },
+    });
+
+    revalidatePath("/settings");
+
+    return {
+      status: "success",
+      message: tr(d, "action.aiAuditRetentionSaved"),
+    };
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
 export async function generateScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("schedule:generate");
   const d = await getDict();
@@ -2280,61 +2346,85 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
     const generatedSignatureSet = new Set<string>();
     const validEvents: typeof draft.events = [];
     const skippedReasons: string[] = [];
+    const auditEntries: Array<{ date: string; userId: string | null; userName: string | null; shiftTypeId: string | null; shiftTypeName: string | null; accepted: boolean; reason: string | null }> = [];
 
     for (const event of draft.events) {
       const eventDate = parseUtcDate(event.date);
 
       if (eventDate < startDate || eventDate > endDate) {
-        skippedReasons.push(tr(d, "action.aiOutOfRange", { date: event.date }));
+        const reason = tr(d, "action.aiOutOfRange", { date: event.date });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: userMap.get(event.userId)?.name ?? null, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftTypeMap.get(event.shiftTypeId)?.name ?? null, accepted: false, reason });
         continue;
       }
 
       const user = userMap.get(event.userId);
       if (!user) {
-        skippedReasons.push(tr(d, "action.aiUnknownUser", { userId: event.userId }));
+        const reason = tr(d, "action.aiUnknownUser", { userId: event.userId });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: null, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftTypeMap.get(event.shiftTypeId)?.name ?? null, accepted: false, reason });
         continue;
       }
 
       if (!user.assignedShiftTypeIds.includes(event.shiftTypeId)) {
-        skippedReasons.push(tr(d, "action.aiShiftNotAssigned", { shiftTypeId: event.shiftTypeId, userId: event.userId }));
+        const reason = tr(d, "action.aiShiftNotAssigned", { shiftTypeId: event.shiftTypeId, userId: event.userId });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftTypeMap.get(event.shiftTypeId)?.name ?? null, accepted: false, reason });
         continue;
       }
 
       const shiftType = shiftTypeMap.get(event.shiftTypeId);
       if (!shiftType) {
-        skippedReasons.push(tr(d, "action.aiUnknownShift", { shiftTypeId: event.shiftTypeId }));
+        const reason = tr(d, "action.aiUnknownShift", { shiftTypeId: event.shiftTypeId });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: null, accepted: false, reason });
         continue;
       }
 
       const validityError = getScheduleValidityError(shiftType.validityDays, eventDate, holidayDates.has(event.date), d);
       if (validityError) {
-        skippedReasons.push(tr(d, "action.aiInvalidShift", { date: event.date, error: validityError }));
+        const reason = tr(d, "action.aiInvalidShift", { date: event.date, error: validityError });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: false, reason });
         continue;
       }
 
       const overlapsVacation = vacations.some((vacation) => vacation.userId === event.userId && eventDate >= vacation.startDate && eventDate <= vacation.endDate);
       if (overlapsVacation) {
-        skippedReasons.push(tr(d, "action.aiVacationConflict", { userName: user.name, date: event.date }));
+        const reason = tr(d, "action.aiVacationConflict", { userName: user.name, date: event.date });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: false, reason });
         continue;
       }
 
       const signature = `${event.date}::${event.userId}::${event.shiftTypeId}`;
       if (generatedSignatureSet.has(signature)) {
-        skippedReasons.push(tr(d, "action.aiDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId }));
+        const reason = tr(d, "action.aiDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: false, reason });
         continue;
       }
 
       if (lockedSignatureSet.has(signature)) {
-        skippedReasons.push(tr(d, "action.aiLockedDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId }));
+        const reason = tr(d, "action.aiLockedDuplicate", { date: event.date, userId: event.userId, shiftTypeId: event.shiftTypeId });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: false, reason });
         continue;
       }
 
       generatedSignatureSet.add(signature);
       validEvents.push(event);
+      auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: true, reason: null });
     }
 
     if (validEvents.length === 0) {
       const reason = skippedReasons.length > 0 ? skippedReasons[0] : tr(d, "action.aiNoResults");
+      // Write audit entries even for failed runs
+      if (auditEntries.length > 0) {
+        await db.aiAuditEntry.createMany({
+          data: auditEntries.map((entry) => ({ aiRunId: aiRun.id, ...entry })),
+        });
+      }
       return failAiRun(reason);
     }
 
@@ -2378,6 +2468,13 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
           note: entry.note,
         }, "CREATE", actorId);
       }
+
+      // Write AI audit entries within the same transaction
+      if (auditEntries.length > 0) {
+        await tx.aiAuditEntry.createMany({
+          data: auditEntries.map((entry) => ({ aiRunId: aiRun.id, ...entry })),
+        });
+      }
     });
 
     await db.aiRun.update({
@@ -2391,6 +2488,9 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         finishedAt: new Date(),
       },
     });
+
+    // Run audit retention cleanup after successful generation
+    await cleanupAiAuditLogs();
 
     const generatedCountsByUser = validEvents.reduce<Record<string, number>>((accumulator, event) => {
       accumulator[event.userId] = (accumulator[event.userId] ?? 0) + 1;
@@ -2688,6 +2788,7 @@ export async function importUsersCsvAction(_: ActionState, formData: FormData): 
           firstName: getRequiredCsvValue(record, "firstName"),
           lastName: getRequiredCsvValue(record, "lastName"),
           roleId: undefined,
+          isActive: parseCsvBoolean(record.isActive, true),
           preferredTheme: getOptionalCsvValue(record, "preferredTheme"),
           notificationsEnabled: parseCsvBoolean(record.notificationsEnabled),
           notificationDays: parseCsvInteger(record.notificationDays, 1),
