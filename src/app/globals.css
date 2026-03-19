@@ -1451,21 +1451,27 @@ ul {
 .calendar-bulk-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 12px;
-  border: 1px solid rgba(213, 229, 232, 0.92);
-  border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
-  font-size: 0.85rem;
-  font-weight: 500;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(199, 218, 221, 0.95);
+  border-radius: 10px;
+  background: rgba(230, 239, 242, 0.88);
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s;
 }
 
+.calendar-bulk-btn-lock {
+  color: #d97706;
+}
+
+.calendar-bulk-btn-unlock {
+  color: #16a34a;
+}
+
 .calendar-bulk-btn:hover {
-  background: rgba(62, 143, 151, 0.06);
-  border-color: var(--accent-strong);
+  background: rgba(255, 255, 255, 0.7);
+  border-color: var(--accent);
 }
 
 .table-pagination {
@@ -2717,7 +2723,15 @@ ul {
 
 :root[data-theme="dark"] .calendar-bulk-btn {
   border-color: rgba(90, 176, 188, 0.25);
-  background: var(--surface);
+  background: rgba(230, 239, 242, 0.06);
+}
+
+:root[data-theme="dark"] .calendar-bulk-btn-lock {
+  color: #f59e0b;
+}
+
+:root[data-theme="dark"] .calendar-bulk-btn-unlock {
+  color: #22c55e;
 }
 
 :root[data-theme="dark"] .calendar-bulk-btn:hover {

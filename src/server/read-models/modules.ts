@@ -55,14 +55,25 @@ function expandUtcDateRange(startDate: Date, endDate: Date) {
   return days;
 }
 
-async function getHolidayDateValues() {
+async function getHolidays() {
   const holidays = await db.holiday.findMany({
     select: {
       date: true,
+      name: true,
+      localName: true,
     },
   });
 
-  return Array.from(new Set(holidays.map((holiday) => toIsoDate(holiday.date))));
+  const seen = new Set<string>();
+  const result: { date: string; name: string; localName?: string }[] = [];
+  for (const h of holidays) {
+    const iso = toIsoDate(h.date);
+    if (!seen.has(iso)) {
+      seen.add(iso);
+      result.push({ date: iso, name: h.name, localName: h.localName ?? undefined });
+    }
+  }
+  return result;
 }
 
 function formatJson(value: unknown) {
@@ -1298,7 +1309,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
 export async function getVacationsModule(): Promise<EntityModuleConfig> {
   const locale = await getServerLocale();
   const d = getDictionary(locale);
-  const [vacations, users, holidayDates] = await Promise.all([
+  const [vacations, users, holidays] = await Promise.all([
     db.vacation.findMany({
       include: {
         user: true,
@@ -1308,7 +1319,7 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
     db.user.findMany({
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
-    getHolidayDateValues(),
+    getHolidays(),
   ]);
 
   const userOptions = users.map((user) => ({
@@ -1384,7 +1395,7 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
     calendar: {
       initialMonth: toIsoDate(vacations[0]?.startDate ?? todayUtc).slice(0, 7),
       items: calendarItems,
-      holidayDates,
+      holidays,
     },
     fields: [
       { type: "select", name: "userId", label: tr(d, "vacations.fieldUser"), required: true, options: userOptions },
@@ -1595,7 +1606,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
   const locale = await getServerLocale();
   const d = getDictionary(locale);
 
-  const [entries, users, services, shiftTypes, holidayDates] = await Promise.all([
+  const [entries, users, services, shiftTypes, holidays] = await Promise.all([
     db.scheduleEntry.findMany({
       include: {
         user: true,
@@ -1619,7 +1630,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       },
       orderBy: [{ service: { name: "asc" } }, { startsAt: "asc" }],
     }),
-    getHolidayDateValues(),
+    getHolidays(),
   ]);
 
   const userOptions = users.map((user) => ({
@@ -1789,7 +1800,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     calendar: {
       initialMonth: toIsoDate(entries[0]?.date ?? todayUtc).slice(0, 7),
       items: calendarItems,
-      holidayDates,
+      holidays,
     },
     fields: [
       { type: "date", name: "date", label: tr(d, "schedule.fieldDate"), required: true },

@@ -1188,7 +1188,6 @@ function CalendarPanel({
   onDaySelect,
   onItemSelect,
   onItemLockToggle,
-  onBulkLock,
 }: {
   calendar: CalendarConfig;
   items: CalendarItem[];
@@ -1199,11 +1198,13 @@ function CalendarPanel({
   onDaySelect?: (date: string) => void;
   onItemSelect?: (recordId: string) => void;
   onItemLockToggle?: (recordId: string) => void;
-  onBulkLock?: (locked: boolean) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const activeMonth = month || calendar.initialMonth;
-  const holidayDates = useMemo(() => new Set(calendar.holidayDates ?? []), [calendar.holidayDates]);
+  const holidays = useMemo(
+    () => new Map((calendar.holidays ?? []).map((h) => [h.date, h])),
+    [calendar.holidays],
+  );
   const monthItems = useMemo(() => {
     const grouped = new Map<string, CalendarItem[]>();
 
@@ -1227,18 +1228,7 @@ function CalendarPanel({
       <div className="calendar-toolbar">
         <MonthSwitcher month={activeMonth} onMonthChange={onMonthChange} />
 
-        {onBulkLock ? (
-          <div className="calendar-toolbar-bulk">
-            <button type="button" className="calendar-bulk-btn" onClick={() => onBulkLock(true)} title={t("entity.lockAll")}>
-              <Lock size={14} />
-              <span>{t("entity.lockAll")}</span>
-            </button>
-            <button type="button" className="calendar-bulk-btn" onClick={() => onBulkLock(false)} title={t("entity.unlockAll")}>
-              <LockOpen size={14} />
-              <span>{t("entity.unlockAll")}</span>
-            </button>
-          </div>
-        ) : null}
+
 
         {searchControl ? <div className="calendar-toolbar-search">{searchControl}</div> : null}
         {actionsControl ? <div className="calendar-toolbar-actions">{actionsControl}</div> : null}
@@ -1254,7 +1244,11 @@ function CalendarPanel({
 
           {days.map((day) => {
             const dayItems = monthItems.get(day.key) ?? [];
-            const isHoliday = holidayDates.has(day.key);
+            const holidayEntry = holidays.get(day.key);
+            const isHoliday = holidayEntry !== undefined;
+            const holidayName = isHoliday
+              ? ((locale === "sk" ? holidayEntry.localName : undefined) ?? holidayEntry.name)
+              : undefined;
 
             return (
               <article
@@ -1272,7 +1266,7 @@ function CalendarPanel({
               >
                 <div
                   className={`calendar-day-head${isHoliday ? " calendar-day-head-holiday" : ""}`}
-                  title={isHoliday ? t("entity.holiday") : undefined}
+                  title={holidayName}
                 >
                   <span className={`calendar-day-number${day.isToday ? " calendar-day-number-today" : ""}`}>{day.date.getUTCDate()}</span>
                   <span className="calendar-day-weekday">{formatWeekdayLabel(day.date)}</span>
@@ -1470,7 +1464,7 @@ export function EntityModule({
   );
   const canToggleLock = (canToggleLockProp ?? Boolean(toggleLockAction)) && Boolean(toggleLockAction) && hasLockedValues;
   const canImport = (canImportProp ?? Boolean(importAction)) && Boolean(importAction);
-  const hasActionDropdown = canImport || canExport || Boolean(bulkLockAction) || Boolean(bulkDeleteAction);
+  const hasActionDropdown = canImport || canExport || Boolean(bulkDeleteAction);
   const canBulkLock = Boolean(bulkLockAction) && canToggleLock;
   const canBulkDelete = Boolean(bulkDeleteAction) && canDelete;
   const hasContextMenu = canDelete || hasAuditMenu;
@@ -2517,6 +2511,26 @@ export function EntityModule({
       </div>
     ) : null;
 
+  const bulkLockControl =
+    canBulkLock && selectedMonth ? (
+      <div className="calendar-toolbar-bulk">
+        <button type="button" className="calendar-bulk-btn calendar-bulk-btn-lock" onClick={() => handleBulkLock(true)} title={t("entity.lockAll")}>
+          <Lock size={16} />
+        </button>
+        <button type="button" className="calendar-bulk-btn calendar-bulk-btn-unlock" onClick={() => handleBulkLock(false)} title={t("entity.unlockAll")}>
+          <LockOpen size={16} />
+        </button>
+      </div>
+    ) : null;
+
+  const calendarActionsControl =
+    bulkLockControl || viewSwitcherControl ? (
+      <>
+        {bulkLockControl}
+        {viewSwitcherControl}
+      </>
+    ) : null;
+
   return (
     <>
       <section className="module-page stack">
@@ -2573,34 +2587,7 @@ export function EntityModule({
                         {t("entity.exportCsv")}
                       </button>
                     ) : null}
-                    {canBulkLock && selectedMonth ? (
-                      <>
-                        <button
-                          type="button"
-                          className="action-dropdown-item"
-                          role="menuitem"
-                          onClick={() => {
-                            setActionMenuOpen(false);
-                            handleBulkLock(true);
-                          }}
-                        >
-                          <Lock size={16} />
-                          {t("entity.lockAll")}
-                        </button>
-                        <button
-                          type="button"
-                          className="action-dropdown-item"
-                          role="menuitem"
-                          onClick={() => {
-                            setActionMenuOpen(false);
-                            handleBulkLock(false);
-                          }}
-                        >
-                          <LockOpen size={16} />
-                          {t("entity.unlockAll")}
-                        </button>
-                      </>
-                    ) : null}
+
                   </div>
                 ) : null}
 
@@ -2639,6 +2626,7 @@ export function EntityModule({
               </div>
 
               <div className="module-toolbar-actions">
+                {bulkLockControl}
                 {activeView === "table" && columns.length > 1 ? (
                   <div className="column-toggle-wrapper" ref={columnMenuRef}>
                     <button
@@ -2683,11 +2671,10 @@ export function EntityModule({
               month={selectedMonth}
               onMonthChange={setSelectedMonth}
               searchControl={searchControl}
-              actionsControl={viewSwitcherControl}
+              actionsControl={calendarActionsControl}
               onDaySelect={canCreate && !createDisabledReason ? handleCalendarDaySelect : undefined}
               onItemSelect={canEdit ? handleCalendarItemSelect : undefined}
               onItemLockToggle={canToggleLock ? handleCalendarItemLockToggle : undefined}
-              onBulkLock={canBulkLock ? handleBulkLock : undefined}
             />
           ) : null}
 

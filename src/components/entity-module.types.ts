@@ -95,10 +95,16 @@ export type CalendarItem = {
   locked?: boolean;
 };
 
+export type HolidayEntry = {
+  date: string;
+  name: string;
+  localName?: string;
+};
+
 export type CalendarConfig = {
   initialMonth: string;
   items: CalendarItem[];
-  holidayDates?: string[];
+  holidays?: HolidayEntry[];
 };
 
 export type FieldOption = {
