@@ -1683,6 +1683,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         user: `${entry.user.firstName} ${entry.user.lastName}`,
         service: entry.service.name,
         shift: `${entry.shiftType.name} (${entry.shiftType.startsAt}-${entry.shiftType.endsAt})`,
+        _shiftStat: `${entry.service.name} / ${entry.shiftType.name}`,
         source: scheduleSourceCell(entry.source),
         locked: boolCell(entry.locked, tr(d, "entity.locked"), tr(d, "entity.unlocked")),
         note: entry.note ?? "-",
@@ -1690,6 +1691,52 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     })),
     auditMap,
   );
+
+  // Build per-user x shift-type breakdown
+  const shiftTypeNames = shiftTypes.map((st) => `${st.service.name} / ${st.name}`);
+  const userShiftCounts = new Map<string, Map<string, number>>();
+
+  for (const entry of entries) {
+    const userName = `${entry.user.firstName} ${entry.user.lastName}`;
+    const shiftName = `${entry.service.name} / ${entry.shiftType.name}`;
+
+    if (!userShiftCounts.has(userName)) {
+      userShiftCounts.set(userName, new Map());
+    }
+
+    const userMap = userShiftCounts.get(userName)!;
+    userMap.set(shiftName, (userMap.get(shiftName) ?? 0) + 1);
+  }
+
+  const userStatRows = Array.from(userShiftCounts.entries())
+    .sort(([a], [b]) => a.localeCompare(b, "sk"))
+    .map(([userName, shiftMap]) => {
+      const values: Record<string, string> = {};
+      let total = 0;
+
+      for (const stName of shiftTypeNames) {
+        const count = shiftMap.get(stName) ?? 0;
+        values[stName] = String(count);
+        total += count;
+      }
+
+      values[tr(d, "schedule.statColTotal")] = String(total);
+      return { label: userName, values };
+    });
+
+  // Build per-shift-type totals
+  const shiftTotals = new Map<string, number>();
+  for (const entry of entries) {
+    const shiftName = `${entry.service.name} / ${entry.shiftType.name}`;
+    shiftTotals.set(shiftName, (shiftTotals.get(shiftName) ?? 0) + 1);
+  }
+
+  const shiftStatRows = shiftTypeNames
+    .filter((name) => (shiftTotals.get(name) ?? 0) > 0)
+    .map((name) => ({
+      label: name,
+      values: { [tr(d, "schedule.statCount")]: String(shiftTotals.get(name) ?? 0) },
+    }));
 
   return {
     title: tr(d, "schedule.title"),
@@ -1699,6 +1746,21 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       { label: tr(d, "schedule.statTotal"), value: String(entries.length) },
       { label: tr(d, "schedule.statLocked"), value: String(entries.filter((entry) => entry.locked).length) },
       { label: tr(d, "schedule.statManual"), value: String(entries.filter((entry) => entry.source === ScheduleSource.MANUAL).length) },
+    ],
+    statGroups: [
+      {
+        title: tr(d, "schedule.statByUser"),
+        columns: [...shiftTypeNames, tr(d, "schedule.statColTotal")],
+        rows: userStatRows,
+        groupByField: "userId",
+        breakdownField: "_shiftStat",
+      },
+      {
+        title: tr(d, "schedule.statByShift"),
+        columns: [tr(d, "schedule.statCount")],
+        rows: shiftStatRows,
+        breakdownField: "_shiftStat",
+      },
     ],
     columns: [
       { key: "date", label: tr(d, "schedule.colDate") },

@@ -42,6 +42,7 @@ import type {
   FormField,
   ModuleView,
   SheetTab,
+  StatGroup,
 } from "@/components/entity-module.types";
 
 const initialActionState: ActionState = {
@@ -1343,6 +1344,7 @@ export function EntityModule({
   csvFileName,
   csvFieldNames,
   stats,
+  statGroups,
   columns,
   rows,
   emptyMessage,
@@ -1916,6 +1918,83 @@ export function EntityModule({
       return stat;
     });
   }, [hasLockedValues, hasMonthScope, hasSourceValues, monthScopedRows, stats]);
+  const displayStatGroups = useMemo(() => {
+    if (!statGroups || statGroups.length === 0) {
+      return statGroups ?? [];
+    }
+
+    if (!hasMonthScope) {
+      return statGroups;
+    }
+
+    // Recalculate stat groups based on month-scoped rows
+    return statGroups.map((group) => {
+      if (!group.groupByField && !group.breakdownField) {
+        return group;
+      }
+
+      // Build counts from monthScopedRows
+      if (group.groupByField) {
+        // Per-user x shift-type breakdown (e.g. groupByField="userId", breakdownField="shift")
+        const labelByGroupValue = new Map<string, string>();
+        const countsByGroup = new Map<string, Map<string, number>>();
+
+        for (const row of monthScopedRows) {
+          const groupValue = String(getFieldDefaultValue(row, group.groupByField) ?? "");
+          const breakdownValue = group.breakdownField ? getCellText(row.cells[group.breakdownField] ?? "") : "";
+
+          if (!labelByGroupValue.has(groupValue)) {
+            const userCell = row.cells["user"];
+            labelByGroupValue.set(groupValue, userCell ? getCellText(userCell) : groupValue);
+          }
+
+          if (!countsByGroup.has(groupValue)) {
+            countsByGroup.set(groupValue, new Map());
+          }
+          const shiftMap = countsByGroup.get(groupValue)!;
+          shiftMap.set(breakdownValue, (shiftMap.get(breakdownValue) ?? 0) + 1);
+        }
+
+        const totalColLabel = group.columns[group.columns.length - 1];
+        const breakdownCols = group.columns.slice(0, -1);
+
+        const rows = Array.from(countsByGroup.entries())
+          .map(([groupValue, shiftMap]) => {
+            const values: Record<string, string> = {};
+            let total = 0;
+            for (const col of breakdownCols) {
+              const count = shiftMap.get(col) ?? 0;
+              values[col] = String(count);
+              total += count;
+            }
+            values[totalColLabel] = String(total);
+            return { label: labelByGroupValue.get(groupValue) ?? groupValue, values };
+          })
+          .sort((a, b) => a.label.localeCompare(b.label, "sk"));
+
+        return { ...group, rows };
+      }
+
+      // Per-shift-type breakdown
+      const shiftCounts = new Map<string, number>();
+      const breakdownField = group.breakdownField!;
+
+      for (const row of monthScopedRows) {
+        const cellValue = row.cells[breakdownField] ? getCellText(row.cells[breakdownField]) : "";
+        shiftCounts.set(cellValue, (shiftCounts.get(cellValue) ?? 0) + 1);
+      }
+
+      const countColLabel = group.columns[0];
+      const rows = Array.from(shiftCounts.entries())
+        .filter(([, count]) => count > 0)
+        .map(([name, count]) => ({
+          label: name,
+          values: { [countColLabel]: String(count) },
+        }));
+
+      return { ...group, rows };
+    });
+  }, [hasMonthScope, monthScopedRows, statGroups]);
   const totalTablePages = Math.max(1, Math.ceil(sortedRows.length / rowsPerPage));
   const visibleTablePage = Math.min(tablePage, totalTablePages);
   const paginatedRows = useMemo(() => {
@@ -2613,14 +2692,36 @@ export function EntityModule({
           ) : null}
 
           {activeView === "stats" ? (
-            <div className="stats-grid">
-              {displayStats.map((stat) => (
-                <article key={stat.label} className="stat-card">
-                  <span className="stat-label">{stat.label}</span>
-                  <strong className="stat-value">{stat.value}</strong>
-                  {stat.detail ? <span className="stat-detail">{stat.detail}</span> : null}
-                </article>
-              ))}
+            <div className="stats-view-stack">
+              {displayStatGroups.map((group) =>
+                group.rows.length > 0 ? (
+                  <div key={group.title} className="stat-group">
+                    <h3 className="stat-group-title">{group.title}</h3>
+                    <div className="table-shell">
+                      <table className="records-table">
+                        <thead>
+                          <tr>
+                            <th />
+                            {group.columns.map((col) => (
+                              <th key={col}>{col}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {group.rows.map((row) => (
+                            <tr key={row.label}>
+                              <td><strong>{row.label}</strong></td>
+                              {group.columns.map((col) => (
+                                <td key={col}>{row.values[col] ?? "0"}</td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : null,
+              )}
             </div>
           ) : null}
 

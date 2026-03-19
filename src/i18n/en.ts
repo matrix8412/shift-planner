@@ -756,6 +756,12 @@ const en: TranslationDictionary = {
   "schedule.depUser": "at least one user",
   "schedule.depService": "at least one service",
   "schedule.depShift": "at least one shift type",
+  "schedule.statByUser": "Statistics by user",
+  "schedule.statByShift": "Statistics by shift type",
+  "schedule.statUser": "User",
+  "schedule.statShift": "Shift type",
+  "schedule.statCount": "Count",
+  "schedule.statColTotal": "Total",
 
   /* ──────────────────── Zod validation – records ──────────────────── */
   "zod.validEmail": "Enter a valid email address.",

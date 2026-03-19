@@ -12,6 +12,21 @@ export type EntityStat = {
   detail?: string;
 };
 
+export type StatGroupRow = {
+  label: string;
+  values: Record<string, string>;
+};
+
+export type StatGroup = {
+  title: string;
+  columns: string[];
+  rows: StatGroupRow[];
+  /** Optional field name on EntityRow.formValues used to group rows client-side for month scope recalc */
+  groupByField?: string;
+  /** Field name on EntityRow.cells used for the column breakdown */
+  breakdownField?: string;
+};
+
 export type EntityColumn = {
   key: string;
   label: string;
@@ -198,6 +213,7 @@ export type EntityModuleConfig = {
   csvFileName: string;
   csvFieldNames?: string[];
   stats: EntityStat[];
+  statGroups?: StatGroup[];
   columns: EntityColumn[];
   rows: EntityRow[];
   emptyMessage: string;

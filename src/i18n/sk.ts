@@ -756,6 +756,12 @@ const sk: TranslationDictionary = {
   "schedule.depUser": "aspoň jedného používateľa",
   "schedule.depService": "aspoň jednu službu",
   "schedule.depShift": "aspoň jeden typ zmeny",
+  "schedule.statByUser": "Štatistiky podľa používateľov",
+  "schedule.statByShift": "Štatistiky podľa typov zmien",
+  "schedule.statUser": "Používateľ",
+  "schedule.statShift": "Typ zmeny",
+  "schedule.statCount": "Počet",
+  "schedule.statColTotal": "Spolu",
 
   /* ──────────────────── Zod validation – records ──────────────────── */
   "zod.validEmail": "Zadajte platnú emailovú adresu.",

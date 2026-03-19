@@ -308,7 +308,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
         </article>
         <article className="settings-overview-card">
           <span className="muted small-text">{t("notifCard.email")}</span>
-          <strong>{settings.email.enabled ? t("notifCard.activeEmail") : t("notifCard.disabledEmail")}</strong>
+          <strong>{settings.email.enabled ? t("notifCard.activeMale") : t("notifCard.disabledMale")}</strong>
         </article>
       </div>
 
@@ -323,10 +323,10 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
           <label className="field">
             <span className="field-label">{t("notifCard.toastPosition")}</span>
             <select name="toastPosition" defaultValue={settings.toast.position} className="field-control">
-              <option value="top-right">{t("notifCard.topRight")}</option>
-              <option value="top-left">{t("notifCard.topLeft")}</option>
-              <option value="bottom-right">{t("notifCard.bottomRight")}</option>
-              <option value="bottom-left">{t("notifCard.bottomLeft")}</option>
+              <option value="top-right">{t("notifCard.toastTopRight")}</option>
+              <option value="top-left">{t("notifCard.toastTopLeft")}</option>
+              <option value="bottom-right">{t("notifCard.toastBottomRight")}</option>
+              <option value="bottom-left">{t("notifCard.toastBottomLeft")}</option>
             </select>
           </label>
 
@@ -342,32 +342,32 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.bgLight")}</span>
+            <span className="field-label">{t("notifCard.toastBgLight")}</span>
             <input type="color" name="toastBackgroundLight" defaultValue={settings.toast.backgroundLight} className="field-control field-control-color" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.textLight")}</span>
+            <span className="field-label">{t("notifCard.toastTextLight")}</span>
             <input type="color" name="toastTextLight" defaultValue={settings.toast.textLight} className="field-control field-control-color" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.borderLight")}</span>
+            <span className="field-label">{t("notifCard.toastBorderLight")}</span>
             <input type="color" name="toastBorderLight" defaultValue={settings.toast.borderLight} className="field-control field-control-color" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.bgDark")}</span>
+            <span className="field-label">{t("notifCard.toastBgDark")}</span>
             <input type="color" name="toastBackgroundDark" defaultValue={settings.toast.backgroundDark} className="field-control field-control-color" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.textDark")}</span>
+            <span className="field-label">{t("notifCard.toastTextDark")}</span>
             <input type="color" name="toastTextDark" defaultValue={settings.toast.textDark} className="field-control field-control-color" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.borderDark")}</span>
+            <span className="field-label">{t("notifCard.toastBorderDark")}</span>
             <input type="color" name="toastBorderDark" defaultValue={settings.toast.borderDark} className="field-control field-control-color" />
           </label>
         </div>
@@ -402,12 +402,12 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.pushIconUrl")}</span>
+            <span className="field-label">{t("notifCard.pushIcon")}</span>
             <input type="text" name="pushIconUrl" defaultValue={settings.push.iconUrl} className="field-control" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.pushBadgeUrl")}</span>
+            <span className="field-label">{t("notifCard.pushBadge")}</span>
             <input type="text" name="pushBadgeUrl" defaultValue={settings.push.badgeUrl} className="field-control" />
           </label>
         </div>
@@ -416,17 +416,17 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
           <article className="settings-overview-card stack-tight">
             <div className="notification-device-head">
               <Smartphone size={18} />
-              <strong>{t("notifCard.thisDevice")}</strong>
+              <strong>{t("notifCard.deviceTitle")}</strong>
             </div>
             <span className="muted small-text">
-              {t("notifCard.deviceStatus")}: {pushPermission === "unsupported" ? t("notifCard.unsupported") : `${pushPermission}${isDeviceSubscribed ? " · subscribed" : ""}`}
+              {t("notifCard.deviceStatus")}: {pushPermission === "unsupported" ? t("notifCard.deviceUnsupported") : `${pushPermission}${isDeviceSubscribed ? " · subscribed" : ""}`}
             </span>
             <div className="sheet-actions notification-device-actions">
               <button type="button" className="button secondary" onClick={handleSubscribeDevice} disabled={deviceActionPending || !settings.push.enabled}>
-                {t("notifCard.enableOnDevice")}
+                {t("notifCard.deviceEnable")}
               </button>
               <button type="button" className="button secondary" onClick={handleUnsubscribeDevice} disabled={deviceActionPending || !isDeviceSubscribed}>
-                {t("notifCard.unsubscribeDevice")}
+                {t("notifCard.deviceDisable")}
               </button>
             </div>
           </article>
@@ -447,22 +447,22 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.fromName")}</span>
+            <span className="field-label">{t("notifCard.emailFromName")}</span>
             <input type="text" name="emailFromName" defaultValue={settings.email.fromName} className="field-control" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.fromEmail")}</span>
+            <span className="field-label">{t("notifCard.emailFromEmail")}</span>
             <input type="email" name="emailFromEmail" defaultValue={settings.email.fromEmail} className="field-control" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.replyTo")}</span>
+            <span className="field-label">{t("notifCard.emailReplyTo")}</span>
             <input type="email" name="emailReplyTo" defaultValue={settings.email.replyTo} className="field-control" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.accentColor")}</span>
+            <span className="field-label">{t("notifCard.emailAccentColor")}</span>
             <input type="color" name="emailAccentColor" defaultValue={settings.email.accentColor} className="field-control field-control-color" />
           </label>
         </div>
@@ -502,7 +502,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
             onDrop={(event) => handleTemplateDrop(event, "emailSubjectTemplate")}
             onDragOver={(event) => event.preventDefault()}
           />
-          <span className="field-description">{t("notifCard.subjectPreview")}: {previewSubject}</span>
+          <span className="field-description">{t("notifCard.emailPreview")}: {previewSubject}</span>
         </label>
 
         <label className="field">
@@ -556,12 +556,12 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
 
         <div className="settings-grid">
           <label className="field">
-            <span className="field-label">{t("notifCard.targetEmail")}</span>
+            <span className="field-label">{t("notifCard.testEmail")}</span>
             <input type="email" name="targetEmail" defaultValue={profile.email} className="field-control" />
           </label>
 
           <label className="field">
-            <span className="field-label">{t("notifCard.targetName")}</span>
+            <span className="field-label">{t("notifCard.testName")}</span>
             <input type="text" name="targetName" defaultValue={profile.name} className="field-control" />
           </label>
 
@@ -584,7 +584,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
                 <Mail size={18} />
                 <strong>{t("notifCard.email")}</strong>
               </span>
-              <span className="field-description">{t("notifCard.testEmailHint")}</span>
+              <span className="field-description">{t("notifCard.testChannelEmailHint")}</span>
             </span>
           </label>
 
@@ -595,7 +595,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
                 <BellRing size={18} />
                 <strong>{t("notifCard.pwaPush")}</strong>
               </span>
-              <span className="field-description">{t("notifCard.testPushHint")}</span>
+              <span className="field-description">{t("notifCard.testChannelPushHint")}</span>
             </span>
           </label>
         </div>
@@ -604,7 +604,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
         {testState.status === "success" && testState.message ? <p className="form-success">{testState.message}</p> : null}
 
         <div className="sheet-actions">
-          <FormSubmitButton label={t("notifCard.sendTest")} />
+          <FormSubmitButton label={t("notifCard.testSend")} />
         </div>
         </fieldset>
       </form>

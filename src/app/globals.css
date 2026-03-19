@@ -1254,6 +1254,23 @@ ul {
   line-height: 1;
 }
 
+.stats-view-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stat-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.stat-group-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
 .table-shell {
   overflow-x: auto;
   border: 1px solid rgba(205, 225, 230, 0.95);

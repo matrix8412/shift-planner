@@ -158,6 +158,7 @@ async function requireCurrentPermission(permission: PermissionCode) {
   await ensurePermissionCatalog();
   const user = await getCurrentUser();
   requirePermission(user, permission);
+  return user!.id;
 }
 
 function parseRequiredId(formData: FormData) {
@@ -282,6 +283,7 @@ async function writeAuditLog(
   entityId: string,
   payload: Prisma.InputJsonValue,
   action: "CREATE" | "UPDATE" | "DELETE" = "CREATE",
+  actorId?: string,
 ) {
   await tx.auditLog.create({
     data: {
@@ -289,6 +291,7 @@ async function writeAuditLog(
       entityId,
       action,
       payload,
+      actorId: actorId ?? null,
     },
   });
 }
@@ -756,7 +759,7 @@ async function resolveShiftReference(tx: Prisma.TransactionClient, value: string
 
 export async function createUserAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("users:create");
+  const actorId = await requireCurrentPermission("users:create");
   const shiftTypeIds = parseStringArray(formData, "shiftTypeIds");
   let permissionSelection: ParsedPermissionSelection;
   try {
@@ -851,7 +854,7 @@ export async function createUserAction(_: ActionState, formData: FormData): Prom
         notificationDays: user.notificationDays,
         preferredTheme: user.preferredTheme,
         permissionCodes: permissionSelection.present ? permissionSelection.codes : rolePermissionCodes,
-      });
+      }, "CREATE", actorId);
     });
 
     return successState(tr(d, "action.userCreated"), "/users");
@@ -862,7 +865,7 @@ export async function createUserAction(_: ActionState, formData: FormData): Prom
 
 export async function createRoleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("roles:create");
+  const actorId = await requireCurrentPermission("roles:create");
   let permissionSelection: ParsedPermissionSelection;
   try {
     permissionSelection = parsePermissionSelection(formData);
@@ -896,7 +899,7 @@ export async function createRoleAction(_: ActionState, formData: FormData): Prom
         name: role.name,
         description: role.description,
         permissionCodes: permissionSelection.codes,
-      });
+      }, "CREATE", actorId);
     });
 
     return successState(tr(d, "action.roleCreated"), "/roles");
@@ -907,7 +910,7 @@ export async function createRoleAction(_: ActionState, formData: FormData): Prom
 
 export async function createServiceAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("services:create");
+  const actorId = await requireCurrentPermission("services:create");
   const parsed = serviceSchema.safeParse({
     code: parseOptionalString(formData.get("code")) ?? "",
     name: parseOptionalString(formData.get("name")) ?? "",
@@ -949,7 +952,7 @@ export async function createServiceAction(_: ActionState, formData: FormData): P
         colorDark: service.colorDark,
         textColorDark: service.textColorDark,
         opacityDark: service.opacityDark,
-      });
+      }, "CREATE", actorId);
     });
 
     return successState(tr(d, "action.serviceCreated"), "/services");
@@ -960,7 +963,7 @@ export async function createServiceAction(_: ActionState, formData: FormData): P
 
 export async function createShiftAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("shifts:create");
+  const actorId = await requireCurrentPermission("shifts:create");
   const parsed = shiftSchema.safeParse({
     code: parseOptionalString(formData.get("code")) ?? "",
     name: parseOptionalString(formData.get("name")) ?? "",
@@ -1000,7 +1003,7 @@ export async function createShiftAction(_: ActionState, formData: FormData): Pro
         crossesMidnight: shiftType.crossesMidnight,
         validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
         isActive: shiftType.isActive,
-      });
+      }, "CREATE", actorId);
     });
 
     return successState(tr(d, "action.shiftCreated"), "/shifts");
@@ -1011,7 +1014,7 @@ export async function createShiftAction(_: ActionState, formData: FormData): Pro
 
 export async function createVacationAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("vacations:create");
+  const actorId = await requireCurrentPermission("vacations:create");
   const parsed = vacationSchema.safeParse({
     userId: parseOptionalString(formData.get("userId")) ?? "",
     startDate: parseOptionalString(formData.get("startDate")) ?? "",
@@ -1045,7 +1048,7 @@ export async function createVacationAction(_: ActionState, formData: FormData): 
         locked: vacation.locked,
         status: vacation.status,
         notes: vacation.notes,
-      });
+      }, "CREATE", actorId);
     });
 
     return successState(tr(d, "action.vacationCreated"), "/vacations");
@@ -1056,7 +1059,7 @@ export async function createVacationAction(_: ActionState, formData: FormData): 
 
 export async function createConditionAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("conditions:create");
+  const actorId = await requireCurrentPermission("conditions:create");
   const parsed = conditionSchema.safeParse({
     type: parseOptionalString(formData.get("type")) ?? "",
     title: parseOptionalString(formData.get("title")) ?? "",
@@ -1081,7 +1084,7 @@ export async function createConditionAction(_: ActionState, formData: FormData):
         description: condition.description,
         priority: condition.priority,
         isActive: condition.isActive,
-      });
+      }, "CREATE", actorId);
     });
 
     return successState(tr(d, "action.conditionCreated"), "/conditions");
@@ -1092,7 +1095,7 @@ export async function createConditionAction(_: ActionState, formData: FormData):
 
 export async function createHolidayAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("holidays:create");
+  const actorId = await requireCurrentPermission("holidays:create");
   const parsed = holidaySchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
     country: parseOptionalString(formData.get("country")) ?? "",
@@ -1120,7 +1123,7 @@ export async function createHolidayAction(_: ActionState, formData: FormData): P
         country: holiday.country,
         name: holiday.name,
         localName: holiday.localName,
-      });
+      }, "CREATE", actorId);
     });
 
     return successState(tr(d, "action.holidayCreated"), "/holidays");
@@ -1131,7 +1134,7 @@ export async function createHolidayAction(_: ActionState, formData: FormData): P
 
 export async function createSettingAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const d = await getDict();
-  await requireCurrentPermission("settings:create");
+  const actorId = await requireCurrentPermission("settings:create");
   const parsed = settingSchema.safeParse({
     key: parseOptionalString(formData.get("key")) ?? "",
     value: parseOptionalString(formData.get("value")) ?? "",
@@ -1173,7 +1176,7 @@ export async function createSettingAction(_: ActionState, formData: FormData): P
 }
 
 export async function updateUserAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("users:edit");
+  const actorId = await requireCurrentPermission("users:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const shiftTypeIds = parseStringArray(formData, "shiftTypeIds");
@@ -1287,6 +1290,7 @@ export async function updateUserAction(_: ActionState, formData: FormData): Prom
           permissionCodes: permissionSelection.present ? permissionSelection.codes : rolePermissionCodes,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1297,7 +1301,7 @@ export async function updateUserAction(_: ActionState, formData: FormData): Prom
 }
 
 export async function updateRoleAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("roles:edit");
+  const actorId = await requireCurrentPermission("roles:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   let permissionSelection: ParsedPermissionSelection;
@@ -1344,6 +1348,7 @@ export async function updateRoleAction(_: ActionState, formData: FormData): Prom
           permissionCodes: permissionSelection.codes,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1354,7 +1359,7 @@ export async function updateRoleAction(_: ActionState, formData: FormData): Prom
 }
 
 export async function updateServiceAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("services:edit");
+  const actorId = await requireCurrentPermission("services:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const parsed = serviceSchema.safeParse({
@@ -1409,6 +1414,7 @@ export async function updateServiceAction(_: ActionState, formData: FormData): P
           opacityDark: service.opacityDark,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1419,7 +1425,7 @@ export async function updateServiceAction(_: ActionState, formData: FormData): P
 }
 
 export async function updateShiftAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("shifts:edit");
+  const actorId = await requireCurrentPermission("shifts:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const parsed = shiftSchema.safeParse({
@@ -1472,6 +1478,7 @@ export async function updateShiftAction(_: ActionState, formData: FormData): Pro
           isActive: shiftType.isActive,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1482,7 +1489,7 @@ export async function updateShiftAction(_: ActionState, formData: FormData): Pro
 }
 
 export async function updateVacationAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("vacations:edit");
+  const actorId = await requireCurrentPermission("vacations:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const parsed = vacationSchema.safeParse({
@@ -1544,6 +1551,7 @@ export async function updateVacationAction(_: ActionState, formData: FormData): 
           notes: vacation.notes,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1554,7 +1562,7 @@ export async function updateVacationAction(_: ActionState, formData: FormData): 
 }
 
 export async function updateConditionAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("conditions:edit");
+  const actorId = await requireCurrentPermission("conditions:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const parsed = conditionSchema.safeParse({
@@ -1592,6 +1600,7 @@ export async function updateConditionAction(_: ActionState, formData: FormData):
           isActive: condition.isActive,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1602,7 +1611,7 @@ export async function updateConditionAction(_: ActionState, formData: FormData):
 }
 
 export async function updateHolidayAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("holidays:edit");
+  const actorId = await requireCurrentPermission("holidays:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const parsed = holidaySchema.safeParse({
@@ -1643,6 +1652,7 @@ export async function updateHolidayAction(_: ActionState, formData: FormData): P
           localName: holiday.localName,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1653,7 +1663,7 @@ export async function updateHolidayAction(_: ActionState, formData: FormData): P
 }
 
 export async function updateSettingAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("settings:edit");
+  const actorId = await requireCurrentPermission("settings:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const parsed = settingSchema.safeParse({
@@ -1716,6 +1726,7 @@ export async function updateSettingAction(_: ActionState, formData: FormData): P
           value: setting.value as Prisma.InputJsonValue,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -1726,7 +1737,7 @@ export async function updateSettingAction(_: ActionState, formData: FormData): P
 }
 
 export async function upsertBrowserNotificationSettingsAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("settings:edit");
+  const actorId = await requireCurrentPermission("settings:edit");
   const d = await getDict();
   try {
     const currentSettings = await getNotificationSettings().catch(() => defaultNotificationSettings);
@@ -1781,7 +1792,7 @@ export async function upsertBrowserNotificationSettingsAction(_: ActionState, fo
 }
 
 export async function upsertNotificationSettingsAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("settings:edit");
+  const actorId = await requireCurrentPermission("settings:edit");
   const d = await getDict();
   try {
     const currentSettings = await getNotificationSettings().catch(() => defaultNotificationSettings);
@@ -1873,7 +1884,7 @@ export async function upsertNotificationSettingsAction(_: ActionState, formData:
 }
 
 export async function sendNotificationTestAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("settings:edit");
+  const actorId = await requireCurrentPermission("settings:edit");
   const d = await getDict();
   const notificationSettings = await getNotificationSettings().catch(() => defaultNotificationSettings);
   const parsed = notificationTestFormSchema.safeParse({
@@ -1932,7 +1943,7 @@ export async function sendNotificationTestAction(_: ActionState, formData: FormD
 }
 
 export async function upsertAiSettingsAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("settings:edit");
+  const actorId = await requireCurrentPermission("settings:edit");
   const d = await getDict();
   const parsed = aiSettingsFormSchema.safeParse({
     provider: parseOptionalString(formData.get("provider")) ?? "openai",
@@ -2004,7 +2015,7 @@ export async function upsertAiSettingsAction(_: ActionState, formData: FormData)
 }
 
 export async function generateScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:generate");
+  const actorId = await requireCurrentPermission("schedule:generate");
   const d = await getDict();
   const parsed = scheduleGenerationSchema.safeParse({
     startDate: parseOptionalString(formData.get("startDate")) ?? "",
@@ -2365,7 +2376,7 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
           locked: entry.locked,
           source: entry.source,
           note: entry.note,
-        });
+        }, "CREATE", actorId);
       }
     });
 
@@ -2429,7 +2440,7 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
 }
 
 export async function createScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:create");
+  const actorId = await requireCurrentPermission("schedule:create");
   const d = await getDict();
   const parsed = scheduleSchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
@@ -2504,7 +2515,7 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
         locked: entry.locked,
         source: entry.source,
         note: entry.note,
-      });
+      }, "CREATE", actorId);
 
       return {
         userId: entry.userId,
@@ -2530,7 +2541,7 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
 }
 
 export async function updateScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:edit");
+  const actorId = await requireCurrentPermission("schedule:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
   const parsed = scheduleSchema.safeParse({
@@ -2632,6 +2643,7 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
           note: entry.note,
         },
         "UPDATE",
+        actorId,
       );
 
       return {
@@ -2658,7 +2670,7 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
 }
 
 export async function importUsersCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("users:importExport");
+  const actorId = await requireCurrentPermission("users:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, [
@@ -2773,6 +2785,7 @@ export async function importUsersCsvAction(_: ActionState, formData: FormData): 
             permissionCodes: permissionCodesRaw,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -2784,7 +2797,7 @@ export async function importUsersCsvAction(_: ActionState, formData: FormData): 
 }
 
 export async function importRolesCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("roles:importExport");
+  const actorId = await requireCurrentPermission("roles:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, ["code", "name", "description", "permissionCodes"]);
@@ -2842,6 +2855,7 @@ export async function importRolesCsvAction(_: ActionState, formData: FormData): 
             permissionCodes: permissionCodesRaw,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -2853,7 +2867,7 @@ export async function importRolesCsvAction(_: ActionState, formData: FormData): 
 }
 
 export async function importServicesCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("services:importExport");
+  const actorId = await requireCurrentPermission("services:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, [
@@ -2921,6 +2935,7 @@ export async function importServicesCsvAction(_: ActionState, formData: FormData
             opacityDark: service.opacityDark,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -2932,7 +2947,7 @@ export async function importServicesCsvAction(_: ActionState, formData: FormData
 }
 
 export async function importShiftsCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("shifts:importExport");
+  const actorId = await requireCurrentPermission("shifts:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, [
@@ -3016,6 +3031,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
             isActive: shiftType.isActive,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -3027,7 +3043,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
 }
 
 export async function importVacationsCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("vacations:importExport");
+  const actorId = await requireCurrentPermission("vacations:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, ["userId", "startDate", "endDate", "status", "notes"]);
@@ -3104,6 +3120,7 @@ export async function importVacationsCsvAction(_: ActionState, formData: FormDat
             notes: vacation.notes,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -3115,7 +3132,7 @@ export async function importVacationsCsvAction(_: ActionState, formData: FormDat
 }
 
 export async function importConditionsCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("conditions:importExport");
+  const actorId = await requireCurrentPermission("conditions:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, ["type", "title", "priority", "isActive", "description"]);
@@ -3170,6 +3187,7 @@ export async function importConditionsCsvAction(_: ActionState, formData: FormDa
             isActive: condition.isActive,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -3181,7 +3199,7 @@ export async function importConditionsCsvAction(_: ActionState, formData: FormDa
 }
 
 export async function importHolidaysCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("holidays:importExport");
+  const actorId = await requireCurrentPermission("holidays:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, ["date", "country", "name", "localName"]);
@@ -3242,6 +3260,7 @@ export async function importHolidaysCsvAction(_: ActionState, formData: FormData
             localName: holiday.localName,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -3253,7 +3272,7 @@ export async function importHolidaysCsvAction(_: ActionState, formData: FormData
 }
 
 export async function importSettingsCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("settings:importExport");
+  const actorId = await requireCurrentPermission("settings:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, ["key", "value"]);
@@ -3317,6 +3336,7 @@ export async function importSettingsCsvAction(_: ActionState, formData: FormData
             value: setting.value as Prisma.InputJsonValue,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -3329,7 +3349,7 @@ export async function importSettingsCsvAction(_: ActionState, formData: FormData
 }
 
 export async function importScheduleCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:importExport");
+  const actorId = await requireCurrentPermission("schedule:importExport");
   const d = await getDict();
   try {
     const records = await getCsvImportRecords(formData, ["date", "userId", "shiftTypeId", "source", "locked", "note"]);
@@ -3428,6 +3448,7 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
             note: entry.note,
           },
           existing ? "UPDATE" : "CREATE",
+          actorId,
         );
       }
     });
@@ -3439,7 +3460,7 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
 }
 
 export async function toggleVacationLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("vacations:edit");
+  const actorId = await requireCurrentPermission("vacations:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3477,6 +3498,7 @@ export async function toggleVacationLockAction(_: ActionState, formData: FormDat
           notes: vacation.notes,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -3487,7 +3509,7 @@ export async function toggleVacationLockAction(_: ActionState, formData: FormDat
 }
 
 export async function toggleScheduleLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:edit");
+  const actorId = await requireCurrentPermission("schedule:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3526,6 +3548,7 @@ export async function toggleScheduleLockAction(_: ActionState, formData: FormDat
           note: entry.note,
         },
         "UPDATE",
+        actorId,
       );
     });
 
@@ -3536,7 +3559,7 @@ export async function toggleScheduleLockAction(_: ActionState, formData: FormDat
 }
 
 export async function bulkToggleScheduleLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:edit");
+  const actorId = await requireCurrentPermission("schedule:edit");
   const d = await getDict();
   const month = parseOptionalString(formData.get("month"));
   const locked = formData.get("locked") === "true";
@@ -3564,7 +3587,7 @@ export async function bulkToggleScheduleLockAction(_: ActionState, formData: For
 }
 
 export async function bulkDeleteScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:delete");
+  const actorId = await requireCurrentPermission("schedule:delete");
   const d = await getDict();
   const idsRaw = parseOptionalString(formData.get("ids"));
 
@@ -3598,7 +3621,7 @@ export async function bulkDeleteScheduleAction(_: ActionState, formData: FormDat
 }
 
 export async function deleteUserAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("users:delete");
+  const actorId = await requireCurrentPermission("users:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3623,6 +3646,7 @@ export async function deleteUserAction(_: ActionState, formData: FormData): Prom
           roleId: user.roleId,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3633,7 +3657,7 @@ export async function deleteUserAction(_: ActionState, formData: FormData): Prom
 }
 
 export async function deleteRoleAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("roles:delete");
+  const actorId = await requireCurrentPermission("roles:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3657,6 +3681,7 @@ export async function deleteRoleAction(_: ActionState, formData: FormData): Prom
           description: role.description,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3667,7 +3692,7 @@ export async function deleteRoleAction(_: ActionState, formData: FormData): Prom
 }
 
 export async function deleteServiceAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("services:delete");
+  const actorId = await requireCurrentPermission("services:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3691,6 +3716,7 @@ export async function deleteServiceAction(_: ActionState, formData: FormData): P
           isActive: service.isActive,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3701,7 +3727,7 @@ export async function deleteServiceAction(_: ActionState, formData: FormData): P
 }
 
 export async function deleteShiftAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("shifts:delete");
+  const actorId = await requireCurrentPermission("shifts:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3728,6 +3754,7 @@ export async function deleteShiftAction(_: ActionState, formData: FormData): Pro
           validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3738,7 +3765,7 @@ export async function deleteShiftAction(_: ActionState, formData: FormData): Pro
 }
 
 export async function deleteVacationAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("vacations:delete");
+  const actorId = await requireCurrentPermission("vacations:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3780,6 +3807,7 @@ export async function deleteVacationAction(_: ActionState, formData: FormData): 
           notes: vacation.notes,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3790,7 +3818,7 @@ export async function deleteVacationAction(_: ActionState, formData: FormData): 
 }
 
 export async function deleteConditionAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("conditions:delete");
+  const actorId = await requireCurrentPermission("conditions:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3816,6 +3844,7 @@ export async function deleteConditionAction(_: ActionState, formData: FormData):
           isActive: condition.isActive,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3826,7 +3855,7 @@ export async function deleteConditionAction(_: ActionState, formData: FormData):
 }
 
 export async function deleteHolidayAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("holidays:delete");
+  const actorId = await requireCurrentPermission("holidays:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3851,6 +3880,7 @@ export async function deleteHolidayAction(_: ActionState, formData: FormData): P
           localName: holiday.localName,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3861,7 +3891,7 @@ export async function deleteHolidayAction(_: ActionState, formData: FormData): P
 }
 
 export async function deleteSettingAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("settings:edit");
+  const actorId = await requireCurrentPermission("settings:edit");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3896,6 +3926,7 @@ export async function deleteSettingAction(_: ActionState, formData: FormData): P
           value: setting.value as Prisma.InputJsonValue,
         },
         "DELETE",
+        actorId,
       );
     });
 
@@ -3907,7 +3938,7 @@ export async function deleteSettingAction(_: ActionState, formData: FormData): P
 }
 
 export async function deleteScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  await requireCurrentPermission("schedule:delete");
+  const actorId = await requireCurrentPermission("schedule:delete");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3950,6 +3981,7 @@ export async function deleteScheduleAction(_: ActionState, formData: FormData): 
           note: entry.note,
         },
         "DELETE",
+        actorId,
       );
     });
 
