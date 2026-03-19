@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 
 import { AppNav } from "@/components/app-nav";
+import { AppVersionChecker } from "@/components/app-version-checker";
 import { BrowserNotificationProvider } from "@/components/browser-notification-provider";
 import { ServiceWorkerRegistration } from "@/components/service-worker-registration";
 import { I18nProvider } from "@/i18n/context";
@@ -48,8 +49,11 @@ export const viewport: Viewport = {
 export const dynamic = "force-dynamic";
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const currentUser = await getCurrentUser();
-  const locale = await getServerLocale();
+  const [currentUser, locale, browserNotificationSettings] = await Promise.all([
+    getCurrentUser(),
+    getServerLocale(),
+    getBrowserNotificationSettings(),
+  ]);
 
   // Redirect to setup wizard when no users exist (skip if already on /setup)
   if (!currentUser) {
@@ -72,14 +76,17 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <body>
           <I18nProvider locale={locale}>
             <ServiceWorkerRegistration />
-            {children}
+            <BrowserNotificationProvider settings={browserNotificationSettings}>
+              <AppVersionChecker />
+              {children}
+            </BrowserNotificationProvider>
           </I18nProvider>
         </body>
       </html>
     );
   }
 
-  const [browserNotificationSettings, shellProfile] = await Promise.all([getBrowserNotificationSettings(), getShellProfile(currentUser.id)]);
+  const shellProfile = await getShellProfile(currentUser.id);
   const allowedRoutes = getVisibleRoutes(currentUser);
 
   return (
@@ -91,6 +98,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         <I18nProvider locale={locale}>
           <ServiceWorkerRegistration />
           <BrowserNotificationProvider settings={browserNotificationSettings}>
+            <AppVersionChecker />
             <div className="app-layout">
               <AppNav profile={shellProfile} allowedRoutes={allowedRoutes} />
               <div className="app-main-shell">

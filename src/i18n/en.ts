@@ -5,6 +5,9 @@ const en: TranslationDictionary = {
   "app.title": "Pohotovosti",
   "app.description": "On-call scheduling management system.",
   "app.brand": "K",
+  "appVersion.title": "New version available",
+  "appVersion.message": "A newer version is available on the server. Click update to reload the latest app.",
+  "appVersion.action": "Update",
 
   /* ──────────────────── Navigation ──────────────────── */
   "nav.sectionMain": "Main",

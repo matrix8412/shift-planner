@@ -8,9 +8,13 @@ import type { BrowserNotificationSettings } from "@/server/config/browser-notifi
 type BrowserNotificationTone = "success" | "error" | "info";
 
 type BrowserNotificationInput = {
+  notificationKey?: string;
   title?: string;
   message: string;
   tone?: BrowserNotificationTone;
+  persistent?: boolean;
+  actionLabel?: string;
+  onAction?: () => void | Promise<void>;
 };
 
 type BrowserNotificationItem = BrowserNotificationInput & {
@@ -20,6 +24,7 @@ type BrowserNotificationItem = BrowserNotificationInput & {
 
 type BrowserNotificationContextValue = {
   notify: (input: BrowserNotificationInput) => void;
+  dismissKey: (key: string) => void;
 };
 
 const BrowserNotificationContext = createContext<BrowserNotificationContextValue | null>(null);
@@ -58,7 +63,7 @@ export function BrowserNotificationProvider({
   const [items, setItems] = useState<BrowserNotificationItem[]>([]);
   const timeoutMapRef = useRef(new Map<number, number>());
 
-  const dismiss = useCallback((id: number) => {
+  const dismissById = useCallback((id: number) => {
     const timeoutId = timeoutMapRef.current.get(id);
     if (timeoutId) {
       window.clearTimeout(timeoutId);
@@ -68,21 +73,56 @@ export function BrowserNotificationProvider({
     setItems((current) => current.filter((item) => item.id !== id));
   }, []);
 
+  const dismissKey = useCallback((key: string) => {
+    setItems((current) => {
+      const match = current.find((item) => item.notificationKey === key);
+
+      if (match) {
+        const timeoutId = timeoutMapRef.current.get(match.id);
+        if (timeoutId) {
+          window.clearTimeout(timeoutId);
+          timeoutMapRef.current.delete(match.id);
+        }
+      }
+
+      return current.filter((item) => item.notificationKey !== key);
+    });
+  }, []);
+
   const notify = useCallback(
     (input: BrowserNotificationInput) => {
       const id = nextNotificationId;
       nextNotificationId += 1;
 
       const tone = input.tone ?? "info";
-      setItems((current) => [...current, { ...input, id, tone }]);
+      const nextItem = { ...input, id, tone };
 
-      const timeoutId = window.setTimeout(() => {
-        dismiss(id);
-      }, settings.durationMs);
+      setItems((current) => {
+        const nextItems = input.notificationKey ? current.filter((item) => item.notificationKey !== input.notificationKey) : current;
 
-      timeoutMapRef.current.set(id, timeoutId);
+        if (input.notificationKey) {
+          const existing = current.find((item) => item.notificationKey === input.notificationKey);
+          if (existing) {
+            const timeoutId = timeoutMapRef.current.get(existing.id);
+            if (timeoutId) {
+              window.clearTimeout(timeoutId);
+              timeoutMapRef.current.delete(existing.id);
+            }
+          }
+        }
+
+        return [...nextItems, nextItem];
+      });
+
+      if (!input.persistent) {
+        const timeoutId = window.setTimeout(() => {
+          dismissById(id);
+        }, settings.durationMs);
+
+        timeoutMapRef.current.set(id, timeoutId);
+      }
     },
-    [dismiss, settings.durationMs],
+    [dismissById, settings.durationMs],
   );
 
   useEffect(() => {
@@ -98,8 +138,9 @@ export function BrowserNotificationProvider({
   const contextValue = useMemo<BrowserNotificationContextValue>(
     () => ({
       notify,
+      dismissKey,
     }),
-    [notify],
+    [dismissKey, notify],
   );
 
   return (
@@ -133,11 +174,24 @@ export function BrowserNotificationProvider({
                   <div className="stack-tight">
                     <strong>{item.title ?? getNotificationTitle(item.tone)}</strong>
                     <p>{item.message}</p>
+                    {item.actionLabel && item.onAction ? (
+                      <button
+                        type="button"
+                        className="browser-notification-action"
+                        onClick={() => {
+                          void item.onAction?.();
+                        }}
+                      >
+                        {item.actionLabel}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
-                <button type="button" className="browser-notification-close" onClick={() => dismiss(item.id)} aria-label="Zavriet notifikaciu">
-                  <X size={16} />
-                </button>
+                {item.persistent ? null : (
+                  <button type="button" className="browser-notification-close" onClick={() => dismissById(item.id)} aria-label="Zavriet notifikaciu">
+                    <X size={16} />
+                  </button>
+                )}
               </div>
             </article>
           );
@@ -153,6 +207,7 @@ export function useBrowserNotifications() {
   if (!context) {
     return {
       notify: (_input: BrowserNotificationInput) => undefined,
+      dismissKey: (_key: string) => undefined,
     };
   }
 

@@ -5,6 +5,9 @@ const sk: TranslationDictionary = {
   "app.title": "Pohotovosti",
   "app.description": "Systém pre správu pracovných pohotovostí.",
   "app.brand": "K",
+  "appVersion.title": "K dispozícii je nová verzia",
+  "appVersion.message": "Na serveri je dostupná novšia verzia aplikácie. Kliknite na aktualizáciu pre načítanie najnovšej verzie.",
+  "appVersion.action": "Aktualizovať",
 
   /* ──────────────────── Navigation ──────────────────── */
   "nav.sectionMain": "Hlavné",
