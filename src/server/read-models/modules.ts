@@ -1595,7 +1595,6 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     value: user.id,
     label: `${user.firstName} ${user.lastName}`,
   }));
-  const serviceOptions = mapOptions(services);
   const shiftOptions = shiftTypes.map((shiftType) => {
     const validity = parseShiftValidity(shiftType.validityDays);
     // Map validity keys to JS Date day numbers (0=Sun, 1=Mon, ..., 6=Sat)
@@ -1648,7 +1647,6 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       formValues: {
         date: toIsoDate(entry.date),
         userId: entry.userId,
-        serviceId: entry.serviceId,
         shiftTypeId: entry.shiftTypeId,
         source: entry.source,
         locked: entry.locked,
@@ -1703,7 +1701,6 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     fields: [
       { type: "date", name: "date", label: tr(d, "schedule.fieldDate"), required: true },
       { type: "select", name: "userId", label: tr(d, "schedule.fieldUser"), required: true, options: userOptions },
-      { type: "select", name: "serviceId", label: tr(d, "schedule.fieldService"), required: true, options: serviceOptions },
       {
         type: "select",
         name: "shiftTypeId",

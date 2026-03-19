@@ -419,7 +419,6 @@ const aiSettingsFormSchema = z.object({
 const scheduleSchema = z.object({
   date: z.string().trim().min(1, "Date is required."),
   userId: z.string().trim().min(1, "User is required."),
-  serviceId: z.string().trim().min(1, "Service is required."),
   shiftTypeId: z.string().trim().min(1, "Shift type is required."),
   locked: z.boolean(),
   source: z.nativeEnum(ScheduleSource),
@@ -2413,7 +2412,6 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
   const parsed = scheduleSchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
     userId: parseOptionalString(formData.get("userId")) ?? "",
-    serviceId: parseOptionalString(formData.get("serviceId")) ?? "",
     shiftTypeId: parseOptionalString(formData.get("shiftTypeId")) ?? "",
     locked: parseBoolean(formData, "locked"),
     source: parseOptionalString(formData.get("source")) ?? ScheduleSource.MANUAL,
@@ -2440,12 +2438,6 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
     });
   }
 
-  if (shiftType.serviceId !== parsed.data.serviceId) {
-    return errorState(tr(d, "action.shiftNotForService"), {
-      shiftTypeId: [tr(d, "action.shiftNotForServiceHint")],
-    });
-  }
-
   const scheduleDate = parseUtcDate(parsed.data.date);
   const holiday = await db.holiday.findUnique({
     where: {
@@ -2469,7 +2461,7 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
         data: {
           date: scheduleDate,
           userId: parsed.data.userId,
-          serviceId: parsed.data.serviceId,
+          serviceId: shiftType.serviceId,
           shiftTypeId: parsed.data.shiftTypeId,
           locked: parsed.data.locked,
           source: parsed.data.source,
@@ -2522,7 +2514,6 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
   const parsed = scheduleSchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
     userId: parseOptionalString(formData.get("userId")) ?? "",
-    serviceId: parseOptionalString(formData.get("serviceId")) ?? "",
     shiftTypeId: parseOptionalString(formData.get("shiftTypeId")) ?? "",
     locked: parseBoolean(formData, "locked"),
     source: parseOptionalString(formData.get("source")) ?? ScheduleSource.MANUAL,
@@ -2568,12 +2559,6 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
     });
   }
 
-  if (shiftType.serviceId !== parsed.data.serviceId) {
-    return errorState(tr(d, "action.shiftNotForService"), {
-      shiftTypeId: [tr(d, "action.shiftNotForServiceHint")],
-    });
-  }
-
   const scheduleDate = parseUtcDate(parsed.data.date);
   const holiday = await db.holiday.findUnique({
     where: {
@@ -2598,7 +2583,7 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
         data: {
           date: scheduleDate,
           userId: parsed.data.userId,
-          serviceId: parsed.data.serviceId,
+          serviceId: shiftType.serviceId,
           shiftTypeId: parsed.data.shiftTypeId,
           locked: parsed.data.locked,
           source: parsed.data.source,
@@ -3325,19 +3310,17 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
   await requireCurrentPermission("schedule:importExport");
   const d = await getDict();
   try {
-    const records = await getCsvImportRecords(formData, ["date", "userId", "serviceId", "shiftTypeId", "source", "locked", "note"]);
+    const records = await getCsvImportRecords(formData, ["date", "userId", "shiftTypeId", "source", "locked", "note"]);
     let created = 0;
     let updated = 0;
 
     await db.$transaction(async (tx) => {
       for (const record of records) {
         const userId = await resolveUserReference(tx, getRequiredCsvValue(record, "userId"));
-        const serviceId = await resolveServiceReference(tx, getRequiredCsvValue(record, "serviceId"));
         const shiftType = await resolveShiftReference(tx, getRequiredCsvValue(record, "shiftTypeId"));
         const parsed = scheduleSchema.safeParse({
           date: getRequiredCsvValue(record, "date"),
           userId,
-          serviceId,
           shiftTypeId: shiftType.id,
           source: getRequiredCsvValue(record, "source"),
           locked: parseCsvBoolean(record.locked),
@@ -3348,10 +3331,7 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
           throw new Error(`Invalid schedule row for "${record.date ?? "unknown"}".`);
         }
 
-        if (shiftType.serviceId !== serviceId) {
-          throw new Error(`Shift type "${record.shiftTypeId}" does not belong to service "${record.serviceId}".`);
-        }
-
+        const serviceId = shiftType.serviceId;
         const date = parseUtcDate(parsed.data.date);
         const holiday = await tx.holiday.findUnique({
           where: {
