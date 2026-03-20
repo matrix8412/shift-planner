@@ -21,6 +21,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/context";
+import SearchableSelect from "@/components/searchable-select";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/types";
 import type { Locale } from "@/i18n/types";
 import { updateProfileAction } from "@/server/actions/auth";
@@ -348,23 +349,26 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
 
               <label className="field">
                 <span className="field-label">{t("profile.fieldTheme")}</span>
-                <select name="preferredTheme" className="field-control" defaultValue={profile.preferredTheme ?? ""}>
-                  <option value="">{t("profile.themeAuto")}</option>
-                  <option value="light">{t("profile.themeLight")}</option>
-                  <option value="dark">{t("profile.themeDark")}</option>
-                </select>
+                <SearchableSelect
+                  name="preferredTheme"
+                  defaultValue={profile.preferredTheme ?? ""}
+                  className="field-control"
+                  options={[
+                    { value: "", label: t("profile.themeAuto") },
+                    { value: "light", label: t("profile.themeLight") },
+                    { value: "dark", label: t("profile.themeDark") },
+                  ]}
+                />
               </label>
 
               <label className="field">
                 <span className="field-label">{t("profile.fieldLocale")}</span>
-                <select name="preferredLocale" className="field-control" defaultValue={profile.preferredLocale ?? ""}>
-                  <option value="">{t("profile.localeAuto")}</option>
-                  {LOCALES.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {LOCALE_LABELS[loc as Locale]}
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  name="preferredLocale"
+                  defaultValue={profile.preferredLocale ?? ""}
+                  className="field-control"
+                  options={[{ value: "", label: t("profile.localeAuto") }, ...LOCALES.map((loc) => ({ value: loc, label: LOCALE_LABELS[loc as Locale] }))]}
+                />
               </label>
 
               <button type="submit" className="button" disabled={profilePending}>

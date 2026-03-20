@@ -26,6 +26,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { useBrowserNotifications } from "@/components/browser-notification-provider";
+import SearchableSelect from "@/components/searchable-select";
 import { FormSubmitButton } from "@/components/form-submit-button";
 import { useI18n } from "@/i18n/context";
 import { saveColumnPreferences, savePageSizePreference } from "@/server/actions/column-preferences";
@@ -783,20 +784,16 @@ function SelectFieldControl({
     return (
       <label className="field">
         <span className={fieldLabelClass(field.required)}>{field.label}</span>
-        <select
+        <SearchableSelect
           name={field.name}
+          options={filteredOptions.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
           value={selectedValue}
-          onChange={(event) => setSelectedValue(event.target.value)}
+          onChange={(v) => setSelectedValue(String(v))}
           required={field.required}
           className="field-control"
-        >
-          {field.allowEmpty ? <option value="">{field.emptyLabel ?? "Vyberte možnosť"}</option> : null}
-          {filteredOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+          allowEmpty={field.allowEmpty}
+          emptyLabel={field.emptyLabel ?? "Vyberte možnosť"}
+        />
         {field.description ? <span className="field-description">{field.description}</span> : null}
         {fieldError ? <span className="field-error">{fieldError}</span> : null}
       </label>
@@ -806,19 +803,15 @@ function SelectFieldControl({
   return (
     <label className="field">
       <span className={fieldLabelClass(field.required)}>{field.label}</span>
-      <select
+      <SearchableSelect
         name={field.name}
+        options={field.options.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
         defaultValue={value ?? field.defaultValue ?? ""}
         required={field.required}
         className="field-control"
-      >
-        {field.allowEmpty ? <option value="">{field.emptyLabel ?? "Vyberte možnosť"}</option> : null}
-        {field.options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        allowEmpty={field.allowEmpty}
+        emptyLabel={field.emptyLabel ?? "Vyberte možnosť"}
+      />
       {field.description ? <span className="field-description">{field.description}</span> : null}
       {fieldError ? <span className="field-error">{fieldError}</span> : null}
     </label>
@@ -846,20 +839,14 @@ function MultiSelectFieldControl({
     return (
       <label className="field">
         <span className={fieldLabelClass(field.required)}>{field.label}</span>
-        <select
+        <SearchableSelect
           name={field.name}
+          options={field.options.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
           defaultValue={initialSelectedValues}
-          required={field.required}
           multiple
-          size={field.size ?? Math.min(8, Math.max(4, field.options.length))}
+          required={field.required}
           className="field-control multiselect-control"
-        >
-          {field.options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        />
         {field.description ? <span className="field-description">{field.description}</span> : null}
         {fieldError ? <span className="field-error">{fieldError}</span> : null}
       </label>
@@ -2869,22 +2856,22 @@ export function EntityModule({
                     <div className="table-pagination-left">
                       <label className="table-page-size-label">
                         {t("entity.rowsPerPage")}
-                        <select
-                          className="table-page-size-select"
-                          value={rowsPerPage}
-                          onChange={(event) => {
-                            const next = Number(event.target.value);
-                            setRowsPerPage(next);
-                            setTablePage(1);
-                            if (moduleKey) {
-                              savePageSizePreference(moduleKey, next);
-                            }
-                          }}
-                        >
-                          {pageSizeOptions.map((size) => (
-                            <option key={size} value={size}>{size}</option>
-                          ))}
-                        </select>
+                        <div style={{ width: 120 }}>
+                          <SearchableSelect
+                            name="rowsPerPage"
+                            value={String(rowsPerPage)}
+                            onChange={(v) => {
+                              const next = Number(v);
+                              setRowsPerPage(next);
+                              setTablePage(1);
+                              if (moduleKey) {
+                                savePageSizePreference(moduleKey, next);
+                              }
+                            }}
+                            className="table-page-size-select"
+                            options={pageSizeOptions.map((size) => ({ value: String(size), label: String(size) }))}
+                          />
+                        </div>
                       </label>
                       {totalTablePages > 1 ? (
                         <p className="table-pagination-summary">

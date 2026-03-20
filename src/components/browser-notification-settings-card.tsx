@@ -7,6 +7,7 @@ import { useBrowserNotifications } from "@/components/browser-notification-provi
 import { FormSubmitButton } from "@/components/form-submit-button";
 import type { ActionState } from "@/components/entity-module.types";
 import { useI18n } from "@/i18n/context";
+import SearchableSelect from "@/components/searchable-select";
 import type { BrowserNotificationSettings } from "@/server/config/browser-notifications";
 
 const initialState: ActionState = {
@@ -81,12 +82,18 @@ export function BrowserNotificationSettingsCard({ settings, action }: BrowserNot
         <div className="settings-grid">
           <label className="field">
             <span className="field-label">{t("browserNotif.positionLabel")}</span>
-            <select name="position" value={position} className="field-control" onChange={(event) => setPosition(event.currentTarget.value as BrowserNotificationSettings["position"])}>
-              <option value="top-right">{t("browserNotif.topRight")}</option>
-              <option value="top-left">{t("browserNotif.topLeft")}</option>
-              <option value="bottom-right">{t("browserNotif.bottomRight")}</option>
-              <option value="bottom-left">{t("browserNotif.bottomLeft")}</option>
-            </select>
+            <SearchableSelect
+              name="position"
+              value={position}
+              onChange={(v) => setPosition(String(v) as BrowserNotificationSettings["position"])}
+              className="field-control"
+              options={[
+                { value: "top-right", label: t("browserNotif.topRight") },
+                { value: "top-left", label: t("browserNotif.topLeft") },
+                { value: "bottom-right", label: t("browserNotif.bottomRight") },
+                { value: "bottom-left", label: t("browserNotif.bottomLeft") },
+              ]}
+            />
             <span className="field-description">{t("browserNotif.positionHint")}</span>
             {state.fieldErrors?.position?.[0] ? <span className="field-error">{state.fieldErrors.position[0]}</span> : null}
           </label>
