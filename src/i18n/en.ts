@@ -310,6 +310,8 @@ const en: TranslationDictionary = {
   "select.searchPlaceholder": "Search...",
   "select.noOptions": "No available options",
   "select.noOptionsSelectUser": "Select a user first",
+  "select.noOptionsSelectDate": "Select a date first",
+  "select.noOptionsSelectDay": "No shift types are available for this day",
 
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifications",
@@ -784,7 +786,7 @@ const en: TranslationDictionary = {
   "schedule.fieldUser": "User",
   "schedule.fieldService": "Service",
   "schedule.fieldShiftType": "Shift type",
-  "schedule.fieldShiftTypeHint": "The selected shift type must belong to the chosen service.",
+  "schedule.fieldShiftTypeHint": "The selected shift type must belong to the chosen service, be assigned to the selected user, and be valid for the selected date.",
   "schedule.fieldSource": "Source",
   "schedule.optManual": "Manual",
   "schedule.optImport": "Import",

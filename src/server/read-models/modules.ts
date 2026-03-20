@@ -1659,6 +1659,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       value: shiftType.id,
       label: `${shiftType.service.name} / ${shiftType.name} (${shiftType.startsAt}-${shiftType.endsAt})`,
       validDays,
+      validHoliday: validity.holiday,
       allowedValues: userShiftTypes.filter((assignment) => assignment.shiftTypeId === shiftType.id).map((assignment) => assignment.userId),
     };
   });
@@ -1821,6 +1822,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         options: shiftOptions,
         description: tr(d, "schedule.fieldShiftTypeHint"),
         filterByField: "userId",
+        filterByDate: "date",
       },
       {
         type: "select",

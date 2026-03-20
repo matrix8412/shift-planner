@@ -115,6 +115,7 @@ export type FieldOption = {
   textColor?: string;
   borderColor?: string;
   validDays?: number[];
+  validHoliday?: boolean;
   allowedValues?: string[];
 };
 

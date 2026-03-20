@@ -310,6 +310,8 @@ const sk: TranslationDictionary = {
   "select.searchPlaceholder": "Hľadať...",
   "select.noOptions": "Žiadne dostupné možnosti",
   "select.noOptionsSelectUser": "Najprv vyber používateľa",
+  "select.noOptionsSelectDate": "Najprv vyber dátum",
+  "select.noOptionsSelectDay": "Pre tento deň nie sú dostupné žiadne typy zmien",
 
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifikácie",
@@ -784,7 +786,7 @@ const sk: TranslationDictionary = {
   "schedule.fieldUser": "Používateľ",
   "schedule.fieldService": "Typ služby",
   "schedule.fieldShiftType": "Typ zmeny",
-  "schedule.fieldShiftTypeHint": "Vybraný typ zmeny musí patriť k zvolenej službe.",
+  "schedule.fieldShiftTypeHint": "Vybraný typ zmeny musí patriť k zvolenej službe, byť pridelený vybranému používateľovi a byť platný pre zvolený deň.",
   "schedule.fieldSource": "Zdroj",
   "schedule.optManual": "Manuálne",
   "schedule.optImport": "Import",

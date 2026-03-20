@@ -755,12 +755,19 @@ function ColorFieldControl({
   );
 }
 
-function getDateFieldDayOfWeek(formRef: React.RefObject<HTMLFormElement | null>, dateFieldName: string): number | null {
+function getDateFieldInfo(
+  formRef: React.RefObject<HTMLFormElement | null>,
+  dateFieldName: string,
+  holidayDates?: Set<string>,
+): { day: number; isHoliday: boolean } | null {
   const input = formRef.current?.elements.namedItem(dateFieldName);
   if (!(input instanceof HTMLInputElement) || !input.value) return null;
   const date = new Date(input.value + "T00:00:00Z");
   if (Number.isNaN(date.getTime())) return null;
-  return date.getUTCDay();
+  return {
+    day: date.getUTCDay(),
+    isHoliday: holidayDates?.has(input.value) ?? false,
+  };
 }
 
 function getFormFieldValue(formRef: React.RefObject<HTMLFormElement | null>, fieldName: string): string {
@@ -778,53 +785,91 @@ function SelectFieldControl({
   value,
   fieldError,
   formRef,
+  holidayDates,
 }: {
   field: Extract<EntityModuleConfig["fields"][number], { type: "select" }>;
   value?: string;
   fieldError?: string;
   formRef?: React.RefObject<HTMLFormElement | null>;
+  holidayDates?: Set<string>;
 }) {
   const { t } = useI18n();
-  const hasDateFilter = Boolean(field.filterByDate) && field.options.some((option) => option.validDays);
+  const hasDateFilter = Boolean(field.filterByDate) && field.options.some((option) => option.validDays || option.validHoliday);
   const hasFieldFilter = Boolean(field.filterByField) && field.options.some((option) => option.allowedValues);
   const [filteredOptions, setFilteredOptions] = useState(field.options);
+  const [noOptionsLabel, setNoOptionsLabel] = useState<string | undefined>();
   const [selectedValue, setSelectedValue] = useState(value ?? field.defaultValue ?? "");
 
   useEffect(() => {
     if ((!hasDateFilter && !hasFieldFilter) || !formRef?.current) return;
 
     function handleChange() {
-      if (hasDateFilter && field.filterByDate) {
-        const day = getDateFieldDayOfWeek(formRef!, field.filterByDate);
-        if (day === null) {
-          setFilteredOptions(field.options);
-          return;
-        }
-
-        setFilteredOptions(field.options.filter((option) => !option.validDays || option.validDays.includes(day)));
-        return;
-      }
+      let nextOptions = field.options;
 
       if (hasFieldFilter && field.filterByField) {
         const sourceValue = getFormFieldValue(formRef!, field.filterByField);
         if (!sourceValue) {
           setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectUser"));
           return;
         }
 
-        setFilteredOptions(
-          field.options.filter((option) => !option.allowedValues || option.allowedValues.length === 0 || option.allowedValues.includes(sourceValue)),
-        );
+        nextOptions = nextOptions.filter((option) => !option.allowedValues || option.allowedValues.length === 0 || option.allowedValues.includes(sourceValue));
+
+        if (nextOptions.length === 0) {
+          setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectUser"));
+          return;
+        }
       }
+
+      if (hasDateFilter && field.filterByDate) {
+        const dateInfo = getDateFieldInfo(formRef!, field.filterByDate, holidayDates);
+        if (!dateInfo) {
+          setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectDate"));
+          return;
+        }
+
+        nextOptions = nextOptions.filter((option) => {
+          if (option.validDays && !option.validDays.includes(dateInfo.day)) {
+            return false;
+          }
+
+          if (typeof option.validHoliday === "boolean" && option.validHoliday !== dateInfo.isHoliday) {
+            return false;
+          }
+
+          return true;
+        });
+
+        if (nextOptions.length === 0) {
+          setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectDay"));
+          return;
+        }
+
+        setFilteredOptions(nextOptions);
+        setNoOptionsLabel(undefined);
+        return;
+      }
+
+      setFilteredOptions(nextOptions);
+      setNoOptionsLabel(undefined);
     }
 
-    const sourceField = field.filterByDate ? formRef.current.elements.namedItem(field.filterByDate) : field.filterByField ? formRef.current.elements.namedItem(field.filterByField) : null;
-    if (sourceField instanceof HTMLInputElement || sourceField instanceof HTMLSelectElement) {
-      sourceField.addEventListener("change", handleChange);
-      handleChange();
-      return () => sourceField.removeEventListener("change", handleChange);
-    }
-  }, [field.filterByDate, field.filterByField, field.options, formRef, hasDateFilter, hasFieldFilter]);
+    const sourceFields = [
+      field.filterByDate ? formRef.current.elements.namedItem(field.filterByDate) : null,
+      field.filterByField ? formRef.current.elements.namedItem(field.filterByField) : null,
+    ].filter((sourceField): sourceField is HTMLInputElement | HTMLSelectElement =>
+      sourceField instanceof HTMLInputElement || sourceField instanceof HTMLSelectElement,
+    );
+
+    sourceFields.forEach((sourceField) => sourceField.addEventListener("change", handleChange));
+    handleChange();
+
+    return () => sourceFields.forEach((sourceField) => sourceField.removeEventListener("change", handleChange));
+  }, [field.filterByDate, field.filterByField, field.options, formRef, hasDateFilter, hasFieldFilter, holidayDates, t]);
 
   useEffect(() => {
     if ((hasDateFilter || hasFieldFilter) && filteredOptions.length > 0 && !filteredOptions.some((option) => option.value === selectedValue)) {
@@ -832,44 +877,24 @@ function SelectFieldControl({
       return;
     }
 
-    if (hasFieldFilter && filteredOptions.length === 0 && selectedValue !== "") {
+    if ((hasFieldFilter || hasDateFilter) && filteredOptions.length === 0 && selectedValue !== "") {
       setSelectedValue("");
     }
   }, [filteredOptions, hasDateFilter, hasFieldFilter, selectedValue]);
-
-  if (hasDateFilter) {
-    return (
-      <label className="field">
-        <span className={fieldLabelClass(field.required)}>{field.label}</span>
-        <SearchableSelect
-          name={field.name}
-          options={filteredOptions.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
-          value={selectedValue}
-          onChange={(v) => setSelectedValue(String(v))}
-          required={field.required}
-          className="field-control"
-          allowEmpty={field.allowEmpty}
-          emptyLabel={field.emptyLabel ?? "Vyberte možnosť"}
-          noOptionsLabel={field.filterByField ? t("select.noOptionsSelectUser") : undefined}
-        />
-        {field.description ? <span className="field-description">{field.description}</span> : null}
-        {fieldError ? <span className="field-error">{fieldError}</span> : null}
-      </label>
-    );
-  }
 
   return (
     <label className="field">
       <span className={fieldLabelClass(field.required)}>{field.label}</span>
       <SearchableSelect
         name={field.name}
-        options={(hasFieldFilter ? filteredOptions : field.options).map((o) => ({ value: o.value, label: o.label, description: o.description }))}
-        defaultValue={value ?? field.defaultValue ?? ""}
+        options={filteredOptions.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
+        value={selectedValue}
+        onChange={(nextValue) => setSelectedValue(String(nextValue))}
         required={field.required}
         className="field-control"
         allowEmpty={field.allowEmpty}
         emptyLabel={field.emptyLabel ?? "Vyberte možnosť"}
-        noOptionsLabel={field.filterByField ? t("select.noOptionsSelectUser") : undefined}
+        noOptionsLabel={noOptionsLabel}
       />
       {field.description ? <span className="field-description">{field.description}</span> : null}
       {fieldError ? <span className="field-error">{fieldError}</span> : null}
@@ -1515,6 +1540,7 @@ export function EntityModule({
     [fields, sheetTabs],
   );
   const fieldNameSet = useMemo(() => new Set(allSheetFields.map((field) => field.name)), [allSheetFields]);
+  const holidayDates = useMemo(() => new Set((calendar?.holidays ?? []).map((holiday) => holiday.date)), [calendar?.holidays]);
   const hasLockedValues = useMemo(
     () => rows.some((row) => Object.prototype.hasOwnProperty.call(row.formValues, "locked")),
     [rows],
@@ -2522,6 +2548,7 @@ export function EntityModule({
           value={String((sheetMode === "edit" ? currentValue : (currentValue ?? field.defaultValue)) ?? "")}
           fieldError={fieldError}
           formRef={field.filterByDate || field.filterByField ? sheetFormRef : undefined}
+          holidayDates={holidayDates}
         />
       );
     }
