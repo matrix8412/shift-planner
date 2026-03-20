@@ -3077,8 +3077,7 @@ export function EntityModule({
                     <div className="table-pagination-left">
                       <label className="table-page-size-label">
                         {t("entity.rowsPerPage")}
-                        <div style={{ width: 120 }}>
-                          <SearchableSelect
+                        <SearchableSelect
                             name="rowsPerPage"
                             value={String(rowsPerPage)}
                             onChange={(v) => {
@@ -3092,7 +3091,6 @@ export function EntityModule({
                             className="table-page-size-select"
                             options={pageSizeOptions.map((size) => ({ value: String(size), label: String(size) }))}
                           />
-                        </div>
                       </label>
                       {totalTablePages > 1 ? (
                         <p className="table-pagination-summary">

@@ -1651,16 +1651,16 @@ ul {
   white-space: nowrap;
 }
 
-.table-page-size-select {
+.table-page-size-select.searchable-select {
+  min-width: 0;
+  width: 120px;
+}
+.table-page-size-select .searchable-select__control {
   height: 34px;
-  padding: 0 8px;
-  border: 1px solid var(--border-strong);
+  padding: 0 10px;
   border-radius: 8px;
-  background: var(--surface);
-  color: var(--text);
   font-size: 0.88rem;
   font-weight: 700;
-  cursor: pointer;
 }
 
 .table-pagination-summary {
