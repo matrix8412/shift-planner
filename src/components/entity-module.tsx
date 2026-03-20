@@ -1283,28 +1283,28 @@ function CalendarPanel({
                         borderColor: item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
                       }}
                     >
-                      <div className="calendar-entry-head">
-                        <strong>{item.title}</strong>
-                        {onItemLockToggle ? (
-                          <button
-                            type="button"
-                            className={`calendar-entry-lock ${item.locked ? "locked" : "unlocked"}`}
-                            aria-label={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
-                            title={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              onItemLockToggle(item.recordId ?? item.id);
-                            }}
-                          >
-                            {item.locked ? <Lock size={16} /> : <LockOpen size={16} />}
-                          </button>
-                        ) : item.locked ? (
-                          <Lock size={15} />
-                        ) : null}
-                      </div>
+                      <strong>{item.title}</strong>
                       {item.subtitle ? <span>{item.subtitle}</span> : null}
                       {item.timeLabel ? <small>{item.timeLabel}</small> : null}
+                      {onItemLockToggle ? (
+                        <button
+                          type="button"
+                          className={`calendar-entry-lock ${item.locked ? "locked" : "unlocked"}`}
+                          aria-label={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
+                          title={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onItemLockToggle(item.recordId ?? item.id);
+                          }}
+                        >
+                          {item.locked ? <Lock size={12} /> : <LockOpen size={12} />}
+                        </button>
+                      ) : item.locked ? (
+                        <span className="calendar-entry-lock-static">
+                          <Lock size={12} />
+                        </span>
+                      ) : null}
                     </article>
                   ))}
                 </div>
