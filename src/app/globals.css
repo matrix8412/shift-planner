@@ -2086,6 +2086,13 @@ ul {
   padding: 24px;
 }
 
+.schedule-generation-layer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  padding: 0;
+}
+
 .confirm-backdrop {
   position: absolute;
   inset: 0;
@@ -2110,7 +2117,14 @@ ul {
 }
 
 .schedule-generation-dialog {
-  width: min(720px, calc(100vw - 32px));
+  width: min(820px, 100vw);
+  height: 100vh;
+  max-height: 100vh;
+  margin: 0;
+  border-radius: 24px 0 0 24px;
+  overflow-y: auto;
+  box-shadow: -24px 0 72px rgba(34, 59, 70, 0.22);
+  animation: slide-in-right 220ms ease-out;
 }
 
 .schedule-generation-overview {
@@ -3038,6 +3052,10 @@ ul {
   box-shadow: 0 24px 64px rgba(3, 8, 12, 0.52);
 }
 
+:root[data-theme="dark"] .schedule-generation-dialog {
+  box-shadow: -24px 0 72px rgba(3, 8, 12, 0.58);
+}
+
 :root[data-theme="dark"] .sheet-close,
 :root[data-theme="dark"] .icon-button,
 :root[data-theme="dark"] .button.secondary,
@@ -3415,6 +3433,12 @@ ul {
   .confirm-dialog {
     width: min(420px, calc(100vw - 32px));
     padding: 18px;
+  }
+
+  .schedule-generation-dialog {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
   }
 }
 
