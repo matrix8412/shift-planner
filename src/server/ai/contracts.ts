@@ -30,7 +30,6 @@ export type ScheduleDraftInput = {
   }>;
   shiftTypes: Array<{
     id: string;
-    serviceId: string;
     serviceName: string;
     name: string;
     startsAt: string;

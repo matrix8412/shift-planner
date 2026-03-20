@@ -2232,6 +2232,25 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
     }
 
     const availableUserIdSet = new Set(availableUsers.map((user) => user.id));
+
+    // Build short aliases (u1, u2... and sh1, sh2...) to prevent the AI from
+    // hallucinating opaque CUID strings — the model needs to echo ids back in
+    // the output, so short predictable aliases are far more reliable.
+    const userAliasById = new Map<string, string>();
+    const aliasToUserId = new Map<string, string>();
+    availableUsers.forEach((user, index) => {
+      const alias = `u${index + 1}`;
+      userAliasById.set(user.id, alias);
+      aliasToUserId.set(alias, user.id);
+    });
+    const shiftTypeAliasById = new Map<string, string>();
+    const aliasToShiftTypeId = new Map<string, string>();
+    shiftTypes.forEach((st, index) => {
+      const alias = `sh${index + 1}`;
+      shiftTypeAliasById.set(st.id, alias);
+      aliasToShiftTypeId.set(alias, st.id);
+    });
+
     const holidayMap = new Map(holidays.map((holiday) => [toIsoDate(holiday.date), holiday]));
     const calendarDays = getDateRange(startDate, endDate).map((date) => {
       const isoDate = toIsoDate(date);
@@ -2252,10 +2271,15 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       endDate: parsed.data.endDate,
       fairnessLookbackDays: parsed.data.fairnessLookbackDays,
       calendarDays,
-      users: availableUsers,
+      users: availableUsers.map((user) => ({
+        id: userAliasById.get(user.id)!,
+        name: user.name,
+        assignedShiftTypeIds: user.assignedShiftTypeIds
+          .map((id) => shiftTypeAliasById.get(id))
+          .filter((alias): alias is string => alias !== undefined),
+      })),
       shiftTypes: shiftTypes.map((shiftType) => ({
-        id: shiftType.id,
-        serviceId: shiftType.serviceId,
+        id: shiftTypeAliasById.get(shiftType.id)!,
         serviceName: shiftType.service.name,
         name: shiftType.name,
         startsAt: shiftType.startsAt,
@@ -2278,7 +2302,7 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         country: holiday.country,
       })),
       vacations: vacations.map((vacation) => ({
-        userId: vacation.userId,
+        userId: userAliasById.get(vacation.userId) ?? vacation.userId,
         userName: `${vacation.user.firstName} ${vacation.user.lastName}`,
         startDate: toIsoDate(vacation.startDate),
         endDate: toIsoDate(vacation.endDate),
@@ -2286,8 +2310,8 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       })),
       lockedEntries: lockedEntries.map((entry) => ({
         date: toIsoDate(entry.date),
-        userId: entry.userId,
-        shiftTypeId: entry.shiftTypeId,
+        userId: userAliasById.get(entry.userId) ?? entry.userId,
+        shiftTypeId: shiftTypeAliasById.get(entry.shiftTypeId) ?? entry.shiftTypeId,
         note: entry.note ?? undefined,
       })),
       historicalAssignments: historicalAssignments
@@ -2295,8 +2319,8 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         .map((entry) => ({
           date: toIsoDate(entry.date),
           weekdayNumber: getWeekdayNumber(entry.date),
-          userId: entry.userId,
-          shiftTypeId: entry.shiftTypeId,
+          userId: userAliasById.get(entry.userId)!,
+          shiftTypeId: shiftTypeAliasById.get(entry.shiftTypeId)!,
         })),
     };
     const aiRunInput = JSON.parse(JSON.stringify(input)) as Prisma.InputJsonValue;
@@ -2345,6 +2369,16 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
 
       return errorState(parseActionError(error, d));
     }
+
+    // Remap short aliases back to real database IDs before validation
+    draft = {
+      ...draft,
+      events: draft.events.map((event) => ({
+        ...event,
+        userId: aliasToUserId.get(event.userId) ?? event.userId,
+        shiftTypeId: aliasToShiftTypeId.get(event.shiftTypeId) ?? event.shiftTypeId,
+      })),
+    };
 
     if (draft.events.length === 0) {
       return failAiRun(tr(d, "action.aiNoResults"));
