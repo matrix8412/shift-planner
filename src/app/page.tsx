@@ -7,23 +7,24 @@ import { getCurrentUser } from "@/server/auth";
 const pillars = [
   {
     title: "Serverové dáta",
-    body: "Zápisy idú cez server actions a Prisma, takže klient nepristupuje priamo na databázu."
+    body: "Zápisy idú cez server actions a Prisma; klient nepristupuje priamo na databázu. CRUD moduly majú validáciu, audit log a CSV import/export."
   },
   {
-    title: "PostgreSQL jadro",
-    body: "Nová schéma pokrýva používateľov, rozvrhy, dovolenky, sviatky, nastavenia aj worker joby."
+    title: "PostgreSQL + Prisma",
+    body: "Schéma pokrýva používateľov, rozvrhy, dovolenky, sviatky, role, oprávnenia, audit aj worker joby vrátane JobRun sledovania."
   },
   {
-    title: "Pripravené na AI",
-    body: "AI provideri sú schovaní za lokálnou vrstvou, takže sa nepretláčajú priamo do UI ani doménovej logiky."
+    title: "AI, worker a notifikácie",
+    body: "Worker cron odosiela pripomienky zmien (email + push) a automaticky synchronizuje sviatky z Nager.Date API pre aktuálny a nasledujúci rok."
   }
 ];
 
 const nextSteps = [
-  "dokončiť editáciu a mazanie v CRUD moduloch",
-  "prepojiť role a oprávnenia s reálnym prihlásením",
-  "doplnit worker flow pre pripomienky a synchronizáciu sviatkov",
-  "rozšíriť kalendárne zobrazenia o ďalšie filtre a navigáciu"
+  "Dokončiť editáciu a mazanie v CRUD moduloch tam, kde chýba",
+  "Prepojiť UI rolí a oprávnení s reálnym prihlasovaním a testovať prístupové cesty",
+  "Vylepšiť generovanie rozvrhov (lepší UI, auditovanie výsledkov, retry/queue)",
+  "Rozšíriť kalendárne zobrazenia o filtre, stránkovanie a exporty",
+  "Pridať testy (jednotkové/integračné) a nastaviť CI pipeline"
 ];
 
 export const dynamic = "force-dynamic";
@@ -41,14 +42,14 @@ export default async function HomePage() {
           <div className="stack-tight">
             <h2>Čo je už pripravené</h2>
             <p className="muted">
-              Aplikácia už beží v Dockeri, používa PostgreSQL, má server actions, worker proces a základné evidencie
-              napojené na databázu.
+              Aplikácia beží v Dockeri, používa PostgreSQL + Prisma, má plné CRUD moduly s auditom, role a oprávnenia,
+              AI generovanie rozvrhu, worker cron s reálnymi pripomienkami a synchronizáciou sviatkov.
             </p>
           </div>
           <div className="stack-tight">
             <h2>Ďalší smer</h2>
             <p className="muted">
-              Ďalšia vrstva je dokončenie oprávnení, väzieb medzi evidenciami a hlbšie workflow pre plánovanie služieb.
+              Zostáva doplniť testy, rozšíriť kalendárne zobrazenia, vylepšiť UI generovania rozvrhov a nastaviť CI pipeline.
             </p>
           </div>
         </div>

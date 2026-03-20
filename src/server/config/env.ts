@@ -21,6 +21,7 @@ const envSchema = z.object({
   S3_ACCESS_KEY: z.string().optional(),
   S3_SECRET_KEY: z.string().optional(),
   S3_FORCE_PATH_STYLE: z.coerce.boolean().optional(),
+  HOLIDAY_COUNTRIES: z.string().default("SK"),
 });
 
 export const env = envSchema.parse({
@@ -42,5 +43,6 @@ export const env = envSchema.parse({
   S3_ACCESS_KEY: process.env.S3_ACCESS_KEY,
   S3_SECRET_KEY: process.env.S3_SECRET_KEY,
   S3_FORCE_PATH_STYLE: process.env.S3_FORCE_PATH_STYLE,
+  HOLIDAY_COUNTRIES: process.env.HOLIDAY_COUNTRIES,
 });
 
