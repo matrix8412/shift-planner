@@ -1475,6 +1475,7 @@ export function EntityModule({
   const [tablePage, setTablePage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(initialPageSize && pageSizeOptions.includes(initialPageSize) ? initialPageSize : defaultRowsPerPage);
   const [tableSort, setTableSort] = useState<TableSortState | null>(null);
+  const [statsSort, setStatsSort] = useState<Map<string, TableSortState>>(new Map());
   const [isSheetDirty, setIsSheetDirty] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
   const [lockOverrides, setLockOverrides] = useState<Record<string, boolean>>({});
@@ -2473,6 +2474,19 @@ export function EntityModule({
     });
   }
 
+  function toggleStatsSort(groupTitle: string, columnKey: string) {
+    setStatsSort((current) => {
+      const next = new Map(current);
+      const existing = next.get(groupTitle);
+      if (!existing || existing.columnKey !== columnKey) {
+        next.set(groupTitle, { columnKey, direction: "asc" });
+      } else {
+        next.set(groupTitle, { columnKey, direction: existing.direction === "asc" ? "desc" : "asc" });
+      }
+      return next;
+    });
+  }
+
   function toggleColumnVisibility(columnKey: string) {
     setHiddenColumns((current) => {
       const next = new Set(current);
@@ -2888,22 +2902,55 @@ export function EntityModule({
 
           {activeView === "stats" ? (
             <div className="stats-view-stack">
-              {displayStatGroups.map((group) =>
-                group.rows.length > 0 ? (
+              {displayStatGroups.map((group) => {
+                if (group.rows.length === 0) return null;
+                const groupSortState = statsSort.get(group.title);
+                const sortedStatRows = groupSortState
+                  ? [...group.rows].sort((a, b) => {
+                      const dir = groupSortState.direction === "asc" ? 1 : -1;
+                      const aVal = groupSortState.columnKey === "__label" ? a.label : (a.values[groupSortState.columnKey] ?? "0");
+                      const bVal = groupSortState.columnKey === "__label" ? b.label : (b.values[groupSortState.columnKey] ?? "0");
+                      const aNum = Number(aVal);
+                      const bNum = Number(bVal);
+                      if (!isNaN(aNum) && !isNaN(bNum)) return (aNum - bNum) * dir;
+                      return String(aVal).localeCompare(String(bVal), locale, { numeric: true, sensitivity: "base" }) * dir;
+                    })
+                  : group.rows;
+                return (
                   <div key={group.title} className="stat-group">
                     <h3 className="stat-group-title">{group.title}</h3>
                     <div className="table-shell">
                       <table className="records-table">
                         <thead>
                           <tr>
-                            <th />
-                            {group.columns.map((col) => (
-                              <th key={col}>{col}</th>
-                            ))}
+                            <th aria-sort={groupSortState?.columnKey === "__label" ? (groupSortState.direction === "asc" ? "ascending" : "descending") : "none"}>
+                              <button type="button" className={`table-heading-button${groupSortState?.columnKey === "__label" ? " active" : ""}`} onClick={() => toggleStatsSort(group.title, "__label")}>
+                                <span className="table-heading">
+                                  <span className="table-sort-indicator" aria-hidden="true">
+                                    {groupSortState?.columnKey === "__label" ? (groupSortState.direction === "asc" ? "↑" : "↓") : <ArrowUpDown size={14} />}
+                                  </span>
+                                </span>
+                              </button>
+                            </th>
+                            {group.columns.map((col) => {
+                              const isActive = groupSortState?.columnKey === col;
+                              return (
+                                <th key={col} aria-sort={isActive ? (groupSortState.direction === "asc" ? "ascending" : "descending") : "none"}>
+                                  <button type="button" className={`table-heading-button${isActive ? " active" : ""}`} onClick={() => toggleStatsSort(group.title, col)}>
+                                    <span className="table-heading">
+                                      {col}
+                                      <span className="table-sort-indicator" aria-hidden="true">
+                                        {isActive ? (groupSortState.direction === "asc" ? "↑" : "↓") : <ArrowUpDown size={14} />}
+                                      </span>
+                                    </span>
+                                  </button>
+                                </th>
+                              );
+                            })}
                           </tr>
                         </thead>
                         <tbody>
-                          {group.rows.map((row) => (
+                          {sortedStatRows.map((row) => (
                             <tr key={row.label}>
                               <td><strong>{row.label}</strong></td>
                               {group.columns.map((col) => (
@@ -2915,8 +2962,8 @@ export function EntityModule({
                       </table>
                     </div>
                   </div>
-                ) : null,
-              )}
+                );
+              })}
             </div>
           ) : null}
 
