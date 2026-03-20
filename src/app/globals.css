@@ -1028,9 +1028,8 @@ ul {
 }
 
 .module-toolbar-primary .module-search {
-  flex: 1 1 320px;
-  min-width: 0;
-  max-width: none;
+  min-width: min(360px, 100%);
+  max-width: 420px;
 }
 
 .module-toolbar-spacer {
@@ -3395,6 +3394,11 @@ ul {
   }
 
   .calendar-toolbar-search .module-search {
+    min-width: min(320px, 100%);
+    max-width: 360px;
+  }
+
+  .module-toolbar-primary .module-search {
     min-width: min(320px, 100%);
     max-width: 360px;
   }
