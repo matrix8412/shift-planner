@@ -1301,8 +1301,6 @@ function CalendarPanel({
       <div className="calendar-toolbar">
         <MonthSwitcher month={activeMonth} onMonthChange={onMonthChange} />
 
-
-
         {searchControl ? <div className="calendar-toolbar-search">{searchControl}</div> : null}
         {actionsControl ? <div className="calendar-toolbar-actions">{actionsControl}</div> : null}
       </div>
@@ -1373,27 +1371,11 @@ function CalendarPanel({
                       role={onItemSelect ? "button" : undefined}
                       tabIndex={onItemSelect ? 0 : undefined}
                       style={{
-                        background: `linear-gradient(90deg, ${item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf"} 0 12px, ${item.backgroundColor ?? "#d6ecd7"} 12px 100%)`,
+                        background: item.backgroundColor ?? "#d6ecd7",
                         color: item.textColor ?? "#17353c",
-                        borderColor: item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        borderColor: item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
                       }}
                     >
-                      {onItemContextMenu ? (
-                        <button
-                          type="button"
-                          className="calendar-entry-menu"
-                          aria-haspopup="menu"
-                          aria-label={t("entity.openMenu", { label: item.subtitle ? `${item.title}, ${item.subtitle}` : item.title })}
-                          title={t("entity.openMenu", { label: item.subtitle ? `${item.title}, ${item.subtitle}` : item.title })}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            event.stopPropagation();
-                            onItemContextMenu(item.recordId ?? item.id, event.clientX, event.clientY);
-                          }}
-                        >
-                          <MoreVertical size={16} />
-                        </button>
-                      ) : null}
                       <strong>{item.title}</strong>
                       {item.subtitle ? <span>{item.subtitle}</span> : null}
                       {item.timeLabel ? <small>{item.timeLabel}</small> : null}
@@ -1419,6 +1401,10 @@ function CalendarPanel({
                     </article>
                   ))}
                 </div>
+              </article>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1469,15 +1455,34 @@ export function EntityModule({
   headerActions,
   primaryAction,
   preSurfaceContent,
-                          <Lock size={12} />
-                        </span>
-                      ) : null}
-                    </article>
-                  ))}
+  hideHeader = false,
+}: EntityModuleProps) {
+  const router = useRouter();
+  const { notify } = useBrowserNotifications();
+  const { t, locale } = useI18n();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [sheetMode, setSheetMode] = useState<"create" | "edit">("create");
+  const [editingRow, setEditingRow] = useState<EntityRow | null>(null);
+  const [menuRowId, setMenuRowId] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState<RowMenuPosition | null>(null);
+  const [calendarMenuState, setCalendarMenuState] = useState<ContextMenuState | null>(null);
+  const [deletePromptState, setDeletePromptState] = useState<DeletePromptState | null>(null);
+  const [auditRow, setAuditRow] = useState<EntityRow | null>(null);
+  const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const [createPrefillValues, setCreatePrefillValues] = useState<Record<string, FormValue>>({});
+  const [activeSheetTabId, setActiveSheetTabId] = useState<string | null>(null);
+  const [searchValue, setSearchValue] = useState("");
+  const [tablePage, setTablePage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(initialPageSize && pageSizeOptions.includes(initialPageSize) ? initialPageSize : defaultRowsPerPage);
+  const [tableSort, setTableSort] = useState<TableSortState | null>(null);
+  const [isSheetDirty, setIsSheetDirty] = useState(false);
+  const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
+  const [lockOverrides, setLockOverrides] = useState<Record<string, boolean>>({});
+  const [deletedRowIds, setDeletedRowIds] = useState<Set<string>>(new Set());
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
-              </article>
-            );
-          })}
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set(initialHiddenColumns ?? []));
+  const [columnMenuOpen, setColumnMenuOpen] = useState(false);
+  const columnMenuRef = useRef<HTMLDivElement | null>(null);
   const visibleColumns = useMemo(() => columns.filter((col) => !hiddenColumns.has(col.key)), [columns, hiddenColumns]);
   const [createState, createFormAction] = useActionState(action, initialActionState);
   const [editState, editFormAction] = useActionState(editAction ?? action, initialActionState);
