@@ -1825,7 +1825,6 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         options: shiftOptions,
         description: tr(d, "schedule.fieldShiftTypeHint"),
         filterByField: "userId",
-        filterByDate: "date",
       },
       {
         type: "select",
