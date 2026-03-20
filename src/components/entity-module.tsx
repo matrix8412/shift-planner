@@ -79,6 +79,11 @@ type RowMenuPosition = {
   top: number;
 };
 
+type ContextMenuState = {
+  recordId: string;
+  position: RowMenuPosition;
+};
+
 type FormValue = string | number | boolean | string[] | undefined;
 type SortDirection = "asc" | "desc";
 type TableSortState = {
@@ -1175,6 +1180,7 @@ function CalendarPanel({
   onDaySelect,
   onItemSelect,
   onItemLockToggle,
+  onItemContextMenu,
 }: {
   calendar: CalendarConfig;
   items: CalendarItem[];
@@ -1185,6 +1191,7 @@ function CalendarPanel({
   onDaySelect?: (date: string) => void;
   onItemSelect?: (recordId: string) => void;
   onItemLockToggle?: (recordId: string) => void;
+  onItemContextMenu?: (recordId: string, clientX: number, clientY: number) => void;
 }) {
   const { t, locale } = useI18n();
   const activeMonth = month || calendar.initialMonth;
@@ -1267,6 +1274,15 @@ function CalendarPanel({
                       onClick={(event) => {
                         event.stopPropagation();
                         onItemSelect?.(item.recordId ?? item.id);
+                      }}
+                      onContextMenu={(event) => {
+                        if (!onItemContextMenu) {
+                          return;
+                        }
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onItemContextMenu(item.recordId ?? item.id, event.clientX, event.clientY);
                       }}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
@@ -1372,6 +1388,7 @@ export function EntityModule({
   const [editingRow, setEditingRow] = useState<EntityRow | null>(null);
   const [menuRowId, setMenuRowId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<RowMenuPosition | null>(null);
+  const [calendarMenuState, setCalendarMenuState] = useState<ContextMenuState | null>(null);
   const [auditRow, setAuditRow] = useState<EntityRow | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [createPrefillValues, setCreatePrefillValues] = useState<Record<string, FormValue>>({});
@@ -1398,6 +1415,7 @@ export function EntityModule({
   const [bulkDeleteState, bulkDeleteFormAction] = useActionState(bulkDeleteAction ?? action, initialActionState);
   const menuHostRef = useRef<HTMLDivElement | null>(null);
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
+  const calendarMenuRef = useRef<HTMLDivElement | null>(null);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const sheetFormRef = useRef<HTMLFormElement | null>(null);
@@ -1723,7 +1741,7 @@ export function EntityModule({
           return;
         }
         setAuditRow(null);
-        setMenuRowId(null);
+        closeAllMenus();
         setActionMenuOpen(false);
       }
     };
@@ -1741,6 +1759,10 @@ export function EntityModule({
         setMenuPosition(null);
       }
 
+      if (calendarMenuState && !calendarMenuRef.current?.contains(target)) {
+        setCalendarMenuState(null);
+      }
+
       if (actionMenuOpen && !actionMenuRef.current?.contains(target)) {
         setActionMenuOpen(false);
       }
@@ -1752,7 +1774,7 @@ export function EntityModule({
 
     window.addEventListener("pointerdown", handlePointerDown);
     return () => window.removeEventListener("pointerdown", handlePointerDown);
-  }, [actionMenuOpen, columnMenuOpen, menuRowId]);
+  }, [actionMenuOpen, calendarMenuState, columnMenuOpen, menuRowId]);
 
   useEffect(() => {
     if (deletedRowIds.size > 0) {
@@ -2037,10 +2059,15 @@ export function EntityModule({
     forceCloseSheet();
   }
 
-  function openAuditRow(row: EntityRow) {
-    setAuditRow(row);
+  function closeAllMenus() {
     setMenuRowId(null);
     setMenuPosition(null);
+    setCalendarMenuState(null);
+  }
+
+  function openAuditRow(row: EntityRow) {
+    setAuditRow(row);
+    closeAllMenus();
   }
 
   function confirmDelete() {
@@ -2070,9 +2097,16 @@ export function EntityModule({
     setCreatePrefillValues({});
     setIsSheetOpen(true);
     setIsUnsavedChangesDialogOpen(false);
-    setMenuRowId(null);
-    setMenuPosition(null);
+    closeAllMenus();
     setActionMenuOpen(false);
+  }
+
+  function computeMenuPosition(left: number, top: number, menuWidth: number, menuHeight: number) {
+    const viewportPadding = 12;
+    const nextLeft = Math.max(viewportPadding, Math.min(left, window.innerWidth - menuWidth - viewportPadding));
+    const nextTop = Math.max(viewportPadding, Math.min(top, window.innerHeight - menuHeight - viewportPadding));
+
+    return { left: nextLeft, top: nextTop };
   }
 
   function handleCalendarDaySelect(dateValue: string) {
@@ -2091,6 +2125,22 @@ export function EntityModule({
     }
 
     openCreateSheet(prefillValues);
+  }
+
+  function openCalendarRecordMenu(recordId: string, clientX: number, clientY: number) {
+    if (!canDelete) {
+      return;
+    }
+
+    setMenuRowId(null);
+    setMenuPosition(null);
+
+    const menuWidth = 190;
+    const menuHeight = 64;
+    setCalendarMenuState({
+      recordId,
+      position: computeMenuPosition(clientX, clientY, menuWidth, menuHeight),
+    });
   }
 
   function handleCalendarItemSelect(itemId: string) {
@@ -2197,11 +2247,13 @@ export function EntityModule({
       return;
     }
 
+    setCalendarMenuState(null);
+
     const rect = trigger.getBoundingClientRect();
     const menuWidth = 190;
     const menuHeight = (row.auditEntries !== undefined ? 48 : 0) + (canDelete ? 48 : 0) + 16;
-    const viewportPadding = 12;
     const offset = 8;
+    const viewportPadding = 12;
     const left = Math.max(viewportPadding, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - viewportPadding));
     const shouldOpenUpward = rect.bottom + offset + menuHeight > window.innerHeight - viewportPadding;
     const top = shouldOpenUpward
@@ -2686,6 +2738,7 @@ export function EntityModule({
               onDaySelect={canCreate && !createDisabledReason ? handleCalendarDaySelect : undefined}
               onItemSelect={canEdit ? handleCalendarItemSelect : undefined}
               onItemLockToggle={canToggleLock ? handleCalendarItemLockToggle : undefined}
+                onItemContextMenu={canDelete ? openCalendarRecordMenu : undefined}
             />
           ) : null}
 
@@ -3068,6 +3121,32 @@ export function EntityModule({
               </button>
             </form>
           ) : null}
+        </div>
+      ) : null}
+
+      {calendarMenuState ? (
+        <div
+          ref={calendarMenuRef}
+          className="row-menu calendar-record-menu"
+          role="menu"
+          style={{ left: `${calendarMenuState.position.left}px`, top: `${calendarMenuState.position.top}px` }}
+        >
+          <form
+            action={deleteFormAction}
+            onSubmit={(event) => {
+              if (!confirmDelete()) {
+                event.preventDefault();
+                return;
+              }
+              pendingDeleteIdRef.current = calendarMenuState.recordId;
+              setCalendarMenuState(null);
+            }}
+          >
+            <input type="hidden" name="id" value={calendarMenuState.recordId} />
+            <button type="submit" className="row-menu-item danger" role="menuitem">
+              {t("entity.delete")}
+            </button>
+          </form>
         </div>
       ) : null}
 
