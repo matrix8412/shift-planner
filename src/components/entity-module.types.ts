@@ -90,6 +90,7 @@ export type CalendarItem = {
   subtitle?: string;
   timeLabel?: string;
   backgroundColor?: string;
+  stripColor?: string;
   textColor?: string;
   accentColor?: string;
   locked?: boolean;

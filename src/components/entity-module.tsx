@@ -1397,13 +1397,29 @@ function CalendarPanel({
                         </button>
                       ) : item.locked ? (
                         <span className="calendar-entry-lock-static">
-                          <Lock size={12} />
-                        </span>
-                      ) : null}
-                    </article>
-                  ))}
+                            {
+                              background: `linear-gradient(90deg, ${item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf"} 0 12px, ${item.backgroundColor ?? "#d6ecd7"} 12px 100%)`,
+                              color: item.textColor ?? "#17353c",
+                              borderColor: item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                            }
                 </div>
               </article>
+                          {onItemContextMenu ? (
+                            <button
+                              type="button"
+                              className="calendar-entry-menu"
+                              aria-haspopup="menu"
+                              aria-label={t("entity.openMenu", { label: item.subtitle ? `${item.title}, ${item.subtitle}` : item.title })}
+                              title={t("entity.openMenu", { label: item.subtitle ? `${item.title}, ${item.subtitle}` : item.title })}
+                              onClick={(event) => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                onItemContextMenu(item.recordId ?? item.id, event.clientX, event.clientY);
+                              }}
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+                          ) : null}
             );
           })}
         </div>

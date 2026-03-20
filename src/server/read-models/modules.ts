@@ -1671,8 +1671,10 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
   const auditMap = await getAuditEntryMap("SCHEDULE_ENTRY", entries.map((entry) => entry.id));
   const calendarItems: CalendarItem[] = entries.map((entry) => {
     const fallbackColors = mapServiceCalendarColors(entry.service.name);
+    const baseBackground = entry.service.colorLight ?? fallbackColors.backgroundColor;
+    const opacity = clampOpacity(entry.service.opacityLight, 78);
     const colors = {
-      backgroundColor: entry.service.colorLight ?? fallbackColors.backgroundColor,
+      backgroundColor: hexToRgba(baseBackground, opacity / 100) ?? baseBackground,
       accentColor: entry.service.colorDark ?? fallbackColors.accentColor,
       textColor: entry.service.textColorLight ?? fallbackColors.textColor,
     };
@@ -1685,6 +1687,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       subtitle: `${entry.user.lastName}, ${entry.user.firstName}`,
       timeLabel: `${entry.shiftType.startsAt} - ${entry.shiftType.endsAt}`,
       backgroundColor: colors.backgroundColor ?? undefined,
+      stripColor: baseBackground,
       accentColor: colors.accentColor ?? undefined,
       textColor: colors.textColor ?? undefined,
       locked: entry.locked,

@@ -1338,10 +1338,11 @@ ul {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 36px 18px 9px;
+  padding: 10px 36px 18px 12px;
   border: 1px solid transparent;
   border-radius: 10px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  overflow: hidden;
 }
 
 .calendar-entry-card-actionable {
@@ -1356,6 +1357,52 @@ ul {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
     0 8px 16px rgba(23, 53, 60, 0.12);
+}
+
+.calendar-entry-card:hover .calendar-entry-menu,
+.calendar-entry-card:focus-within .calendar-entry-menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.calendar-entry-menu {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.6);
+  color: rgba(18, 32, 41, 0.82);
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px) scale(0.94);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease,
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.calendar-entry-menu:hover {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(255, 255, 255, 0.8);
+  box-shadow:
+    0 3px 10px rgba(15, 23, 42, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
 }
 
 .calendar-entry-lock {
@@ -2907,6 +2954,23 @@ ul {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 10px 20px rgba(0, 0, 0, 0.25);
+}
+
+:root[data-theme="dark"] .calendar-entry-menu {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: rgba(12, 20, 28, 0.38);
+  color: rgba(247, 250, 252, 0.9);
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+:root[data-theme="dark"] .calendar-entry-menu:hover {
+  background: rgba(18, 29, 39, 0.62);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 3px 10px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 :root[data-theme="dark"] .calendar-entry-lock.unlocked {
