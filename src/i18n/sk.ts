@@ -904,6 +904,7 @@ const sk: TranslationDictionary = {
   "action.settingCreated": "Nastavenie bolo vytvorené.",
   "action.scheduleCreated": "Záznam rozvrhu bol vytvorený.",
   "action.scheduleDuplicateEntry": "Pre tohto používateľa už na {date} existuje záznam rozvrhu.",
+  "action.scheduleShiftTypeDuplicate": "Typ zmeny {shiftTypeName} je na {date} už naplánovaný. Každý typ zmeny možno použiť len raz za deň.",
 
   "action.userUpdated": "Používateľ bol upravený.",
   "action.roleUpdated": "Rola bola upravená.",
@@ -975,6 +976,7 @@ const sk: TranslationDictionary = {
   "action.aiInvalidShift": "AI vrátilo neplatnú zmenu pre {date}: {error}",
   "action.aiVacationConflict": "AI priradilo používateľa {userName} na {date}, ale tento má schválenú dovolenku.",
   "action.aiDuplicate": "AI vrátilo duplicitné záznamy rozvrhu pre {date}, používateľa {userId} a zmenu {shiftTypeId}.",
+  "action.aiShiftTypeDuplicate": "AI priradilo typ zmeny {shiftTypeId} viackrát na {date}. Každý typ zmeny možno použiť len raz za deň.",
   "action.aiLockedDuplicate": "AI duplikovalo zamknutý záznam pre {date}, používateľa {userId} a zmenu {shiftTypeId}.",
 
   /* ── AI generation success/notifications ── */

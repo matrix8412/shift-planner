@@ -904,6 +904,7 @@ const en: TranslationDictionary = {
   "action.settingCreated": "Setting has been created.",
   "action.scheduleCreated": "Schedule record has been created.",
   "action.scheduleDuplicateEntry": "A schedule entry already exists for this user on {date}.",
+  "action.scheduleShiftTypeDuplicate": "Shift type {shiftTypeName} is already scheduled on {date}. Each shift type can only be used once per day.",
 
   "action.userUpdated": "User has been updated.",
   "action.roleUpdated": "Role has been updated.",
@@ -975,6 +976,7 @@ const en: TranslationDictionary = {
   "action.aiInvalidShift": "AI returned an invalid shift for {date}: {error}",
   "action.aiVacationConflict": "AI assigned user {userName} on {date}, but the user has approved vacation for that date.",
   "action.aiDuplicate": "AI returned duplicate schedule rows for {date}, user {userId} and shift {shiftTypeId}.",
+  "action.aiShiftTypeDuplicate": "AI assigned shift type {shiftTypeId} more than once on {date}. Each shift type can only be used once per day.",
   "action.aiLockedDuplicate": "AI duplicated a locked schedule entry for {date}, user {userId} and shift {shiftTypeId}.",
 
   /* ── AI generation success/notifications ── */

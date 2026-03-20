@@ -2387,7 +2387,10 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
     const userMap = new Map(availableUsers.map((user) => [user.id, user]));
     const holidayDates = new Set(holidays.map((holiday) => toIsoDate(holiday.date)));
     const lockedSignatureSet = new Set(lockedEntries.map((entry) => `${toIsoDate(entry.date)}::${entry.userId}::${entry.shiftTypeId}`));
+    // Tracks date::shiftTypeId to enforce one shift type per day globally
+    const lockedShiftTypeOnDaySet = new Set(lockedEntries.map((entry) => `${toIsoDate(entry.date)}::${entry.shiftTypeId}`));
     const generatedSignatureSet = new Set<string>();
+    const generatedShiftTypeOnDaySet = new Set<string>();
     const validEvents: typeof draft.events = [];
     const skippedReasons: string[] = [];
     const auditEntries: Array<{ date: string; userId: string | null; userName: string | null; shiftTypeId: string | null; shiftTypeName: string | null; accepted: boolean; reason: string | null }> = [];
@@ -2457,6 +2460,7 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       }
 
       generatedSignatureSet.add(signature);
+      generatedShiftTypeOnDaySet.add(shiftTypeOnDayKey);
       validEvents.push(event);
       auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: true, reason: null });
     }
@@ -2660,6 +2664,22 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
     });
   }
 
+  const shiftTypeDuplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      shiftTypeId: parsed.data.shiftTypeId,
+    },
+    select: { id: true },
+  });
+
+  if (shiftTypeDuplicateEntry) {
+    const msg = tr(d, "action.scheduleShiftTypeDuplicate", {
+      shiftTypeName: shiftType.name,
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+    return errorState(msg, { shiftTypeId: [msg] });
+  }
+
   try {
     const notificationPayload = await db.$transaction(async (tx) => {
       const entry = await tx.scheduleEntry.create({
@@ -2792,13 +2812,9 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
     where: {
       date: scheduleDate,
       userId: parsed.data.userId,
-      id: {
-        not: id,
-      },
+      id: { not: id },
     },
-    select: {
-      id: true,
-    },
+    select: { id: true },
   });
 
   if (duplicateEntry) {
@@ -2810,6 +2826,23 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
       date: [duplicateMessage],
       userId: [duplicateMessage],
     });
+  }
+
+  const shiftTypeDuplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      shiftTypeId: parsed.data.shiftTypeId,
+      id: { not: id },
+    },
+    select: { id: true },
+  });
+
+  if (shiftTypeDuplicateEntry) {
+    const msg = tr(d, "action.scheduleShiftTypeDuplicate", {
+      shiftTypeName: shiftType.name,
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+    return errorState(msg, { shiftTypeId: [msg] });
   }
 
   try {
@@ -3605,6 +3638,20 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
 
         if (existing?.locked) {
           throw new Error(`Schedule entry "${record.date ?? "unknown"}" is locked.`);
+        }
+
+        // Enforce one shift type per day globally (skip if this is an update of the same row)
+        const shiftTypeOnDayConflict = await tx.scheduleEntry.findFirst({
+          where: {
+            date,
+            shiftTypeId: shiftType.id,
+            ...(existing ? { id: { not: existing.id } } : {}),
+          },
+          select: { id: true },
+        });
+
+        if (shiftTypeOnDayConflict) {
+          throw new Error(`Shift type "${shiftType.id}" is already scheduled on ${parsed.data.date}. Each shift type can only be used once per day.`);
         }
 
         const entry = existing
