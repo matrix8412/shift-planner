@@ -309,6 +309,7 @@ const sk: TranslationDictionary = {
   /* ──────────────────── Select controls ──────────────────── */
   "select.searchPlaceholder": "Hľadať...",
   "select.noOptions": "Žiadne dostupné možnosti",
+  "select.noOptionsSelectUser": "Najprv vyber používateľa",
 
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifikácie",

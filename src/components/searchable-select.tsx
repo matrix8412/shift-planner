@@ -21,6 +21,7 @@ type Props = {
   required?: boolean;
   allowEmpty?: boolean;
   emptyLabel?: string;
+  noOptionsLabel?: string;
   multiple?: boolean;
 };
 
@@ -42,6 +43,7 @@ export default function SearchableSelect({
   required,
   allowEmpty,
   emptyLabel,
+  noOptionsLabel,
   multiple,
 }: Props) {
   const { t } = useI18n();
@@ -91,13 +93,24 @@ export default function SearchableSelect({
   }
 
   // expose hidden inputs for form submission
+  const hiddenInputRef = useRef<HTMLInputElement | null>(null);
+
   const hiddenInputs = useMemo(() => {
     if (multiple) {
       const arr = Array.isArray(selected) ? selected : [];
       return arr.map((v, i) => <input key={i} type="hidden" name={name} value={v} />);
     }
-    return <input type="hidden" name={name} value={(selected as string) ?? ""} />;
+    return <input ref={hiddenInputRef} type="hidden" name={name} value={(selected as string) ?? ""} />;
   }, [name, selected, multiple]);
+
+  useEffect(() => {
+    if (multiple || !hiddenInputRef.current) {
+      return;
+    }
+
+    hiddenInputRef.current.dispatchEvent(new Event("input", { bubbles: true }));
+    hiddenInputRef.current.dispatchEvent(new Event("change", { bubbles: true }));
+  }, [multiple, selected]);
 
   const displayLabel = useMemo(() => {
     if (multiple) {
@@ -128,7 +141,7 @@ export default function SearchableSelect({
             />
           </div>
           <div className="searchable-select__list">
-            {filtered.length === 0 ? <div className="searchable-select__empty">{t("select.noOptions")}</div> : null}
+            {filtered.length === 0 ? <div className="searchable-select__empty">{noOptionsLabel ?? t("select.noOptions")}</div> : null}
             {filtered.map((opt) => {
               const isSelected = multiple ? (Array.isArray(selected) && selected.includes(opt.value)) : selected === opt.value;
               return (

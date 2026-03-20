@@ -309,6 +309,7 @@ const en: TranslationDictionary = {
   /* ──────────────────── Select controls ──────────────────── */
   "select.searchPlaceholder": "Search...",
   "select.noOptions": "No available options",
+  "select.noOptionsSelectUser": "Select a user first",
 
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifications",

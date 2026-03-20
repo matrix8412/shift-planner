@@ -1606,7 +1606,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
   const locale = await getServerLocale();
   const d = getDictionary(locale);
 
-  const [entries, users, services, shiftTypes, holidays] = await Promise.all([
+  const [entries, users, services, shiftTypes, userShiftTypes, holidays] = await Promise.all([
     db.scheduleEntry.findMany({
       include: {
         user: true,
@@ -1629,6 +1629,12 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         service: true,
       },
       orderBy: [{ service: { name: "asc" } }, { startsAt: "asc" }],
+    }),
+    db.userShiftType.findMany({
+      select: {
+        userId: true,
+        shiftTypeId: true,
+      },
     }),
     getHolidays(),
   ]);
@@ -1653,6 +1659,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       value: shiftType.id,
       label: `${shiftType.service.name} / ${shiftType.name} (${shiftType.startsAt}-${shiftType.endsAt})`,
       validDays,
+      allowedValues: userShiftTypes.filter((assignment) => assignment.shiftTypeId === shiftType.id).map((assignment) => assignment.userId),
     };
   });
   const missingDependencies = [
@@ -1812,7 +1819,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         required: true,
         options: shiftOptions,
         description: tr(d, "schedule.fieldShiftTypeHint"),
-        filterByDate: "date",
+        filterByField: "userId",
       },
       {
         type: "select",

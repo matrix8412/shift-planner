@@ -749,6 +749,16 @@ function getDateFieldDayOfWeek(formRef: React.RefObject<HTMLFormElement | null>,
   return date.getUTCDay();
 }
 
+function getFormFieldValue(formRef: React.RefObject<HTMLFormElement | null>, fieldName: string): string {
+  const field = formRef.current?.elements.namedItem(fieldName);
+
+  if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+    return field.value;
+  }
+
+  return "";
+}
+
 function SelectFieldControl({
   field,
   value,
@@ -760,35 +770,58 @@ function SelectFieldControl({
   fieldError?: string;
   formRef?: React.RefObject<HTMLFormElement | null>;
 }) {
+  const { t } = useI18n();
   const hasDateFilter = Boolean(field.filterByDate) && field.options.some((option) => option.validDays);
+  const hasFieldFilter = Boolean(field.filterByField) && field.options.some((option) => option.allowedValues);
   const [filteredOptions, setFilteredOptions] = useState(field.options);
   const [selectedValue, setSelectedValue] = useState(value ?? field.defaultValue ?? "");
 
   useEffect(() => {
-    if (!hasDateFilter || !formRef?.current || !field.filterByDate) return;
+    if ((!hasDateFilter && !hasFieldFilter) || !formRef?.current) return;
 
     function handleChange() {
-      const day = getDateFieldDayOfWeek(formRef!, field.filterByDate!);
-      if (day === null) {
-        setFilteredOptions(field.options);
-      } else {
+      if (hasDateFilter && field.filterByDate) {
+        const day = getDateFieldDayOfWeek(formRef!, field.filterByDate);
+        if (day === null) {
+          setFilteredOptions(field.options);
+          return;
+        }
+
         setFilteredOptions(field.options.filter((option) => !option.validDays || option.validDays.includes(day)));
+        return;
+      }
+
+      if (hasFieldFilter && field.filterByField) {
+        const sourceValue = getFormFieldValue(formRef!, field.filterByField);
+        if (!sourceValue) {
+          setFilteredOptions([]);
+          return;
+        }
+
+        setFilteredOptions(
+          field.options.filter((option) => !option.allowedValues || option.allowedValues.length === 0 || option.allowedValues.includes(sourceValue)),
+        );
       }
     }
 
-    const dateInput = formRef.current.elements.namedItem(field.filterByDate);
-    if (dateInput instanceof HTMLInputElement) {
-      dateInput.addEventListener("change", handleChange);
+    const sourceField = field.filterByDate ? formRef.current.elements.namedItem(field.filterByDate) : field.filterByField ? formRef.current.elements.namedItem(field.filterByField) : null;
+    if (sourceField instanceof HTMLInputElement || sourceField instanceof HTMLSelectElement) {
+      sourceField.addEventListener("change", handleChange);
       handleChange();
-      return () => dateInput.removeEventListener("change", handleChange);
+      return () => sourceField.removeEventListener("change", handleChange);
     }
-  }, [hasDateFilter, formRef, field.filterByDate, field.options]);
+  }, [field.filterByDate, field.filterByField, field.options, formRef, hasDateFilter, hasFieldFilter]);
 
   useEffect(() => {
-    if (hasDateFilter && filteredOptions.length > 0 && !filteredOptions.some((option) => option.value === selectedValue)) {
-      setSelectedValue(filteredOptions[0].value);
+    if ((hasDateFilter || hasFieldFilter) && filteredOptions.length > 0 && !filteredOptions.some((option) => option.value === selectedValue)) {
+      setSelectedValue(hasFieldFilter ? "" : filteredOptions[0].value);
+      return;
     }
-  }, [filteredOptions, hasDateFilter, selectedValue]);
+
+    if (hasFieldFilter && filteredOptions.length === 0 && selectedValue !== "") {
+      setSelectedValue("");
+    }
+  }, [filteredOptions, hasDateFilter, hasFieldFilter, selectedValue]);
 
   if (hasDateFilter) {
     return (
@@ -803,6 +836,7 @@ function SelectFieldControl({
           className="field-control"
           allowEmpty={field.allowEmpty}
           emptyLabel={field.emptyLabel ?? "Vyberte možnosť"}
+          noOptionsLabel={field.filterByField ? t("select.noOptionsSelectUser") : undefined}
         />
         {field.description ? <span className="field-description">{field.description}</span> : null}
         {fieldError ? <span className="field-error">{fieldError}</span> : null}
@@ -821,6 +855,7 @@ function SelectFieldControl({
         className="field-control"
         allowEmpty={field.allowEmpty}
         emptyLabel={field.emptyLabel ?? "Vyberte možnosť"}
+        noOptionsLabel={field.filterByField ? t("select.noOptionsSelectUser") : undefined}
       />
       {field.description ? <span className="field-description">{field.description}</span> : null}
       {fieldError ? <span className="field-error">{fieldError}</span> : null}
