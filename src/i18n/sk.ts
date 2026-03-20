@@ -306,6 +306,10 @@ const sk: TranslationDictionary = {
   "schedGen.close": "Zavrieť",
   "schedGen.submit": "Spustiť generovanie",
 
+  /* ──────────────────── Select controls ──────────────────── */
+  "select.searchPlaceholder": "Hľadať...",
+  "select.noOptions": "Žiadne dostupné možnosti",
+
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifikácie",
   "notifCard.heading": "Robustný notifikačný systém",

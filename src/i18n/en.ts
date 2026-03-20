@@ -306,6 +306,10 @@ const en: TranslationDictionary = {
   "schedGen.close": "Close",
   "schedGen.submit": "Start generation",
 
+  /* ──────────────────── Select controls ──────────────────── */
+  "select.searchPlaceholder": "Search...",
+  "select.noOptions": "No available options",
+
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifications",
   "notifCard.heading": "Robust notification system",

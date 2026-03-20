@@ -3,6 +3,8 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Search } from "lucide-react";
 
+import { useI18n } from "@/i18n/context";
+
 type Option = {
   value: string;
   label: string;
@@ -42,6 +44,7 @@ export default function SearchableSelect({
   emptyLabel,
   multiple,
 }: Props) {
+  const { t } = useI18n();
   const isControlled = controlledValue !== undefined;
   const initial = useMemo(() => {
     if (isControlled) return controlledValue as string | string[];
@@ -118,14 +121,14 @@ export default function SearchableSelect({
             <Search size={16} className="search-icon" />
             <input
               autoFocus
-              placeholder="Search..."
+              placeholder={t("select.searchPlaceholder")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="searchable-select__input"
             />
           </div>
           <div className="searchable-select__list">
-            {filtered.length === 0 ? <div className="searchable-select__empty">Žiadne dostupné možnosti</div> : null}
+            {filtered.length === 0 ? <div className="searchable-select__empty">{t("select.noOptions")}</div> : null}
             {filtered.map((opt) => {
               const isSelected = multiple ? (Array.isArray(selected) && selected.includes(opt.value)) : selected === opt.value;
               return (
