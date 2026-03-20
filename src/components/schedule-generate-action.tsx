@@ -86,15 +86,20 @@ export function ScheduleGenerateAction({ action, disabledReason, provider, initi
       </button>
 
       {isOpen ? (
-        <div className="confirm-layer schedule-generation-layer" role="presentation">
-          <button type="button" className="confirm-backdrop" aria-label={t("schedGen.closeAria")} onClick={() => setIsOpen(false)} />
-          <section className="confirm-dialog schedule-generation-dialog" aria-modal="true" role="dialog" aria-labelledby="schedule-generation-title">
-            <div className="stack-tight">
-              <p className="eyebrow">{t("schedGen.eyebrow")}</p>
-              <h2 id="schedule-generation-title">{t("schedGen.heading")}</h2>
-              <p className="muted">
-                {t("schedGen.providerNote", { provider: provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google Gemini" })}
-              </p>
+        <div className="sheet-layer" role="presentation">
+          <button type="button" className="sheet-backdrop" aria-label={t("schedGen.closeAria")} onClick={() => setIsOpen(false)} />
+          <section className="sheet-panel schedule-generation-sheet" aria-modal="true" role="dialog" aria-labelledby="schedule-generation-title">
+            <div className="sheet-header">
+              <div className="stack-tight">
+                <p className="eyebrow">{t("schedGen.eyebrow")}</p>
+                <h2 id="schedule-generation-title">{t("schedGen.heading")}</h2>
+                <p className="muted">
+                  {t("schedGen.providerNote", { provider: provider === "openai" ? "OpenAI" : provider === "anthropic" ? "Anthropic" : "Google Gemini" })}
+                </p>
+              </div>
+              <button type="button" className="sheet-close" onClick={() => setIsOpen(false)} aria-label={t("schedGen.closeAria")}>
+                {t("schedGen.close")}
+              </button>
             </div>
 
             <div className="settings-overview-grid schedule-generation-overview">
