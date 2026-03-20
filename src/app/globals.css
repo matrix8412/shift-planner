@@ -659,6 +659,17 @@ ul {
   background: rgba(62, 143, 151, 0.08);
 }
 
+.button.danger {
+  background: rgba(226, 90, 83, 0.12);
+  border-color: rgba(226, 90, 83, 0.35);
+  color: #b63f3a;
+}
+
+.button.danger:hover {
+  background: rgba(226, 90, 83, 0.18);
+  border-color: rgba(226, 90, 83, 0.48);
+}
+
 .button:disabled {
   opacity: 0.56;
   cursor: not-allowed;
@@ -3122,6 +3133,17 @@ ul {
   background: #2d8a93;
   border-color: #2d8a93;
   color: #ffffff;
+}
+
+:root[data-theme="dark"] .button.danger {
+  background: rgba(226, 90, 83, 0.18);
+  border-color: rgba(226, 90, 83, 0.34);
+  color: #ffb7b3;
+}
+
+:root[data-theme="dark"] .button.danger:hover {
+  background: rgba(226, 90, 83, 0.24);
+  border-color: rgba(226, 90, 83, 0.46);
 }
 
 :root[data-theme="dark"] .button:not(.secondary):hover {

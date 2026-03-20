@@ -84,6 +84,11 @@ type ContextMenuState = {
   position: RowMenuPosition;
 };
 
+type DeletePromptState = {
+  recordId: string;
+  label: string;
+};
+
 type FormValue = string | number | boolean | string[] | undefined;
 type SortDirection = "asc" | "desc";
 type TableSortState = {
@@ -1389,6 +1394,7 @@ export function EntityModule({
   const [menuRowId, setMenuRowId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<RowMenuPosition | null>(null);
   const [calendarMenuState, setCalendarMenuState] = useState<ContextMenuState | null>(null);
+  const [deletePromptState, setDeletePromptState] = useState<DeletePromptState | null>(null);
   const [auditRow, setAuditRow] = useState<EntityRow | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [createPrefillValues, setCreatePrefillValues] = useState<Record<string, FormValue>>({});
@@ -1439,7 +1445,7 @@ export function EntityModule({
   const hasAuditMenu = rows.some((row) => row.auditEntries !== undefined);
   const canEdit = (canEditProp ?? Boolean(editAction)) && Boolean(editAction);
   const canDelete = (canDeleteProp ?? Boolean(deleteAction)) && Boolean(deleteAction);
-  const isOverlayOpen = isSheetOpen || auditRow !== null || isUnsavedChangesDialogOpen;
+  const isOverlayOpen = isSheetOpen || auditRow !== null || isUnsavedChangesDialogOpen || deletePromptState !== null;
   const deferredSearchValue = useDeferredValue(searchValue);
   const normalizedSearch = normalizeSearchValue(deferredSearchValue);
   const availableViews = useMemo<ModuleView[]>(() => {
@@ -1735,6 +1741,12 @@ export function EntityModule({
           return;
         }
 
+        if (deletePromptState) {
+          event.preventDefault();
+          setDeletePromptState(null);
+          return;
+        }
+
         if (isSheetOpen) {
           event.preventDefault();
           requestSheetClose();
@@ -1748,7 +1760,7 @@ export function EntityModule({
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isSheetDirty, isSheetOpen, isUnsavedChangesDialogOpen]);
+  }, [deletePromptState, isSheetDirty, isSheetOpen, isUnsavedChangesDialogOpen]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -2070,8 +2082,24 @@ export function EntityModule({
     closeAllMenus();
   }
 
-  function confirmDelete() {
-    return window.confirm(t("entity.confirmDelete"));
+  function requestDeleteRecord(recordId: string, label: string) {
+    closeAllMenus();
+    setDeletePromptState({ recordId, label });
+  }
+
+  function confirmDeleteRecord() {
+    if (!deletePromptState) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("id", deletePromptState.recordId);
+    pendingDeleteIdRef.current = deletePromptState.recordId;
+    setDeletePromptState(null);
+
+    startTransition(() => {
+      deleteFormAction(formData);
+    });
   }
 
   function openCreateSheet(prefillValues?: Record<string, FormValue>) {
@@ -3097,6 +3125,27 @@ export function EntityModule({
         </div>
       ) : null}
 
+      {deletePromptState ? (
+        <div className="confirm-layer" role="presentation">
+          <button type="button" className="confirm-backdrop" aria-label={t("entity.closeConfirm")} onClick={() => setDeletePromptState(null)} />
+          <section className="confirm-dialog" aria-modal="true" role="dialog" aria-labelledby="delete-confirm-title">
+            <div className="stack-tight">
+              <p className="eyebrow">{t("entity.delete")}</p>
+              <h2 id="delete-confirm-title">{deletePromptState.label}</h2>
+              <p className="muted">{t("entity.confirmDelete")}</p>
+            </div>
+            <div className="confirm-actions">
+              <button type="button" className="button secondary" onClick={() => setDeletePromptState(null)}>
+                {t("entity.cancel")}
+              </button>
+              <button type="button" className="button danger" onClick={confirmDeleteRecord}>
+                {t("entity.delete")}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
       {activeMenuRow && menuPosition ? (
         <div ref={rowMenuRef} className="row-menu" role="menu" style={{ left: `${menuPosition.left}px`, top: `${menuPosition.top}px` }}>
           {activeMenuRow.auditEntries !== undefined ? (
@@ -3105,21 +3154,14 @@ export function EntityModule({
             </button>
           ) : null}
           {canDelete ? (
-            <form
-              action={deleteFormAction}
-              onSubmit={(event) => {
-                if (!confirmDelete()) {
-                  event.preventDefault();
-                  return;
-                }
-                pendingDeleteIdRef.current = activeMenuRow.id;
-              }}
+            <button
+              type="button"
+              className="row-menu-item danger"
+              role="menuitem"
+              onClick={() => requestDeleteRecord(activeMenuRow.id, activeMenuRow.label ?? activeMenuRow.id)}
             >
-              <input type="hidden" name="id" value={activeMenuRow.id} />
-              <button type="submit" className="row-menu-item danger" role="menuitem">
-                {t("entity.delete")}
-              </button>
-            </form>
+              {t("entity.delete")}
+            </button>
           ) : null}
         </div>
       ) : null}
@@ -3131,22 +3173,14 @@ export function EntityModule({
           role="menu"
           style={{ left: `${calendarMenuState.position.left}px`, top: `${calendarMenuState.position.top}px` }}
         >
-          <form
-            action={deleteFormAction}
-            onSubmit={(event) => {
-              if (!confirmDelete()) {
-                event.preventDefault();
-                return;
-              }
-              pendingDeleteIdRef.current = calendarMenuState.recordId;
-              setCalendarMenuState(null);
-            }}
+          <button
+            type="button"
+            className="row-menu-item danger"
+            role="menuitem"
+            onClick={() => requestDeleteRecord(calendarMenuState.recordId, rows.find((row) => row.id === calendarMenuState.recordId)?.label ?? calendarMenuState.recordId)}
           >
-            <input type="hidden" name="id" value={calendarMenuState.recordId} />
-            <button type="submit" className="row-menu-item danger" role="menuitem">
-              {t("entity.delete")}
-            </button>
-          </form>
+            {t("entity.delete")}
+          </button>
         </div>
       ) : null}
 
