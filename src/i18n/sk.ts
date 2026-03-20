@@ -690,6 +690,13 @@ const sk: TranslationDictionary = {
   "vacations.fieldNotesPlaceholder": "Voliteľné poznámky k žiadosti",
   "vacations.createDisabled": "Najprv vytvorte aspoň jedného používateľa.",
   "vacations.importDisabled": "Najprv vytvorte aspoň jedného používateľa pred importom.",
+  "vacations.statByUser": "Podľa používateľa",
+  "vacations.statByStatus": "Podľa stavu",
+  "vacations.statColPending": "Čakajúce",
+  "vacations.statColApproved": "Schválené",
+  "vacations.statColRejected": "Zamietnuté",
+  "vacations.statColTotal": "Spolu",
+  "vacations.statColCount": "Počet",
 
   /* ──────────────────── Module: Conditions ──────────────────── */
   "conditions.title": "Podmienky",

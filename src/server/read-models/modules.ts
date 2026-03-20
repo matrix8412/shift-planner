@@ -1343,6 +1343,16 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
       locked: vacation.locked,
     }));
   });
+  const pendingLabel = tr(d, "vacations.statColPending");
+  const approvedLabel = tr(d, "vacations.statColApproved");
+  const rejectedLabel = tr(d, "vacations.statColRejected");
+  const totalLabel = tr(d, "vacations.statColTotal");
+  const countLabel = tr(d, "vacations.statColCount");
+  const vacStatusLabel = (status: VacationStatus) =>
+    status === VacationStatus.APPROVED ? approvedLabel
+    : status === VacationStatus.REJECTED ? rejectedLabel
+    : pendingLabel;
+
   const rows = attachAuditRows(
     vacations.map((vacation) => ({
       id: vacation.id,
@@ -1361,10 +1371,34 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
         locked: boolCell(vacation.locked, "Zamknute", "Otvorene"),
         status: vacationStatusCell(vacation.status),
         notes: vacation.notes ?? "-",
+        _vacStatus: vacStatusLabel(vacation.status),
       },
     })),
     auditMap,
   );
+
+  const userVacCounts = new Map<string, { id: string; PENDING: number; APPROVED: number; REJECTED: number }>();
+  for (const vacation of vacations) {
+    const userName = `${vacation.user.firstName} ${vacation.user.lastName}`;
+    if (!userVacCounts.has(userName)) userVacCounts.set(userName, { id: vacation.userId, PENDING: 0, APPROVED: 0, REJECTED: 0 });
+    userVacCounts.get(userName)![vacation.status]++;
+  }
+  const userStatRows = Array.from(userVacCounts.entries())
+    .sort(([a], [b]) => a.localeCompare(b, "sk"))
+    .map(([userName, counts]) => ({
+      label: userName,
+      values: {
+        [pendingLabel]: String(counts.PENDING),
+        [approvedLabel]: String(counts.APPROVED),
+        [rejectedLabel]: String(counts.REJECTED),
+        [totalLabel]: String(counts.PENDING + counts.APPROVED + counts.REJECTED),
+      },
+    }));
+  const statusStatRows = [
+    { label: pendingLabel, values: { [countLabel]: String(vacations.filter((v) => v.status === VacationStatus.PENDING).length) } },
+    { label: approvedLabel, values: { [countLabel]: String(vacations.filter((v) => v.status === VacationStatus.APPROVED).length) } },
+    { label: rejectedLabel, values: { [countLabel]: String(vacations.filter((v) => v.status === VacationStatus.REJECTED).length) } },
+  ].filter((row) => Number(row.values[countLabel]) > 0);
 
   return {
     title: tr(d, "vacations.title"),
@@ -1389,7 +1423,22 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
     sheetDescription: tr(d, "vacations.sheetDescription"),
     submitLabel: tr(d, "vacations.submitLabel"),
     searchPlaceholder: tr(d, "vacations.search"),
-    views: ["calendar", "table"],
+    statGroups: [
+      {
+        title: tr(d, "vacations.statByUser"),
+        columns: [pendingLabel, approvedLabel, rejectedLabel, totalLabel],
+        rows: userStatRows,
+        groupByField: "userId",
+        breakdownField: "_vacStatus",
+      },
+      {
+        title: tr(d, "vacations.statByStatus"),
+        columns: [countLabel],
+        rows: statusStatRows,
+        breakdownField: "_vacStatus",
+      },
+    ],
+    views: ["calendar", "table", "stats"],
     defaultView: "calendar",
     monthScopeEnabled: true,
     calendar: {

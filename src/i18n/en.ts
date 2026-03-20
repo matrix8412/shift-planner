@@ -690,6 +690,13 @@ const en: TranslationDictionary = {
   "vacations.fieldNotesPlaceholder": "Optional notes for the request",
   "vacations.createDisabled": "Create at least one user first.",
   "vacations.importDisabled": "Create at least one user before importing.",
+  "vacations.statByUser": "By User",
+  "vacations.statByStatus": "By Status",
+  "vacations.statColPending": "Pending",
+  "vacations.statColApproved": "Approved",
+  "vacations.statColRejected": "Rejected",
+  "vacations.statColTotal": "Total",
+  "vacations.statColCount": "Count",
 
   /* ──────────────────── Module: Conditions ──────────────────── */
   "conditions.title": "Conditions",
