@@ -2459,6 +2459,14 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         continue;
       }
 
+      const shiftTypeOnDayKey = `${event.date}::${event.shiftTypeId}`;
+      if (lockedShiftTypeOnDaySet.has(shiftTypeOnDayKey) || generatedShiftTypeOnDaySet.has(shiftTypeOnDayKey)) {
+        const reason = tr(d, "action.aiShiftTypeDuplicate", { shiftTypeId: event.shiftTypeId, date: event.date });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: false, reason });
+        continue;
+      }
+
       generatedSignatureSet.add(signature);
       generatedShiftTypeOnDaySet.add(shiftTypeOnDayKey);
       validEvents.push(event);
