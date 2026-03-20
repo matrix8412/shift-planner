@@ -50,6 +50,7 @@
 
 html {
   zoom: 0.9;
+  min-height: calc(100vh / 0.9);
 }
 
 html,
