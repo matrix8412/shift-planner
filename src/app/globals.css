@@ -458,6 +458,9 @@ ul {
 .searchable-select__item.selected {
   background: linear-gradient(90deg, rgba(62,143,151,0.06), rgba(62,143,151,0.02));
 }
+.searchable-select__item.active {
+  background: linear-gradient(90deg, rgba(62,143,151,0.12), rgba(62,143,151,0.05));
+}
 .searchable-select__item-label {
   flex: 1;
 }

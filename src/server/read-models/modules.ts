@@ -1762,6 +1762,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     }));
 
   return {
+    moduleKey: "schedule",
     title: tr(d, "schedule.title"),
     summary: tr(d, "schedule.summary"),
     csvFileName: "schedule.csv",

@@ -901,6 +901,7 @@ const en: TranslationDictionary = {
   "action.holidayCreated": "Holiday has been created.",
   "action.settingCreated": "Setting has been created.",
   "action.scheduleCreated": "Schedule record has been created.",
+  "action.scheduleDuplicateEntry": "A schedule entry already exists for this user on {date}.",
 
   "action.userUpdated": "User has been updated.",
   "action.roleUpdated": "Role has been updated.",

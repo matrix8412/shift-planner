@@ -901,6 +901,7 @@ const sk: TranslationDictionary = {
   "action.holidayCreated": "Sviatok bol vytvorený.",
   "action.settingCreated": "Nastavenie bolo vytvorené.",
   "action.scheduleCreated": "Záznam rozvrhu bol vytvorený.",
+  "action.scheduleDuplicateEntry": "Pre tohto používateľa už na {date} existuje záznam rozvrhu.",
 
   "action.userUpdated": "Používateľ bol upravený.",
   "action.roleUpdated": "Rola bola upravená.",

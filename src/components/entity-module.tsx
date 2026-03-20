@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, type CSSProperties, type ChangeEvent, type ReactNode, useActionState, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, type CSSProperties, type ChangeEvent, type FormEvent, type ReactNode, useActionState, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
   BarChart3,
@@ -181,6 +181,20 @@ function getCellToneClass(cell: EntityCell) {
 
 function getCellText(cell: EntityCell) {
   return typeof cell === "string" ? cell : cell.text;
+}
+
+function formatDisplayDate(value: string, locale: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  const formatterLocale = locale === "sk" ? "sk-SK" : "en-US";
+
+  return new Intl.DateTimeFormat(formatterLocale, {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function findScheduleDuplicateRow(rows: EntityRow[], date: string, userId: string) {
+  return rows.find((row) => row.formValues?.date === date && row.formValues?.userId === userId);
 }
 
 function initialsFromName(name: string) {
@@ -849,7 +863,7 @@ function SelectFieldControl({
       <span className={fieldLabelClass(field.required)}>{field.label}</span>
       <SearchableSelect
         name={field.name}
-        options={field.options.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
+        options={(hasFieldFilter ? filteredOptions : field.options).map((o) => ({ value: o.value, label: o.label, description: o.description }))}
         defaultValue={value ?? field.defaultValue ?? ""}
         required={field.required}
         className="field-control"
@@ -1465,6 +1479,7 @@ export function EntityModule({
   const lockTogglePendingRef = useRef(false);
   const handledActionStatesRef = useRef({
     create: createState,
+    createError: createState,
     edit: editState,
     delete: deleteState,
     deleteError: deleteState,
@@ -1659,6 +1674,19 @@ export function EntityModule({
     router,
     toggleLockState,
   ]);
+
+  useEffect(() => {
+    const hasNewCreateError = createState.status === "error" && handledActionStatesRef.current.createError !== createState;
+
+    if (hasNewCreateError && createState.message) {
+      notify({
+        tone: "error",
+        message: createState.message,
+      });
+    }
+
+    handledActionStatesRef.current.createError = createState;
+  }, [createState, notify]);
 
   useEffect(() => {
     const hasNewDeleteError = deleteState.status === "error" && handledActionStatesRef.current.deleteError !== deleteState;
@@ -2172,6 +2200,34 @@ export function EntityModule({
     return { left: nextLeft, top: nextTop };
   }
 
+  function handleSheetSubmit(event: FormEvent<HTMLFormElement>) {
+    if (moduleKey !== "schedule" || sheetMode !== "create") {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const date = String(formData.get("date") ?? "").trim();
+    const userId = String(formData.get("userId") ?? "").trim();
+
+    if (!date || !userId) {
+      return;
+    }
+
+    const duplicateRow = findScheduleDuplicateRow(rows, date, userId);
+
+    if (!duplicateRow) {
+      return;
+    }
+
+    event.preventDefault();
+    notify({
+      tone: "error",
+      message: t("action.scheduleDuplicateEntry", {
+        date: formatDisplayDate(date, locale),
+      }),
+    });
+  }
+
   function handleCalendarDaySelect(dateValue: string) {
     const prefillValues: Record<string, FormValue> = {};
 
@@ -2465,7 +2521,7 @@ export function EntityModule({
           field={field}
           value={String((sheetMode === "edit" ? currentValue : (currentValue ?? field.defaultValue)) ?? "")}
           fieldError={fieldError}
-          formRef={field.filterByDate ? sheetFormRef : undefined}
+          formRef={field.filterByDate || field.filterByField ? sheetFormRef : undefined}
         />
       );
     }
@@ -3082,7 +3138,7 @@ export function EntityModule({
               </button>
             </div>
 
-            <form action={activeFormAction} className="sheet-form" ref={sheetFormRef} onChange={syncSheetDirtyState} onInput={syncSheetDirtyState}>
+            <form action={activeFormAction} className="sheet-form" ref={sheetFormRef} onChange={syncSheetDirtyState} onInput={syncSheetDirtyState} onSubmit={handleSheetSubmit}>
               {sheetMode === "edit" && editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
               {activeSheetTabs.length > 1 ? (
                 <div className="sheet-tab-strip" role="tablist" aria-label="Form sections">

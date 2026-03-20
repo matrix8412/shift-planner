@@ -56,6 +56,7 @@ export default function SearchableSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | string[]>(initial ?? (multiple ? [] : ""));
+  const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -77,6 +78,14 @@ export default function SearchableSelect({
     return options.filter((o) => normalize(o.label).includes(q) || normalize(o.description ?? "").includes(q));
   }, [options, query]);
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    setActiveIndex(filtered.length > 0 ? 0 : -1);
+  }, [filtered, open, query]);
+
   function toggleValue(val: string) {
     if (multiple) {
       const arr = Array.isArray(selected) ? [...selected] : [];
@@ -90,6 +99,37 @@ export default function SearchableSelect({
       onChange?.(val);
       setOpen(false);
     }
+  }
+
+  function commitActiveOption() {
+    if (activeIndex < 0 || activeIndex >= filtered.length) {
+      return;
+    }
+
+    toggleValue(filtered[activeIndex].value);
+  }
+
+  function moveActiveIndex(direction: -1 | 1) {
+    if (filtered.length === 0) {
+      return;
+    }
+
+    setActiveIndex((current) => {
+      if (current < 0) {
+        return 0;
+      }
+
+      const next = current + direction;
+      if (next < 0) {
+        return 0;
+      }
+
+      if (next >= filtered.length) {
+        return filtered.length - 1;
+      }
+
+      return next;
+    });
   }
 
   // expose hidden inputs for form submission
@@ -137,15 +177,40 @@ export default function SearchableSelect({
               placeholder={t("select.searchPlaceholder")}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  moveActiveIndex(1);
+                  return;
+                }
+
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  moveActiveIndex(-1);
+                  return;
+                }
+
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  commitActiveOption();
+                }
+              }}
               className="searchable-select__input"
             />
           </div>
           <div className="searchable-select__list">
             {filtered.length === 0 ? <div className="searchable-select__empty">{noOptionsLabel ?? t("select.noOptions")}</div> : null}
-            {filtered.map((opt) => {
+            {filtered.map((opt, index) => {
               const isSelected = multiple ? (Array.isArray(selected) && selected.includes(opt.value)) : selected === opt.value;
+              const isActive = index === activeIndex;
               return (
-                <button type="button" key={opt.value} className={`searchable-select__item${isSelected ? " selected" : ""}`} onClick={() => toggleValue(opt.value)}>
+                <button
+                  type="button"
+                  key={opt.value}
+                  className={`searchable-select__item${isSelected ? " selected" : ""}${isActive ? " active" : ""}`}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => toggleValue(opt.value)}
+                >
                   {multiple ? <input type="checkbox" readOnly checked={!!isSelected} /> : null}
                   <div className="searchable-select__item-label">{opt.label}</div>
                   {opt.description ? <div className="searchable-select__item-desc">{opt.description}</div> : null}

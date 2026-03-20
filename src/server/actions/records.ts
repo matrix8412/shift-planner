@@ -510,6 +510,16 @@ function getWeekdayNumber(date: Date) {
   return day === 0 ? 7 : day;
 }
 
+function formatDisplayDateValue(value: string, locale: string) {
+  const date = parseUtcDate(value);
+  const formatterLocale = locale === "sk" ? "sk-SK" : "en-US";
+
+  return new Intl.DateTimeFormat(formatterLocale, {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 function toAiProviderKind(provider: "openai" | "anthropic" | "gemini") {
   if (provider === "anthropic") return AiProviderKind.ANTHROPIC;
   if (provider === "gemini") return AiProviderKind.GEMINI;
@@ -2541,7 +2551,8 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
 
 export async function createScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("schedule:create");
-  const d = await getDict();
+  const locale = await getServerLocale();
+  const d = getDictionary(locale);
   const parsed = scheduleSchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
     userId: parseOptionalString(formData.get("userId")) ?? "",
@@ -2560,7 +2571,13 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
       id: parsed.data.shiftTypeId,
     },
     select: {
+      name: true,
       serviceId: true,
+      service: {
+        select: {
+          name: true,
+        },
+      },
       validityDays: true,
     },
   });
@@ -2585,6 +2602,27 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
   if (validityError) {
     return errorState(validityError, {
       shiftTypeId: [validityError],
+    });
+  }
+
+  const duplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      userId: parsed.data.userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (duplicateEntry) {
+    const duplicateMessage = tr(d, "action.scheduleDuplicateEntry", {
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+
+    return errorState(duplicateMessage, {
+      date: [duplicateMessage],
+      userId: [duplicateMessage],
     });
   }
 
@@ -2642,7 +2680,8 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
 
 export async function updateScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("schedule:edit");
-  const d = await getDict();
+  const locale = await getServerLocale();
+  const d = getDictionary(locale);
   const id = parseRequiredId(formData);
   const parsed = scheduleSchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
@@ -2681,7 +2720,13 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
       id: parsed.data.shiftTypeId,
     },
     select: {
+      name: true,
       serviceId: true,
+      service: {
+        select: {
+          name: true,
+        },
+      },
       validityDays: true,
     },
   });
@@ -2706,6 +2751,30 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
   if (validityError) {
     return errorState(validityError, {
       shiftTypeId: [validityError],
+    });
+  }
+
+  const duplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      userId: parsed.data.userId,
+      id: {
+        not: id,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (duplicateEntry) {
+    const duplicateMessage = tr(d, "action.scheduleDuplicateEntry", {
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+
+    return errorState(duplicateMessage, {
+      date: [duplicateMessage],
+      userId: [duplicateMessage],
     });
   }
 
