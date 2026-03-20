@@ -2431,6 +2431,30 @@ export function EntityModule({
   }
 
   function renderFormFields(formFields: FormField[]): ReactNode[] {
+    const avatarFieldIndex = formFields.findIndex((field) => field.type === "avatar" && field.name === "avatarUrl");
+    const firstNameIndex = formFields.findIndex((field) => field.name === "firstName");
+    const lastNameIndex = formFields.findIndex((field) => field.name === "lastName");
+
+    if (avatarFieldIndex >= 0 && firstNameIndex >= 0 && lastNameIndex >= 0) {
+      const avatarField = formFields[avatarFieldIndex];
+      const firstNameField = formFields[firstNameIndex];
+      const lastNameField = formFields[lastNameIndex];
+      const identityIndices = new Set([avatarFieldIndex, firstNameIndex, lastNameIndex]);
+
+      const remainingFields = formFields.filter((_, index) => !identityIndices.has(index));
+
+      return [
+        <div key="user-identity" className="user-sheet-identity-grid">
+          <div className="user-sheet-avatar-col">{renderFormField(avatarField)}</div>
+          <div className="user-sheet-name-col">
+            {renderFormField(firstNameField)}
+            {renderFormField(lastNameField)}
+          </div>
+        </div>,
+        ...renderFormFields(remainingFields),
+      ];
+    }
+
     const result: ReactNode[] = [];
     let i = 0;
 

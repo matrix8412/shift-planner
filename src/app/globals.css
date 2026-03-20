@@ -2641,6 +2641,21 @@ ul {
   display: grid;
   gap: 16px;
 }
+.user-sheet-identity-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.user-sheet-avatar-col {
+  display: flex;
+  flex-direction: column;
+}
+.user-sheet-name-col {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
 
 .sheet-tab-panel[hidden] {
   display: none;
@@ -3457,6 +3472,9 @@ ul {
 @media (max-width: 860px) {
   .module-page-header {
     flex-direction: column;
+  }
+  .user-sheet-identity-grid {
+    grid-template-columns: 1fr;
   }
 
   .module-header-actions {
