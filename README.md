@@ -1,7 +1,3 @@
-# Pohotovosti Rewrite
-
-This directory contains the new application rewrite that replaces the Firebase-based architecture with a self-hosted stack.
-
 ## Target architecture
 
 - Next.js App Router for web UI and server actions
@@ -39,4 +35,3 @@ The current scaffold includes:
 3. Rebuild services, shift types and conditions.
 4. Rebuild schedule and vacations with proper server-side validation.
 5. Add reminders and AI generation on top of stable domain services.
-6. Import Firebase data only after the target schema is fixed.
