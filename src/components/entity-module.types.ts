@@ -94,6 +94,7 @@ export type CalendarItem = {
   textColor?: string;
   accentColor?: string;
   locked?: boolean;
+  sortOrder?: number;
 };
 
 export type HolidayEntry = {

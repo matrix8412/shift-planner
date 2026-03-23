@@ -656,6 +656,8 @@ const en: TranslationDictionary = {
   "shifts.fieldStartsAt": "Starts at",
   "shifts.fieldEndsAt": "Ends at",
   "shifts.fieldCrossesMidnight": "Crosses midnight",
+  "shifts.fieldSortOrder": "Sort order",
+  "shifts.colSortOrder": "Order",
   "shifts.fieldValidFor": "Valid for {day}",
   "shifts.fieldValidForGroup": "Valid for days",
   "shifts.fieldIsActive": "Shift is active",

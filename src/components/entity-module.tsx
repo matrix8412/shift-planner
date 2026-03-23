@@ -1288,8 +1288,13 @@ function CalendarPanel({
 
     items
       .filter((item) => item.date.startsWith(activeMonth))
-      .sort((left, right) => `${left.date}-${left.timeLabel ?? ""}`.localeCompare(`${right.date}-${right.timeLabel ?? ""}`))
-      .forEach((item) => {
+      .sort((left, right) => {
+        const dateComp = left.date.localeCompare(right.date);
+        if (dateComp !== 0) return dateComp;
+        const orderComp = (left.sortOrder ?? 5) - (right.sortOrder ?? 5);
+        if (orderComp !== 0) return orderComp;
+        return (left.timeLabel ?? "").localeCompare(right.timeLabel ?? "");
+      })      .forEach((item) => {
         const existing = grouped.get(item.date) ?? [];
         existing.push(item);
         grouped.set(item.date, existing);

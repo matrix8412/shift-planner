@@ -136,6 +136,7 @@ model ShiftType {
   startsAt         String
   endsAt           String
   crossesMidnight  Boolean         @default(false)
+  sortOrder        Int             @default(5)
   validityDays     Json?
   isActive         Boolean         @default(true)
   assignments      UserShiftType[]

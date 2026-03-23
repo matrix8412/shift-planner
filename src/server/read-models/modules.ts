@@ -1234,6 +1234,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
         startsAt: shiftType.startsAt,
         endsAt: shiftType.endsAt,
         crossesMidnight: shiftType.crossesMidnight,
+        sortOrder: shiftType.sortOrder,
         isActive: shiftType.isActive,
         ...getShiftValidityFormValues(shiftType.validityDays),
       },
@@ -1245,6 +1246,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
           colorTokens: [buildServiceBadgeToken(shiftType.service)],
         },
         window: `${shiftType.startsAt} - ${shiftType.endsAt}${shiftType.crossesMidnight ? " (+1)" : ""}`,
+        sortOrder: String(shiftType.sortOrder),
         validity: buildShiftValidityCell(shiftType.validityDays),
         status: boolCell(shiftType.isActive, "Aktívna", "Neaktívna"),
       },
@@ -1266,6 +1268,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
       { key: "name", label: tr(d, "shifts.colName") },
       { key: "service", label: tr(d, "shifts.colService") },
       { key: "window", label: tr(d, "shifts.colTime") },
+      { key: "sortOrder", label: tr(d, "shifts.colSortOrder") },
       { key: "validity", label: tr(d, "shifts.colDays") },
       { key: "status", label: tr(d, "shifts.colValidity") },
     ],
@@ -1290,6 +1293,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
       { type: "time", name: "startsAt", label: tr(d, "shifts.fieldStartsAt"), required: true, defaultValue: "08:00" },
       { type: "time", name: "endsAt", label: tr(d, "shifts.fieldEndsAt"), required: true, defaultValue: "20:00" },
       { type: "checkbox", name: "crossesMidnight", label: tr(d, "shifts.fieldCrossesMidnight") },
+      { type: "number", name: "sortOrder", label: tr(d, "shifts.fieldSortOrder"), required: true, defaultValue: 5, min: 1, max: 10, step: 1 },
       ...shiftValidityDefinitions.map((definition, index) => ({
         type: "checkbox" as const,
         name: definition.fieldName,
@@ -1740,8 +1744,10 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       accentColor: colors.accentColor ?? undefined,
       textColor: colors.textColor ?? undefined,
       locked: entry.locked,
+      sortOrder: entry.shiftType.sortOrder,
     };
   });
+  calendarItems.sort((a, b) => (a.sortOrder ?? 5) - (b.sortOrder ?? 5));
   const rows = attachAuditRows(
     entries.map((entry) => ({
       id: entry.id,

@@ -365,6 +365,7 @@ const shiftSchema = z.object({
   startsAt: z.string().regex(timePattern, "Use HH:MM format."),
   endsAt: z.string().regex(timePattern, "Use HH:MM format."),
   crossesMidnight: z.boolean(),
+  sortOrder: z.number().int().min(1, "Sort order must be between 1 and 10.").max(10, "Sort order must be between 1 and 10."),
   validityDays: z.record(z.string(), z.boolean()),
   isActive: z.boolean(),
 });
@@ -1017,6 +1018,7 @@ export async function createShiftAction(_: ActionState, formData: FormData): Pro
     startsAt: parseOptionalString(formData.get("startsAt")) ?? "",
     endsAt: parseOptionalString(formData.get("endsAt")) ?? "",
     crossesMidnight: parseBoolean(formData, "crossesMidnight"),
+    sortOrder: Number.parseInt(parseOptionalString(formData.get("sortOrder")) ?? "5", 10),
     validityDays: parseShiftValidityFormData(formData),
     isActive: parseBoolean(formData, "isActive"),
   });
@@ -1047,6 +1049,7 @@ export async function createShiftAction(_: ActionState, formData: FormData): Pro
         startsAt: shiftType.startsAt,
         endsAt: shiftType.endsAt,
         crossesMidnight: shiftType.crossesMidnight,
+        sortOrder: shiftType.sortOrder,
         validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
         isActive: shiftType.isActive,
       }, "CREATE", actorId);
@@ -1483,6 +1486,7 @@ export async function updateShiftAction(_: ActionState, formData: FormData): Pro
     startsAt: parseOptionalString(formData.get("startsAt")) ?? "",
     endsAt: parseOptionalString(formData.get("endsAt")) ?? "",
     crossesMidnight: parseBoolean(formData, "crossesMidnight"),
+    sortOrder: Number.parseInt(parseOptionalString(formData.get("sortOrder")) ?? "5", 10),
     validityDays: parseShiftValidityFormData(formData),
     isActive: parseBoolean(formData, "isActive"),
   });
@@ -1522,6 +1526,7 @@ export async function updateShiftAction(_: ActionState, formData: FormData): Pro
           startsAt: shiftType.startsAt,
           endsAt: shiftType.endsAt,
           crossesMidnight: shiftType.crossesMidnight,
+          sortOrder: shiftType.sortOrder,
           validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
           isActive: shiftType.isActive,
         },
@@ -3382,6 +3387,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
       "startsAt",
       "endsAt",
       "crossesMidnight",
+      "sortOrder",
       "validOnMon",
       "validOnTue",
       "validOnWed",
@@ -3405,6 +3411,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
           startsAt: getRequiredCsvValue(record, "startsAt"),
           endsAt: getRequiredCsvValue(record, "endsAt"),
           crossesMidnight: parseCsvBoolean(record.crossesMidnight),
+          sortOrder: parseCsvInteger(record.sortOrder, 5),
           validityDays: buildShiftValidityFromFieldValues({
             validOnMon: parseCsvBoolean(record.validOnMon, true),
             validOnTue: parseCsvBoolean(record.validOnTue, true),
@@ -3452,6 +3459,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
             startsAt: shiftType.startsAt,
             endsAt: shiftType.endsAt,
             crossesMidnight: shiftType.crossesMidnight,
+            sortOrder: shiftType.sortOrder,
             validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
             isActive: shiftType.isActive,
           },

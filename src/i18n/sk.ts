@@ -656,6 +656,8 @@ const sk: TranslationDictionary = {
   "shifts.fieldStartsAt": "Začína o",
   "shifts.fieldEndsAt": "Končí o",
   "shifts.fieldCrossesMidnight": "Cez polnoc",
+  "shifts.fieldSortOrder": "Poradové číslo",
+  "shifts.colSortOrder": "Poradie",
   "shifts.fieldValidFor": "Platí pre {day}",
   "shifts.fieldValidForGroup": "Platí pre dni",
   "shifts.fieldIsActive": "Zmena je aktívna",
