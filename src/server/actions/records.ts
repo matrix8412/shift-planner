@@ -11,7 +11,8 @@ import { getCurrentUser } from "@/server/auth/index";
 import { ensurePermissionCatalog, permissionCatalog, type PermissionCode } from "@/server/auth/permissions";
 import { aiSettingsSchema, defaultAiSettings, getAiSettings } from "@/server/config/ai-settings";
 import { defaultNotificationSettings, getNotificationSettings, notificationSettingsSchema } from "@/server/config/notification-settings";
-import { AI_SETTINGS_KEY, BROWSER_NOTIFICATION_SETTINGS_KEY, NOTIFICATION_SETTINGS_KEY, isManagedSettingKey } from "@/server/config/managed-settings";
+import { httpsSettingsSchema, defaultHttpsSettings, getHttpsSettings } from "@/server/config/https-settings";
+import { AI_SETTINGS_KEY, BROWSER_NOTIFICATION_SETTINGS_KEY, NOTIFICATION_SETTINGS_KEY, HTTPS_SETTINGS_KEY, isManagedSettingKey } from "@/server/config/managed-settings";
 import { AI_AUDIT_RETENTION_DAYS_KEY, DEFAULT_AI_AUDIT_RETENTION_DAYS } from "@/server/config/ai-audit-retention";
 import { db } from "@/server/db/client";
 import { dispatchNotification } from "@/server/notifications";
@@ -2084,6 +2085,43 @@ export async function upsertAiAuditRetentionAction(_: ActionState, formData: For
     return {
       status: "success",
       message: tr(d, "action.aiAuditRetentionSaved"),
+    };
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
+export async function upsertHttpsSettingsAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireCurrentPermission("settings:edit");
+  const d = await getDict();
+
+  try {
+    const currentSettings = await getHttpsSettings().catch(() => defaultHttpsSettings);
+    const httpPort = Number.parseInt(parseOptionalString(formData.get("httpPort")) ?? String(currentSettings.httpPort), 10);
+    const httpsPort = Number.parseInt(parseOptionalString(formData.get("httpsPort")) ?? String(currentSettings.httpsPort), 10);
+    const renewIntervalHours = Number.parseInt(parseOptionalString(formData.get("renewIntervalHours")) ?? String(currentSettings.renewIntervalHours), 10);
+    const parsed = httpsSettingsSchema.safeParse({
+      acmeEmail: parseOptionalString(formData.get("acmeEmail")) ?? "",
+      httpPort: Number.isNaN(httpPort) ? currentSettings.httpPort : httpPort,
+      httpsPort: Number.isNaN(httpsPort) ? currentSettings.httpsPort : httpsPort,
+      renewIntervalHours: Number.isNaN(renewIntervalHours) ? currentSettings.renewIntervalHours : renewIntervalHours,
+    });
+
+    if (!parsed.success) {
+      return errorState(tr(d, "action.reviewHttpsFields"), parseZodError(parsed));
+    }
+
+    await db.appSetting.upsert({
+      where: { key: HTTPS_SETTINGS_KEY },
+      update: { value: parsed.data },
+      create: { key: HTTPS_SETTINGS_KEY, value: parsed.data },
+    });
+
+    revalidatePath("/settings");
+
+    return {
+      status: "success",
+      message: tr(d, "action.httpsSettingsSaved"),
     };
   } catch (error) {
     return errorState(parseActionError(error, d));

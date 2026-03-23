@@ -1082,6 +1082,31 @@ const sk: TranslationDictionary = {
   /* ──────────────────── Module placeholder ──────────────────── */
   "placeholder.module": "Modul",
   "placeholder.nextSteps": "Ďalšie kroky implementácie",
+
+  /* ──────────────────── HTTPS / Let's Encrypt ──────────────────── */
+  "settingsTabs.https": "HTTPS",
+  "https.eyebrow": "Let's Encrypt / Caddy",
+  "https.title": "Konfigurácia HTTPS",
+  "https.description": "Nastavte automatické TLS certifikáty cez Let's Encrypt. Caddy získava a obnovuje certifikáty automaticky po zadaní domény a ACME emailu.",
+  "https.domainLabel": "Aktuálna doména",
+  "https.statusLabel": "Stav HTTPS",
+  "https.statusConfigured": "Nakonfigurované",
+  "https.statusNotConfigured": "Nenakonfigurované",
+  "https.acmeEmailLabel": "ACME email (Let's Encrypt)",
+  "https.acmeEmailHint": "Emailová adresa na registráciu u Let's Encrypt. Vyžaduje sa pre akceptovanie ACME podmienok. Nechajte prázdne pre vypnutie HTTPS.",
+  "https.httpPortLabel": "HTTP port",
+  "https.httpPortHint": "Port na ktorom Caddy počúva pre bežnú HTTP komunikáciu a HTTP-01 challenge požiadavky od Let's Encrypt. Predvolená hodnota: 80.",
+  "https.httpsPortLabel": "HTTPS port",
+  "https.httpsPortHint": "Port na ktorom Caddy počúva pre TLS šifrovanú komunikáciu. Predvolená hodnota: 443.",
+  "https.renewIntervalLabel": "Interval kontroly obnovy (hodiny)",
+  "https.renewIntervalHint": "Ako často Caddy kontroluje, či certifikát potrebuje obnoviť. Certifikáty sa obnovujú keď im zostáva menej ako ~30 dní. Predvolená hodnota: 12 hodín.",
+  "https.restartNote": "Po uložení aktualizujte HTTP_PORT, HTTPS_PORT, CADDY_HOSTNAME, ACME_EMAIL a CADDY_RENEW_INTERVAL vo vašom .env súbore a reštartujte proxy službu aby sa zmeny prejavili.",
+  "https.envVarsNote": "Príklad: CADDY_HOSTNAME={hostname}  ACME_EMAIL=admin@example.com  HTTP_PORT=80  HTTPS_PORT=443",
+  "https.save": "Uložiť HTTPS nastavenia",
+
+  /* ── HTTPS action messages ── */
+  "action.httpsSettingsSaved": "HTTPS nastavenia boli uložené. Pre aktiváciu reštartujte proxy službu.",
+  "action.reviewHttpsFields": "Skontrolujte polia HTTPS nastavení.",
 };
 
 export default sk;

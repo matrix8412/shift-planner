@@ -1082,6 +1082,31 @@ const en: TranslationDictionary = {
   /* ──────────────────── Module placeholder ──────────────────── */
   "placeholder.module": "Module",
   "placeholder.nextSteps": "Next implementation steps",
+
+  /* ──────────────────── HTTPS / Let's Encrypt ──────────────────── */
+  "settingsTabs.https": "HTTPS",
+  "https.eyebrow": "Let's Encrypt / Caddy",
+  "https.title": "HTTPS Configuration",
+  "https.description": "Configure automatic TLS certificates via Let's Encrypt. Caddy obtains and renews certificates automatically once a hostname and ACME email are provided.",
+  "https.domainLabel": "Current domain",
+  "https.statusLabel": "HTTPS status",
+  "https.statusConfigured": "Configured",
+  "https.statusNotConfigured": "Not configured",
+  "https.acmeEmailLabel": "ACME email (Let's Encrypt)",
+  "https.acmeEmailHint": "Email address used to register with Let's Encrypt. Required to agree to the ACME terms of service. Leave empty to disable HTTPS.",
+  "https.httpPortLabel": "HTTP port",
+  "https.httpPortHint": "Port on which Caddy listens for plain HTTP traffic and Let's Encrypt HTTP-01 challenge requests. Default: 80.",
+  "https.httpsPortLabel": "HTTPS port",
+  "https.httpsPortHint": "Port on which Caddy listens for TLS-encrypted traffic. Default: 443.",
+  "https.renewIntervalLabel": "Renewal check interval (hours)",
+  "https.renewIntervalHint": "How often Caddy checks whether a certificate needs to be renewed. Certificates are renewed when they have fewer than ~30 days left. Default: 12 hours.",
+  "https.restartNote": "After saving, update HTTP_PORT, HTTPS_PORT, CADDY_HOSTNAME, ACME_EMAIL and CADDY_RENEW_INTERVAL in your .env file and restart the proxy service for changes to take effect.",
+  "https.envVarsNote": "Example: CADDY_HOSTNAME={hostname}  ACME_EMAIL=admin@example.com  HTTP_PORT=80  HTTPS_PORT=443",
+  "https.save": "Save HTTPS settings",
+
+  /* ── HTTPS action messages ── */
+  "action.httpsSettingsSaved": "HTTPS settings have been saved. Restart the proxy service to apply.",
+  "action.reviewHttpsFields": "Review the HTTPS settings fields.",
 };
 
 export default en;

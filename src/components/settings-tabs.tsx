@@ -4,7 +4,7 @@ import { useId, useState, type ReactNode } from "react";
 
 import { useI18n } from "@/i18n/context";
 
-type SettingsTabId = "system" | "appearance" | "notifications" | "ai";
+type SettingsTabId = "system" | "appearance" | "notifications" | "ai" | "https";
 
 type SettingsTab = {
   id: SettingsTabId;
@@ -17,6 +17,7 @@ type SettingsTabsProps = {
   appearanceContent: ReactNode;
   notificationsContent: ReactNode;
   aiContent: ReactNode;
+  httpsContent: ReactNode;
 };
 
 const tabsMeta: Omit<SettingsTab, "content">[] = [
@@ -36,9 +37,13 @@ const tabsMeta: Omit<SettingsTab, "content">[] = [
     id: "ai",
     labelKey: "settingsTabs.ai",
   },
+  {
+    id: "https",
+    labelKey: "settingsTabs.https",
+  },
 ];
 
-export function SettingsTabs({ systemContent, appearanceContent, notificationsContent, aiContent }: SettingsTabsProps) {
+export function SettingsTabs({ systemContent, appearanceContent, notificationsContent, aiContent, httpsContent }: SettingsTabsProps) {
   const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<SettingsTabId>("system");
   const tabListId = useId();
@@ -48,6 +53,7 @@ export function SettingsTabs({ systemContent, appearanceContent, notificationsCo
     { ...tabsMeta[1], content: appearanceContent },
     { ...tabsMeta[2], content: notificationsContent },
     { ...tabsMeta[3], content: aiContent },
+    { ...tabsMeta[4], content: httpsContent },
   ];
 
   const activeTabMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
