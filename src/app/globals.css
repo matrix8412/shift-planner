@@ -2173,6 +2173,7 @@ ul {
   z-index: 50;
   display: flex;
   justify-content: flex-end;
+  align-items: flex-start;
 }
 
 .sheet-backdrop {
@@ -2187,7 +2188,7 @@ ul {
   position: relative;
   z-index: 1;
   width: min(960px, 100vw);
-  height: 100vh;
+  max-height: 100vh;
   padding: calc(22px + var(--safe-top)) calc(20px + var(--safe-right)) calc(22px + var(--safe-bottom))
     calc(20px + var(--safe-left));
   border-left: 1px solid rgba(205, 225, 230, 0.95);
