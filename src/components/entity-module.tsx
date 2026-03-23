@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, type CSSProperties, type ChangeEvent, type FormEvent, type ReactNode, useActionState, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, type CSSProperties, type ChangeEvent, type FormEvent, type ReactNode, useActionState, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
   BarChart3,
@@ -62,6 +62,7 @@ type EntityModuleProps = EntityModuleConfig & {
   toggleLockAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   bulkLockAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   bulkDeleteAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  moveAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   canCreate?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
@@ -1260,6 +1261,7 @@ function CalendarPanel({
   onItemSelect,
   onItemLockToggle,
   onItemContextMenu,
+  onItemDrop,
 }: {
   calendar: CalendarConfig;
   items: CalendarItem[];
@@ -1271,8 +1273,11 @@ function CalendarPanel({
   onItemSelect?: (recordId: string) => void;
   onItemLockToggle?: (recordId: string) => void;
   onItemContextMenu?: (recordId: string, clientX: number, clientY: number) => void;
+  onItemDrop?: (recordId: string, targetDate: string) => void;
 }) {
   const { t, locale } = useI18n();
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const activeMonth = month || calendar.initialMonth;
   const holidays = useMemo(
     () => new Map((calendar.holidays ?? []).map((h) => [h.date, h])),
@@ -1320,11 +1325,12 @@ function CalendarPanel({
             const holidayName = isHoliday
               ? ((locale === "sk" ? holidayEntry.localName : undefined) ?? holidayEntry.name)
               : undefined;
+            const isDragOver = dragOverDate === day.key;
 
             return (
               <article
                 key={day.key}
-                className={`calendar-day${day.inMonth ? "" : " calendar-day-outside"}${isHoliday ? " calendar-day-holiday" : ""}${onDaySelect ? " calendar-day-actionable" : ""}`}
+                className={`calendar-day${day.inMonth ? "" : " calendar-day-outside"}${isHoliday ? " calendar-day-holiday" : ""}${onDaySelect ? " calendar-day-actionable" : ""}${isDragOver ? " calendar-day-drag-over" : ""}`}
                 onClick={() => onDaySelect?.(day.key)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -1332,6 +1338,25 @@ function CalendarPanel({
                     onDaySelect?.(day.key);
                   }
                 }}
+                onDragOver={onItemDrop ? (event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  setDragOverDate(day.key);
+                } : undefined}
+                onDragLeave={onItemDrop ? () => {
+                  setDragOverDate((current) => current === day.key ? null : current);
+                } : undefined}
+                onDrop={onItemDrop ? (event) => {
+                  event.preventDefault();
+                  setDragOverDate(null);
+                  setDraggingItemId(null);
+                  const recordId = event.dataTransfer.getData("text/x-record-id");
+                  const sourceDate = event.dataTransfer.getData("text/x-source-date");
+
+                  if (recordId && sourceDate !== day.key) {
+                    onItemDrop(recordId, day.key);
+                  }
+                } : undefined}
                 role={onDaySelect ? "button" : undefined}
                 tabIndex={onDaySelect ? 0 : undefined}
               >
@@ -1347,7 +1372,19 @@ function CalendarPanel({
                   {dayItems.map((item) => (
                     <article
                       key={item.id}
-                      className={`calendar-entry-card${onItemSelect ? " calendar-entry-card-actionable" : ""}`}
+                      className={`calendar-entry-card${onItemSelect ? " calendar-entry-card-actionable" : ""}${draggingItemId === (item.recordId ?? item.id) ? " calendar-entry-card-dragging" : ""}`}
+                      draggable={onItemDrop && !item.locked ? true : undefined}
+                      onDragStart={onItemDrop ? (event) => {
+                        const recordId = item.recordId ?? item.id;
+                        event.dataTransfer.setData("text/x-record-id", recordId);
+                        event.dataTransfer.setData("text/x-source-date", item.date);
+                        event.dataTransfer.effectAllowed = "move";
+                        setDraggingItemId(recordId);
+                      } : undefined}
+                      onDragEnd={onItemDrop ? () => {
+                        setDraggingItemId(null);
+                        setDragOverDate(null);
+                      } : undefined}
                       onClick={(event) => {
                         event.stopPropagation();
                         onItemSelect?.(item.recordId ?? item.id);
@@ -1438,6 +1475,7 @@ export function EntityModule({
   toggleLockAction,
   bulkLockAction,
   bulkDeleteAction,
+  moveAction,
   canCreate = true,
   canEdit: canEditProp,
   canDelete: canDeleteProp,
@@ -1492,6 +1530,7 @@ export function EntityModule({
   const [toggleLockState, toggleLockFormAction] = useActionState(toggleLockAction ?? action, initialActionState);
   const [bulkLockState, bulkLockFormAction] = useActionState(bulkLockAction ?? action, initialActionState);
   const [bulkDeleteState, bulkDeleteFormAction] = useActionState(bulkDeleteAction ?? action, initialActionState);
+  const [moveState, moveFormAction] = useActionState(moveAction ?? action, initialActionState);
   const menuHostRef = useRef<HTMLDivElement | null>(null);
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
   const calendarMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1515,6 +1554,8 @@ export function EntityModule({
     bulkLockError: bulkLockState,
     bulkDelete: bulkDeleteState,
     bulkDeleteError: bulkDeleteState,
+    move: moveState,
+    moveError: moveState,
   });
   const hasAuditMenu = rows.some((row) => row.auditEntries !== undefined);
   const canEdit = (canEditProp ?? Boolean(editAction)) && Boolean(editAction);
@@ -1631,6 +1672,7 @@ export function EntityModule({
     const hasNewToggleSuccess = toggleLockState.status === "success" && handledActionStatesRef.current.toggleLock !== toggleLockState;
     const hasNewBulkLockSuccess = bulkLockState.status === "success" && handledActionStatesRef.current.bulkLock !== bulkLockState;
     const hasNewBulkDeleteSuccess = bulkDeleteState.status === "success" && handledActionStatesRef.current.bulkDelete !== bulkDeleteState;
+    const hasNewMoveSuccess = moveState.status === "success" && handledActionStatesRef.current.move !== moveState;
     const nextSuccessMessage =
       (hasNewCreateSuccess ? createState.message : undefined) ??
       (hasNewEditSuccess ? editState.message : undefined) ??
@@ -1638,8 +1680,9 @@ export function EntityModule({
       (hasNewImportSuccess ? importState.message : undefined) ??
       (hasNewToggleSuccess ? toggleLockState.message : undefined) ??
       (hasNewBulkLockSuccess ? bulkLockState.message : undefined) ??
-      (hasNewBulkDeleteSuccess ? bulkDeleteState.message : undefined);
-    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess;
+      (hasNewBulkDeleteSuccess ? bulkDeleteState.message : undefined) ??
+      (hasNewMoveSuccess ? moveState.message : undefined);
+    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess || hasNewMoveSuccess;
 
     if (hasNewSuccess) {
       if (nextSuccessMessage) {
@@ -1688,6 +1731,7 @@ export function EntityModule({
     handledActionStatesRef.current.toggleLock = toggleLockState;
     handledActionStatesRef.current.bulkLock = bulkLockState;
     handledActionStatesRef.current.bulkDelete = bulkDeleteState;
+    handledActionStatesRef.current.move = moveState;
   }, [
     bulkDeleteState,
     bulkLockState,
@@ -1695,6 +1739,7 @@ export function EntityModule({
     deleteState,
     editState,
     importState,
+    moveState,
     notify,
     router,
     toggleLockState,
@@ -1778,6 +1823,19 @@ export function EntityModule({
 
     handledActionStatesRef.current.bulkDeleteError = bulkDeleteState;
   }, [bulkDeleteState, notify]);
+
+  useEffect(() => {
+    const hasNewMoveError = moveState.status === "error" && handledActionStatesRef.current.moveError !== moveState;
+
+    if (hasNewMoveError && moveState.message) {
+      notify({
+        tone: "error",
+        message: moveState.message,
+      });
+    }
+
+    handledActionStatesRef.current.moveError = moveState;
+  }, [moveState, notify]);
 
   useEffect(() => {
     if (lockTogglePendingRef.current) {
@@ -2319,6 +2377,20 @@ export function EntityModule({
       toggleLockFormAction(formData);
     });
   }
+
+  const handleCalendarItemDrop = useCallback((recordId: string, targetDate: string) => {
+    if (!moveAction) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("id", recordId);
+    formData.set("targetDate", targetDate);
+
+    startTransition(() => {
+      moveFormAction(formData);
+    });
+  }, [moveAction, moveFormAction]);
 
   function handleBulkLock(locked: boolean) {
     if (!canBulkLock || !selectedMonth) {
@@ -2896,7 +2968,8 @@ export function EntityModule({
               onDaySelect={canCreate && !createDisabledReason ? handleCalendarDaySelect : undefined}
               onItemSelect={canEdit ? handleCalendarItemSelect : undefined}
               onItemLockToggle={canToggleLock ? handleCalendarItemLockToggle : undefined}
-                onItemContextMenu={canDelete ? openCalendarRecordMenu : undefined}
+              onItemContextMenu={canDelete ? openCalendarRecordMenu : undefined}
+              onItemDrop={moveAction && canEdit ? handleCalendarItemDrop : undefined}
             />
           ) : null}
 

@@ -2913,6 +2913,148 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
   }
 }
 
+export async function moveScheduleEntryAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const actorId = await requireCurrentPermission("schedule:edit");
+  const locale = await getServerLocale();
+  const d = getDictionary(locale);
+
+  const id = parseOptionalString(formData.get("id"))?.trim();
+  const targetDate = parseOptionalString(formData.get("targetDate"))?.trim();
+
+  if (!id || !targetDate) {
+    return errorState(tr(d, "action.missingId"));
+  }
+
+  const entry = await db.scheduleEntry.findUnique({
+    where: { id },
+    include: { user: true, service: true, shiftType: true },
+  });
+
+  if (!entry) {
+    return missingIdState(d);
+  }
+
+  if (entry.locked) {
+    return errorState(tr(d, "action.scheduleMoveSourceLocked"));
+  }
+
+  const parsedTargetDate = parseUtcDate(targetDate);
+  const sourceDate = entry.date;
+
+  // Check if the shift type is valid for the target day
+  const holiday = await db.holiday.findUnique({
+    where: { date: parsedTargetDate },
+    select: { id: true },
+  });
+  const validityError = getScheduleValidityError(entry.shiftType.validityDays, parsedTargetDate, Boolean(holiday), d);
+
+  if (validityError) {
+    return errorState(validityError);
+  }
+
+  // Check for same-user duplicate on target date (but not the same entry)
+  const userDuplicate = await db.scheduleEntry.findFirst({
+    where: {
+      date: parsedTargetDate,
+      userId: entry.userId,
+      id: { not: id },
+    },
+    select: { id: true },
+  });
+
+  if (userDuplicate) {
+    return errorState(tr(d, "action.scheduleDuplicateEntry", {
+      date: formatDisplayDateValue(targetDate, locale),
+    }));
+  }
+
+  // Check for shift-type conflict on target date
+  const conflictEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: parsedTargetDate,
+      shiftTypeId: entry.shiftTypeId,
+      id: { not: id },
+    },
+    include: { user: true, service: true, shiftType: true },
+  });
+
+  if (conflictEntry) {
+    // If the conflicting entry is locked, block the move
+    if (conflictEntry.locked) {
+      return errorState(tr(d, "action.scheduleMoveLockedConflict", {
+        date: formatDisplayDateValue(targetDate, locale),
+      }));
+    }
+
+    // If the conflicting entry is unlocked, swap dates between the two entries
+    // Also check that the conflict entry's shift type is valid for the source date
+    const sourceHoliday = await db.holiday.findUnique({
+      where: { date: sourceDate },
+      select: { id: true },
+    });
+    const reverseValidityError = getScheduleValidityError(conflictEntry.shiftType.validityDays, sourceDate, Boolean(sourceHoliday), d);
+
+    if (reverseValidityError) {
+      return errorState(reverseValidityError);
+    }
+
+    // Check that the conflict entry's user doesn't already have an entry on the source date
+    const reverseUserDuplicate = await db.scheduleEntry.findFirst({
+      where: {
+        date: sourceDate,
+        userId: conflictEntry.userId,
+        id: { not: conflictEntry.id },
+      },
+      select: { id: true },
+    });
+
+    if (reverseUserDuplicate) {
+      return errorState(tr(d, "action.scheduleDuplicateEntry", {
+        date: formatDisplayDateValue(sourceDate.toISOString().slice(0, 10), locale),
+      }));
+    }
+
+    try {
+      await db.$transaction(async (tx) => {
+        // Move source entry to target date
+        await tx.scheduleEntry.update({
+          where: { id: entry.id },
+          data: { date: parsedTargetDate },
+        });
+
+        // Move conflict entry to source date
+        await tx.scheduleEntry.update({
+          where: { id: conflictEntry.id },
+          data: { date: sourceDate },
+        });
+
+        await writeAuditLog(tx, "SCHEDULE_ENTRY", entry.id, { date: parsedTargetDate.toISOString() }, "UPDATE", actorId);
+        await writeAuditLog(tx, "SCHEDULE_ENTRY", conflictEntry.id, { date: sourceDate.toISOString() }, "UPDATE", actorId);
+      });
+
+      return successState(tr(d, "action.scheduleSwapped"), "/schedule");
+    } catch (error) {
+      return errorState(parseActionError(error, d));
+    }
+  }
+
+  // No conflict — simple move
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.scheduleEntry.update({
+        where: { id: entry.id },
+        data: { date: parsedTargetDate },
+      });
+
+      await writeAuditLog(tx, "SCHEDULE_ENTRY", entry.id, { date: parsedTargetDate.toISOString() }, "UPDATE", actorId);
+    });
+
+    return successState(tr(d, "action.scheduleMoved", { date: formatDisplayDateValue(targetDate, locale) }), "/schedule");
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
 export async function importUsersCsvAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("users:importExport");
   const d = await getDict();

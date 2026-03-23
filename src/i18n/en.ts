@@ -938,6 +938,10 @@ const en: TranslationDictionary = {
   "action.scheduleBulkLockUpdated": "Bulk updated {count} schedule records.",
   "action.scheduleBulkDeleteLocked": "{count} selected records are locked. Unlock them first.",
   "action.scheduleBulkDeleted": "Bulk deleted {count} schedule records.",
+  "action.scheduleMoved": "Schedule record has been moved to {date}.",
+  "action.scheduleSwapped": "Schedule records have been swapped.",
+  "action.scheduleMoveLockedConflict": "Cannot move: a locked record with the same shift type already exists on {date}.",
+  "action.scheduleMoveSourceLocked": "Cannot move a locked record. Unlock it first.",
 
   "action.vacationLockedError": "Vacation record is locked. Use the lock icon on the record to unlock it.",
   "action.scheduleLockedError": "Schedule record is locked. Use the lock icon on the record to unlock it.",

@@ -938,6 +938,10 @@ const sk: TranslationDictionary = {
   "action.scheduleBulkLockUpdated": "Hromadne aktualizovaných {count} záznamov rozvrhu.",
   "action.scheduleBulkDeleteLocked": "{count} vybraných záznamov je zamknutých. Najprv ich odomknite.",
   "action.scheduleBulkDeleted": "Hromadne odstránených {count} záznamov rozvrhu.",
+  "action.scheduleMoved": "Záznam rozvrhu bol presunutý na {date}.",
+  "action.scheduleSwapped": "Záznamy rozvrhu boli vymenené.",
+  "action.scheduleMoveLockedConflict": "Presun nie je možný: na {date} už existuje zamknutý záznam s rovnakým typom zmeny.",
+  "action.scheduleMoveSourceLocked": "Zamknutý záznam nie je možné presunúť. Najprv ho odomknite.",
 
   "action.vacationLockedError": "Záznam dovolenky je zamknutý. Pre odomknutie použite ikonku zámku na zázname.",
   "action.scheduleLockedError": "Záznam rozvrhu je zamknutý. Pre odomknutie použite ikonku zámku na zázname.",
