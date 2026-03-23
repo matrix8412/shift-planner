@@ -2186,8 +2186,10 @@ ul {
 .sheet-panel {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
   width: min(960px, 100vw);
-  height: 100vh;
+  height: 100dvh;
   padding: calc(22px + var(--safe-top)) calc(20px + var(--safe-right)) calc(22px + var(--safe-bottom))
     calc(20px + var(--safe-left));
   border-left: 1px solid rgba(205, 225, 230, 0.95);
@@ -2218,6 +2220,7 @@ ul {
 .sheet-form {
   display: flex;
   flex-direction: column;
+  flex: 1;
   gap: 14px;
 }
 
@@ -2750,6 +2753,7 @@ ul {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 12px;
+  margin-top: auto;
   padding-top: 8px;
 }
 
