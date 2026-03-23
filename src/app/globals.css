@@ -49,8 +49,7 @@
 }
 
 html {
-  zoom: 0.9;
-  min-height: calc(100vh / 0.9);
+  min-height: 100vh;
 }
 
 html,
@@ -65,7 +64,7 @@ body {
 }
 
 body {
-  min-height: calc(100vh / 0.9);
+  min-height: 100vh;
 }
 
 a {
@@ -90,7 +89,7 @@ ul {
 
 .app-layout {
   display: flex;
-  min-height: calc(100vh / 0.9);
+  min-height: 100vh;
   align-items: flex-start;
 }
 
@@ -3354,9 +3353,18 @@ ul {
 }
 
 @media (min-width: 1181px) {
-  html,
+  html {
+    zoom: 0.9;
+    min-height: calc(100vh / 0.9);
+  }
+
   body {
+    min-height: calc(100vh / 0.9);
     font-size: 14px;
+  }
+
+  .app-layout {
+    min-height: calc(100vh / 0.9);
   }
 
   .app-main-shell {
@@ -3654,6 +3662,7 @@ ul {
 
   .app-main {
     padding-top: 20px;
+    min-height: auto;
   }
 }
 
@@ -3746,6 +3755,10 @@ ul {
 
   .records-table thead {
     display: none;
+  }
+
+  .table-shell {
+    overflow-x: visible;
   }
 
   .records-table,
