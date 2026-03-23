@@ -1410,10 +1410,11 @@ function CalendarPanel({
                       role={onItemSelect ? "button" : undefined}
                       tabIndex={onItemSelect ? 0 : undefined}
                       style={{
+                        "--strip-color": item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
                         background: item.backgroundColor ?? "#d6ecd7",
                         color: item.textColor ?? "#17353c",
                         borderColor: item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
-                      }}
+                      } as React.CSSProperties}
                     >
                       <strong>{item.title}</strong>
                       {item.subtitle ? <span>{item.subtitle}</span> : null}
@@ -1430,11 +1431,11 @@ function CalendarPanel({
                             onItemLockToggle(item.recordId ?? item.id);
                           }}
                         >
-                          {item.locked ? <Lock size={12} /> : <LockOpen size={12} />}
+                          {item.locked ? <Lock size={16} /> : <LockOpen size={16} />}
                         </button>
                       ) : item.locked ? (
                         <span className="calendar-entry-lock-static">
-                          <Lock size={12} />
+                          <Lock size={16} />
                         </span>
                       ) : null}
                     </article>

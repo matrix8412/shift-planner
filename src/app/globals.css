@@ -1342,11 +1342,22 @@ ul {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 10px 36px 18px 12px;
+  padding: 10px 36px 18px 16px;
   border: 1px solid transparent;
   border-radius: 10px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
   overflow: hidden;
+}
+
+.calendar-entry-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 5px;
+  height: 100%;
+  background: var(--strip-color, #a9c8bf);
+  border-radius: 10px 0 0 10px;
 }
 
 .calendar-entry-card-actionable {
