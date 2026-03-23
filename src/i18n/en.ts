@@ -1072,6 +1072,8 @@ const en: TranslationDictionary = {
   "profile.themeDark": "Dark",
   "profile.localeAuto": "Auto",
   "profile.uploadPhoto": "Upload photo",
+  "profile.removePhoto": "Remove photo",
+  "profile.removing": "Removing...",
   "profile.uploading": "Uploading...",
   "profile.updated": "Profile updated.",
   "profile.updateError": "Failed to update the profile.",

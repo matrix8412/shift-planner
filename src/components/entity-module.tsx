@@ -616,6 +616,37 @@ function RangeFieldControl({
   );
 }
 
+function resizeImage(file: File, maxDim = 512, quality = 0.8): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) {
+        resolve(file);
+        return;
+      }
+      const ratio = Math.min(maxDim / width, maxDim / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.src = url;
+  });
+}
+
 function AvatarFieldControl({
   field,
   value,
@@ -642,8 +673,9 @@ function AvatarFieldControl({
 
     setUploading(true);
     try {
+      const resized = await resizeImage(file);
       const formData = new FormData();
-      formData.set("file", file);
+      formData.set("file", resized);
       formData.set("userId", recordId);
 
       const response = await fetch(field.uploadUrl, { method: "POST", body: formData });
@@ -657,6 +689,21 @@ function AvatarFieldControl({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  }
+
+  async function handleDelete() {
+    if (!recordId) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("userId", recordId);
+      const response = await fetch("/api/avatars/delete", { method: "POST", body: formData });
+      if (response.ok) {
+        setPreview(null);
+      }
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -688,6 +735,17 @@ function AvatarFieldControl({
           >
             {uploading ? t("profile.uploading") : t("profile.uploadPhoto")}
           </button>
+          {preview ? (
+            <button
+              type="button"
+              className="button danger"
+              disabled={uploading || !recordId}
+              onClick={handleDelete}
+            >
+              <Trash2 size={16} />
+              {t("profile.removePhoto")}
+            </button>
+          ) : null}
         </div>
       </div>
       {!recordId ? <span className="field-description">{t("profile.avatarSaveFirst")}</span> : null}

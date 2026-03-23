@@ -1072,6 +1072,8 @@ const sk: TranslationDictionary = {
   "profile.themeDark": "Tmavá",
   "profile.localeAuto": "Auto",
   "profile.uploadPhoto": "Nahrať fotku",
+  "profile.removePhoto": "Odstrániť fotku",
+  "profile.removing": "Odstraňujem...",
   "profile.uploading": "Nahrávam...",
   "profile.updated": "Profil bol aktualizovaný.",
   "profile.updateError": "Nepodarilo sa aktualizovať profil.",
