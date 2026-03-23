@@ -109,7 +109,7 @@ const monthFormatter = new Intl.DateTimeFormat("sk-SK", {
 });
 
 function normalizeSearchValue(value: string) {
-  return value.trim().toLocaleLowerCase("sk-SK");
+  return value.trim().toLocaleLowerCase("sk-SK").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function formatMonthLabel(value: string) {
