@@ -1348,10 +1348,11 @@ function CalendarPanel({
                 } : undefined}
                 onDrop={onItemDrop ? (event) => {
                   event.preventDefault();
-                  setDragOverDate(null);
-                  setDraggingItemId(null);
+                  event.stopPropagation();
                   const recordId = event.dataTransfer.getData("text/x-record-id");
                   const sourceDate = event.dataTransfer.getData("text/x-source-date");
+                  setDragOverDate(null);
+                  setDraggingItemId(null);
 
                   if (recordId && sourceDate !== day.key) {
                     onItemDrop(recordId, day.key);
@@ -1386,6 +1387,7 @@ function CalendarPanel({
                         setDragOverDate(null);
                       } : undefined}
                       onClick={(event) => {
+                        if (draggingItemId) return;
                         event.stopPropagation();
                         onItemSelect?.(item.recordId ?? item.id);
                       }}
@@ -1530,7 +1532,6 @@ export function EntityModule({
   const [toggleLockState, toggleLockFormAction] = useActionState(toggleLockAction ?? action, initialActionState);
   const [bulkLockState, bulkLockFormAction] = useActionState(bulkLockAction ?? action, initialActionState);
   const [bulkDeleteState, bulkDeleteFormAction] = useActionState(bulkDeleteAction ?? action, initialActionState);
-  const [moveState, moveFormAction] = useActionState(moveAction ?? action, initialActionState);
   const menuHostRef = useRef<HTMLDivElement | null>(null);
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
   const calendarMenuRef = useRef<HTMLDivElement | null>(null);
@@ -1554,8 +1555,6 @@ export function EntityModule({
     bulkLockError: bulkLockState,
     bulkDelete: bulkDeleteState,
     bulkDeleteError: bulkDeleteState,
-    move: moveState,
-    moveError: moveState,
   });
   const hasAuditMenu = rows.some((row) => row.auditEntries !== undefined);
   const canEdit = (canEditProp ?? Boolean(editAction)) && Boolean(editAction);
@@ -1672,7 +1671,6 @@ export function EntityModule({
     const hasNewToggleSuccess = toggleLockState.status === "success" && handledActionStatesRef.current.toggleLock !== toggleLockState;
     const hasNewBulkLockSuccess = bulkLockState.status === "success" && handledActionStatesRef.current.bulkLock !== bulkLockState;
     const hasNewBulkDeleteSuccess = bulkDeleteState.status === "success" && handledActionStatesRef.current.bulkDelete !== bulkDeleteState;
-    const hasNewMoveSuccess = moveState.status === "success" && handledActionStatesRef.current.move !== moveState;
     const nextSuccessMessage =
       (hasNewCreateSuccess ? createState.message : undefined) ??
       (hasNewEditSuccess ? editState.message : undefined) ??
@@ -1680,9 +1678,8 @@ export function EntityModule({
       (hasNewImportSuccess ? importState.message : undefined) ??
       (hasNewToggleSuccess ? toggleLockState.message : undefined) ??
       (hasNewBulkLockSuccess ? bulkLockState.message : undefined) ??
-      (hasNewBulkDeleteSuccess ? bulkDeleteState.message : undefined) ??
-      (hasNewMoveSuccess ? moveState.message : undefined);
-    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess || hasNewMoveSuccess;
+      (hasNewBulkDeleteSuccess ? bulkDeleteState.message : undefined);
+    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess;
 
     if (hasNewSuccess) {
       if (nextSuccessMessage) {
@@ -1731,7 +1728,6 @@ export function EntityModule({
     handledActionStatesRef.current.toggleLock = toggleLockState;
     handledActionStatesRef.current.bulkLock = bulkLockState;
     handledActionStatesRef.current.bulkDelete = bulkDeleteState;
-    handledActionStatesRef.current.move = moveState;
   }, [
     bulkDeleteState,
     bulkLockState,
@@ -1739,7 +1735,6 @@ export function EntityModule({
     deleteState,
     editState,
     importState,
-    moveState,
     notify,
     router,
     toggleLockState,
@@ -1823,19 +1818,6 @@ export function EntityModule({
 
     handledActionStatesRef.current.bulkDeleteError = bulkDeleteState;
   }, [bulkDeleteState, notify]);
-
-  useEffect(() => {
-    const hasNewMoveError = moveState.status === "error" && handledActionStatesRef.current.moveError !== moveState;
-
-    if (hasNewMoveError && moveState.message) {
-      notify({
-        tone: "error",
-        message: moveState.message,
-      });
-    }
-
-    handledActionStatesRef.current.moveError = moveState;
-  }, [moveState, notify]);
 
   useEffect(() => {
     if (lockTogglePendingRef.current) {
@@ -2387,10 +2369,22 @@ export function EntityModule({
     formData.set("id", recordId);
     formData.set("targetDate", targetDate);
 
-    startTransition(() => {
-      moveFormAction(formData);
+    startTransition(async () => {
+      const result = await moveAction(initialActionState, formData);
+
+      if (result.status === "success") {
+        if (result.message) {
+          notify({ tone: "success", message: result.message });
+        }
+
+        startTransition(() => {
+          router.refresh();
+        });
+      } else if (result.status === "error" && result.message) {
+        notify({ tone: "error", message: result.message });
+      }
     });
-  }, [moveAction, moveFormAction]);
+  }, [moveAction, notify, router]);
 
   function handleBulkLock(locked: boolean) {
     if (!canBulkLock || !selectedMonth) {

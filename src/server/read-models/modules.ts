@@ -1772,6 +1772,13 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
   const shiftTypeNames = shiftTypes.map((st) => `${st.service.name} / ${st.name}`);
   const userShiftCounts = new Map<string, Map<string, number>>();
 
+  for (const user of users) {
+    const userName = `${user.firstName} ${user.lastName}`;
+    if (!userShiftCounts.has(userName)) {
+      userShiftCounts.set(userName, new Map());
+    }
+  }
+
   for (const entry of entries) {
     const userName = `${entry.user.firstName} ${entry.user.lastName}`;
     const shiftName = `${entry.service.name} / ${entry.shiftType.name}`;
