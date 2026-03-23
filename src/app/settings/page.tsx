@@ -28,6 +28,7 @@ import { getSettingsModule } from "@/server/read-models/modules";
 import { getAiAuditRuns } from "@/server/read-models/modules";
 import { env } from "@/server/config/env";
 import { db } from "@/server/db/client";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,9 @@ export default async function SettingsPage() {
   } catch { /* use default */ }
 
   const appUrl = new URL(env.APP_URL);
-  const appDomain = appUrl.hostname;
+  const requestHeaders = await headers();
+  const hostHeader = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? appUrl.hostname;
+  const appDomain = hostHeader.split(":")[0];
 
   return (
     <SettingsTabs
