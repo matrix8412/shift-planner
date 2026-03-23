@@ -3558,14 +3558,19 @@ ul {
 }
 
 @media (max-width: 1180px) {
+  .app-layout {
+    flex-direction: column;
+  }
+
   .app-sidebar {
     position: fixed;
     top: 0;
     bottom: 0;
     left: 0;
+    flex: none;
     width: min(320px, calc(100vw - 24px));
-    height: calc(100dvh / 0.9);
-    min-height: calc(100dvh / 0.9);
+    height: 100dvh;
+    min-height: 100dvh;
     transform: translateX(-102%);
     transition: transform 180ms ease;
   }
