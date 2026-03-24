@@ -1,4 +1,5 @@
 import { AccessDenied } from "@/components/access-denied";
+import { ConditionsAiHelp } from "@/components/conditions-ai-help";
 import { EntityModule } from "@/components/entity-module";
 import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
@@ -31,6 +32,7 @@ export default async function ConditionsPage() {
       canDelete={access.canDelete}
       canImport={access.canImportExport}
       canExport={access.canImportExport}
+      headerActions={<ConditionsAiHelp />}
     />
   );
 }
