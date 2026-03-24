@@ -642,18 +642,27 @@ function vacationStatusCalendarColors(status: VacationStatus) {
         backgroundColor: "#d9efd7",
         accentColor: "#72b16b",
         textColor: "#17381b",
+        darkBackgroundColor: "#1a3318",
+        darkAccentColor: "#72b16b",
+        darkTextColor: "#c8e6c5",
       };
     case VacationStatus.REJECTED:
       return {
         backgroundColor: "#f7d4d1",
         accentColor: "#dc655b",
         textColor: "#5b211c",
+        darkBackgroundColor: "#3b1a17",
+        darkAccentColor: "#dc655b",
+        darkTextColor: "#f0c4c0",
       };
     default:
       return {
         backgroundColor: "#e7eff0",
         accentColor: "#7b9ca3",
         textColor: "#21434b",
+        darkBackgroundColor: "#1a2e34",
+        darkAccentColor: "#7b9ca3",
+        darkTextColor: "#c0d4d8",
       };
   }
 }
@@ -1344,6 +1353,9 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
       backgroundColor: colors.backgroundColor,
       accentColor: colors.accentColor,
       textColor: colors.textColor,
+      darkBackgroundColor: colors.darkBackgroundColor,
+      darkAccentColor: colors.darkAccentColor,
+      darkTextColor: colors.darkTextColor,
       locked: vacation.locked,
     }));
   });
@@ -1731,6 +1743,13 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       accentColor: entry.service.colorDark ?? fallbackColors.accentColor,
       textColor: entry.service.textColorLight ?? fallbackColors.textColor,
     };
+    const darkBaseBackground = entry.service.colorDark ?? fallbackColors.backgroundColor;
+    const darkOpacity = clampOpacity(entry.service.opacityDark, 100);
+    const darkColors = {
+      backgroundColor: hexToRgba(darkBaseBackground, darkOpacity / 100) ?? darkBaseBackground,
+      accentColor: entry.service.colorDark ?? fallbackColors.accentColor,
+      textColor: entry.service.textColorDark ?? "#F8FBFB",
+    };
 
     return {
       id: entry.id,
@@ -1743,6 +1762,10 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       stripColor: baseBackground,
       accentColor: colors.accentColor ?? undefined,
       textColor: colors.textColor ?? undefined,
+      darkBackgroundColor: darkColors.backgroundColor ?? undefined,
+      darkStripColor: darkBaseBackground,
+      darkAccentColor: darkColors.accentColor ?? undefined,
+      darkTextColor: darkColors.textColor ?? undefined,
       locked: entry.locked,
       sortOrder: entry.shiftType.sortOrder,
     };

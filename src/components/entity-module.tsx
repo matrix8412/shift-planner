@@ -1448,6 +1448,7 @@ function CalendarPanel({
                         setDraggingItemId(null);
                         setDragOverDate(null);
                       } : undefined}
+                      onClick={(event) => event.stopPropagation()}
                       onContextMenu={(event) => {
                         if (!onItemContextMenu) {
                           return;
@@ -1459,9 +1460,16 @@ function CalendarPanel({
                       }}
                       style={{
                         "--strip-color": item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
-                        background: item.backgroundColor ?? "#d6ecd7",
-                        color: item.textColor ?? "#17353c",
-                        borderColor: item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        "--card-bg": item.backgroundColor ?? "#d6ecd7",
+                        "--card-text": item.textColor ?? "#17353c",
+                        "--card-border": item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        "--dark-strip-color": item.darkStripColor ?? item.darkAccentColor ?? item.darkBackgroundColor ?? item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        "--dark-card-bg": item.darkBackgroundColor ?? item.backgroundColor ?? "#d6ecd7",
+                        "--dark-card-text": item.darkTextColor ?? item.textColor ?? "#17353c",
+                        "--dark-card-border": item.darkAccentColor ?? item.darkBackgroundColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        background: "var(--card-bg)",
+                        color: "var(--card-text)",
+                        borderColor: "var(--card-border)",
                       } as React.CSSProperties}
                     >
                       {onItemContextMenu ? (

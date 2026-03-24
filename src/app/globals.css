@@ -3002,6 +3002,13 @@ ul {
   background: rgba(18, 33, 44, 0.95);
 }
 
+:root[data-theme="dark"] .calendar-entry-card {
+  --strip-color: var(--dark-strip-color);
+  background: var(--dark-card-bg) !important;
+  color: var(--dark-card-text) !important;
+  border-color: var(--dark-card-border) !important;
+}
+
 :root[data-theme="dark"] .calendar-entry-card-actionable:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),

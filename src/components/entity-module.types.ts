@@ -93,6 +93,10 @@ export type CalendarItem = {
   stripColor?: string;
   textColor?: string;
   accentColor?: string;
+  darkBackgroundColor?: string;
+  darkStripColor?: string;
+  darkTextColor?: string;
+  darkAccentColor?: string;
   locked?: boolean;
   sortOrder?: number;
 };
