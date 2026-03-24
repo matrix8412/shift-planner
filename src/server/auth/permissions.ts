@@ -6,10 +6,9 @@ export const permissionModules = [
     label: "Schedule",
     permissions: [
       { action: "view", label: "View" },
-      { action: "edit", label: "Edit records" },
+      { action: "edit", label: "Edit records", description: "Includes locking and unlocking schedule entries." },
       { action: "create", label: "Add a manual record" },
       { action: "delete", label: "Delete a record" },
-      { action: "lock", label: "Lock / Unlock records" },
       { action: "generate", label: "Generate a schedule" },
       { action: "importExport", label: "Import / Export" },
     ],
@@ -19,10 +18,9 @@ export const permissionModules = [
     label: "Vacations",
     permissions: [
       { action: "view", label: "View" },
-      { action: "edit", label: "Edit records" },
+      { action: "edit", label: "Edit records", description: "Includes locking and unlocking vacation records." },
       { action: "create", label: "Add a manual record" },
       { action: "delete", label: "Delete a record" },
-      { action: "lock", label: "Lock / Unlock records" },
       { action: "importExport", label: "Import / Export" },
     ],
   },
@@ -125,7 +123,7 @@ export const permissionDefinitions = permissionModules.flatMap((moduleDefinition
         moduleLabel: moduleDefinition.label,
         action: permissionDefinition.action,
         label: permissionDefinition.label,
-        description: "description" in permissionDefinition ? (permissionDefinition.description as string) : undefined,
+        description: "description" in permissionDefinition ? permissionDefinition.description : undefined,
       }) as const,
   ),
 );
@@ -157,7 +155,7 @@ export function getPermissionMatrixSections(): PermissionMatrixSection[] {
     permissions: moduleDefinition.permissions.map((permissionDefinition) => ({
       code: `${moduleDefinition.key}:${permissionDefinition.action}` as PermissionCode,
       label: permissionDefinition.label,
-      description: "description" in permissionDefinition ? (permissionDefinition.description as string) : undefined,
+      description: "description" in permissionDefinition ? permissionDefinition.description : undefined,
     })),
   }));
 }
@@ -195,33 +193,6 @@ export async function ensurePermissionCatalog() {
               }),
         ),
       );
-
-      // Idempotent migration: for every "lock" permission in the catalog, ensure all roles
-      // that have the corresponding "edit" permission also receive the "lock" permission.
-      // This handles both fresh deployments and upgrades where the lock permission was added later.
-      const lockDefinitions = permissionDefinitions.filter((d) => d.action === "lock");
-      for (const lockDef of lockDefinitions) {
-        const editCode = `${lockDef.module}:edit` as PermissionCode;
-        const lockCode = lockDef.code;
-
-        const [rolesWithEdit, rolesWithLock, lockPermission] = await Promise.all([
-          db.rolePermission.findMany({ where: { permission: { code: editCode } }, select: { roleId: true } }),
-          db.rolePermission.findMany({ where: { permission: { code: lockCode } }, select: { roleId: true } }),
-          db.permission.findUnique({ where: { code: lockCode } }),
-        ]);
-
-        if (!lockPermission || rolesWithEdit.length === 0) continue;
-
-        const roleIdsWithLock = new Set(rolesWithLock.map((rp) => rp.roleId));
-        const rolesToGrant = rolesWithEdit.filter((rp) => !roleIdsWithLock.has(rp.roleId));
-
-        if (rolesToGrant.length > 0) {
-          await db.rolePermission.createMany({
-            data: rolesToGrant.map((rp) => ({ roleId: rp.roleId, permissionId: lockPermission.id })),
-            skipDuplicates: true,
-          });
-        }
-      }
     })().catch((error) => {
       ensurePermissionCatalogPromise = null;
       throw error;

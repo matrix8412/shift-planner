@@ -1088,7 +1088,6 @@ function PermissionMatrixFieldControl({
       { id: "create", action: "create", label: t("perm.add") },
       { id: "edit", action: "edit", label: t("perm.edit") },
       { id: "delete", action: "delete", label: t("perm.delete") },
-      { id: "lock", action: "lock", label: t("perm.lock") },
       { id: "import", action: "importExport", label: t("perm.import") },
       { id: "export", action: "importExport", label: t("perm.export") },
       { id: "generate", action: "generate", label: t("perm.generate") },
@@ -1495,11 +1494,11 @@ function CalendarPanel({
                             onItemLockToggle(item.recordId ?? item.id);
                           }}
                         >
-                          {item.locked ? <Lock size={20} /> : <LockOpen size={20} />}
+                          {item.locked ? <Lock size={18} /> : <LockOpen size={18} />}
                         </button>
                       ) : item.locked ? (
                         <span className="calendar-entry-lock-static">
-                          <Lock size={20} />
+                          <Lock size={18} />
                         </span>
                       ) : null}
                     </article>

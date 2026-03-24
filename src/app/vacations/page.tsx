@@ -32,7 +32,7 @@ export default async function VacationsPage() {
       canDelete={access.canDelete}
       canImport={access.canImportExport}
       canExport={access.canImportExport}
-      canToggleLock={access.canToggleLock}
+      canToggleLock={access.canEdit}
     />
   );
 }
