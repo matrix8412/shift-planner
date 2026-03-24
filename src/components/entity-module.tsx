@@ -1088,6 +1088,7 @@ function PermissionMatrixFieldControl({
       { id: "create", action: "create", label: t("perm.add") },
       { id: "edit", action: "edit", label: t("perm.edit") },
       { id: "delete", action: "delete", label: t("perm.delete") },
+      { id: "lock", action: "lock", label: t("perm.lock") },
       { id: "import", action: "importExport", label: t("perm.import") },
       { id: "export", action: "importExport", label: t("perm.export") },
       { id: "generate", action: "generate", label: t("perm.generate") },

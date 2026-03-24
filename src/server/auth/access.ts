@@ -16,6 +16,7 @@ export type ModuleAccess = {
   canCreate: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  canToggleLock: boolean;
   canImportExport: boolean;
   canGenerate: boolean;
 };
@@ -41,6 +42,7 @@ export function getModuleAccess(user: SessionUser | null, module: PermissionModu
     canCreate: hasPermission(user, `${module}:create` as PermissionCode),
     canEdit: hasPermission(user, `${module}:edit` as PermissionCode),
     canDelete: hasPermission(user, `${module}:delete` as PermissionCode),
+    canToggleLock: hasPermission(user, `${module}:lock` as PermissionCode),
     canImportExport: hasPermission(user, `${module}:importExport` as PermissionCode),
     canGenerate: hasPermission(user, `${module}:generate` as PermissionCode),
   };

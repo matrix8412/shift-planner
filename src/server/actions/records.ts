@@ -3907,7 +3907,7 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
 }
 
 export async function toggleVacationLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const actorId = await requireCurrentPermission("vacations:edit");
+  const actorId = await requireCurrentPermission("vacations:lock");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3956,7 +3956,7 @@ export async function toggleVacationLockAction(_: ActionState, formData: FormDat
 }
 
 export async function toggleScheduleLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const actorId = await requireCurrentPermission("schedule:edit");
+  const actorId = await requireCurrentPermission("schedule:lock");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -4006,7 +4006,7 @@ export async function toggleScheduleLockAction(_: ActionState, formData: FormDat
 }
 
 export async function bulkToggleScheduleLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const actorId = await requireCurrentPermission("schedule:edit");
+  const actorId = await requireCurrentPermission("schedule:lock");
   const d = await getDict();
   const month = parseOptionalString(formData.get("month"));
   const locked = formData.get("locked") === "true";
