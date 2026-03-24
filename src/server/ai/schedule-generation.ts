@@ -9,13 +9,10 @@ const systemPrompt = [
   "1. Return JSON only with keys summary and events.",
   "2. Every event must contain date, userId and shiftTypeId.",
   "3. Use ONLY the exact id values from the input users[].id and shiftTypes[].id arrays. These are short aliases like u1, u2, sh1, sh2. Never invent, guess, modify or shorten any id.",
-  "4. Every event.userId must match an entry in input.users[].id exactly. Every event.shiftTypeId must match an entry in input.shiftTypes[].id exactly.",
-  "5. A generated shiftTypeId must be in the assignedShiftTypeIds list of the selected user.",
-  "6. Respect shift validity day types, holiday dates, approved vacations and locked entries.",
-  "7. Locked entries are fixed, already-assigned shifts in the current period. Do not change, duplicate or omit them. Treat every locked entry as an occupied slot — evaluate all conditions as if locked entries and your generated events form a single combined schedule.",
-  "8. Prefer balanced distribution across users when the conditions do not say otherwise.",
-  "9. Use historicalAssignments as fairness context so recent similar shifts are distributed more fairly.",
-  "10. Do not invent missing users, shifts, services, rules or dates.",
+  "4. A generated shiftTypeId must be in the assignedShiftTypeIds list of the selected user.",
+  "5. Respect shift validity day types, holiday dates, approved vacations and locked entries.",
+  "6. Locked entries are fixed, already-assigned shifts in the current period. Do not change, duplicate or omit them. Treat every locked entry as an occupied slot — evaluate all conditions as if locked entries and your generated events form a single combined schedule.",
+  "7. Use historicalAssignments as fairness context so recent similar shifts are distributed more fairly.",
 ].join("\n");
 
 export function buildScheduleGenerationPrompt(input: ScheduleDraftInput) {

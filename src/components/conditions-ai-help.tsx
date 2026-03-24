@@ -13,9 +13,6 @@ const AI_RULES = [
   "conditions.aiRule5",
   "conditions.aiRule6",
   "conditions.aiRule7",
-  "conditions.aiRule8",
-  "conditions.aiRule9",
-  "conditions.aiRule10",
 ] as const;
 
 export function ConditionsAiHelp() {

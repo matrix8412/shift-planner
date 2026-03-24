@@ -738,13 +738,10 @@ const en: TranslationDictionary = {
   "conditions.aiRule1": "Output is always JSON with keys summary and events.",
   "conditions.aiRule2": "Every event must contain date, userId and shiftTypeId.",
   "conditions.aiRule3": "Uses ONLY the exact id values from the input – never invents its own.",
-  "conditions.aiRule4": "Every userId and shiftTypeId must exactly match an entry from the input.",
-  "conditions.aiRule5": "A generated shift must be in the assigned shift types list of the selected user.",
-  "conditions.aiRule6": "Respects shift validity day types, holidays, approved vacations and locked entries.",
-  "conditions.aiRule7": "Locked entries are fixed – AI must not change, duplicate or omit them.",
-  "conditions.aiRule8": "Prefers balanced distribution of shifts across users.",
-  "conditions.aiRule9": "Uses historical assignments for fairer distribution.",
-  "conditions.aiRule10": "Does not invent users, shifts, services, rules or dates.",
+  "conditions.aiRule4": "A generated shift must be in the assigned shift types list of the selected user.",
+  "conditions.aiRule5": "Respects shift validity day types, holidays, approved vacations and locked entries.",
+  "conditions.aiRule6": "Locked entries are fixed – AI must not change, duplicate or omit them.",
+  "conditions.aiRule7": "Uses historical assignments for fairer distribution.",
 
   /* ──────────────────── Module: Holidays ──────────────────── */
   "holidays.title": "Public holidays",

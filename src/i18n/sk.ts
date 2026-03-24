@@ -738,13 +738,10 @@ const sk: TranslationDictionary = {
   "conditions.aiRule1": "Výstup je vždy JSON s kľúčmi summary a events.",
   "conditions.aiRule2": "Každá udalosť musí obsahovať dátum, userId a shiftTypeId.",
   "conditions.aiRule3": "Používa LEN presné id hodnoty zo vstupu – nikdy si nevymýšľa vlastné.",
-  "conditions.aiRule4": "Každý userId a shiftTypeId musí presne zodpovedať záznamu zo vstupu.",
-  "conditions.aiRule5": "Priradená zmena musí byť v zozname povolených zmien daného používateľa.",
-  "conditions.aiRule6": "Rešpektuje typy dní zmien, sviatky, schválené dovolenky a zamknuté záznamy.",
-  "conditions.aiRule7": "Zamknuté záznamy sú fixné – AI ich nesmie meniť, duplikovať ani vynechať.",
-  "conditions.aiRule8": "Uprednostňuje rovnomerné rozdelenie zmien medzi používateľov.",
-  "conditions.aiRule9": "Využíva historické priradenia na spravodlivejšie rozdelenie.",
-  "conditions.aiRule10": "Nevymýšľa používateľov, zmeny, služby, pravidlá ani dátumy.",
+  "conditions.aiRule4": "Priradená zmena musí byť v zozname povolených zmien daného používateľa.",
+  "conditions.aiRule5": "Rešpektuje typy dní zmien, sviatky, schválené dovolenky a zamknuté záznamy.",
+  "conditions.aiRule6": "Zamknuté záznamy sú fixné – AI ich nesmie meniť, duplikovať ani vynechať.",
+  "conditions.aiRule7": "Využíva historické priradenia na spravodlivejšie rozdelenie.",
 
   /* ──────────────────── Module: Holidays ──────────────────── */
   "holidays.title": "Štátne sviatky",
