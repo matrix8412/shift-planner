@@ -823,6 +823,7 @@ const sk: TranslationDictionary = {
   "schedule.depService": "aspoň jednu službu",
   "schedule.depShift": "aspoň jeden typ zmeny",
   "schedule.statByUser": "Štatistiky podľa používateľov",
+  "schedule.statByUserService": "Štatistiky podľa používateľov a služieb",
   "schedule.statByShift": "Štatistiky podľa typov zmien",
   "schedule.statUser": "Používateľ",
   "schedule.statShift": "Typ zmeny",

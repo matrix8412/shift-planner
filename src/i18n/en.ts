@@ -823,6 +823,7 @@ const en: TranslationDictionary = {
   "schedule.depService": "at least one service",
   "schedule.depShift": "at least one shift type",
   "schedule.statByUser": "Statistics by user",
+  "schedule.statByUserService": "Statistics by user and service",
   "schedule.statByShift": "Statistics by shift type",
   "schedule.statUser": "User",
   "schedule.statShift": "Shift type",

@@ -1836,6 +1836,40 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       return { label: userName, values };
     });
 
+  // Build per-user x service breakdown
+  const serviceNames = services.map((s) => s.name);
+  const userServiceCounts = new Map<string, Map<string, number>>();
+
+  for (const user of users) {
+    const userName = `${user.firstName} ${user.lastName}`;
+    if (!userServiceCounts.has(userName)) {
+      userServiceCounts.set(userName, new Map());
+    }
+  }
+
+  for (const entry of entries) {
+    const userName = `${entry.user.firstName} ${entry.user.lastName}`;
+    if (!userServiceCounts.has(userName)) {
+      userServiceCounts.set(userName, new Map());
+    }
+    const userMap = userServiceCounts.get(userName)!;
+    userMap.set(entry.service.name, (userMap.get(entry.service.name) ?? 0) + 1);
+  }
+
+  const userServiceStatRows = Array.from(userServiceCounts.entries())
+    .sort(([a], [b]) => a.localeCompare(b, "sk"))
+    .map(([userName, svcMap]) => {
+      const values: Record<string, string> = {};
+      let total = 0;
+      for (const svcName of serviceNames) {
+        const count = svcMap.get(svcName) ?? 0;
+        values[svcName] = String(count);
+        total += count;
+      }
+      values[tr(d, "schedule.statColTotal")] = String(total);
+      return { label: userName, values };
+    });
+
   // Build per-shift-type totals
   const shiftTotals = new Map<string, number>();
   for (const entry of entries) {
@@ -1867,6 +1901,13 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         rows: userStatRows,
         groupByField: "userId",
         breakdownField: "_shiftStat",
+      },
+      {
+        title: tr(d, "schedule.statByUserService"),
+        columns: [...serviceNames, tr(d, "schedule.statColTotal")],
+        rows: userServiceStatRows,
+        groupByField: "userId",
+        breakdownField: "service",
       },
       {
         title: tr(d, "schedule.statByShift"),
