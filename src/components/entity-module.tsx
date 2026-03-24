@@ -1088,6 +1088,7 @@ function PermissionMatrixFieldControl({
       { id: "create", action: "create", label: t("perm.add") },
       { id: "edit", action: "edit", label: t("perm.edit") },
       { id: "delete", action: "delete", label: t("perm.delete") },
+      { id: "lock", action: "lock", label: t("perm.lock") },
       { id: "import", action: "importExport", label: t("perm.import") },
       { id: "export", action: "importExport", label: t("perm.export") },
       { id: "generate", action: "generate", label: t("perm.generate") },
@@ -1316,7 +1317,6 @@ function CalendarPanel({
   searchControl,
   actionsControl,
   onDaySelect,
-  onItemSelect,
   onItemLockToggle,
   onItemContextMenu,
   onItemDrop,
@@ -1328,7 +1328,6 @@ function CalendarPanel({
   searchControl?: ReactNode;
   actionsControl?: ReactNode;
   onDaySelect?: (date: string) => void;
-  onItemSelect?: (recordId: string) => void;
   onItemLockToggle?: (recordId: string) => void;
   onItemContextMenu?: (recordId: string, clientX: number, clientY: number) => void;
   onItemDrop?: (recordId: string, targetDate: string) => void;
@@ -1436,7 +1435,7 @@ function CalendarPanel({
                   {dayItems.map((item) => (
                     <article
                       key={item.id}
-                      className={`calendar-entry-card${onItemSelect ? " calendar-entry-card-actionable" : ""}${draggingItemId === (item.recordId ?? item.id) ? " calendar-entry-card-dragging" : ""}`}
+                      className={`calendar-entry-card${draggingItemId === (item.recordId ?? item.id) ? " calendar-entry-card-dragging" : ""}`}
                       draggable={onItemDrop && !item.locked ? true : undefined}
                       onDragStart={onItemDrop ? (event) => {
                         const recordId = item.recordId ?? item.id;
@@ -1449,11 +1448,6 @@ function CalendarPanel({
                         setDraggingItemId(null);
                         setDragOverDate(null);
                       } : undefined}
-                      onClick={(event) => {
-                        if (draggingItemId) return;
-                        event.stopPropagation();
-                        onItemSelect?.(item.recordId ?? item.id);
-                      }}
                       onContextMenu={(event) => {
                         if (!onItemContextMenu) {
                           return;
@@ -1463,15 +1457,6 @@ function CalendarPanel({
                         event.stopPropagation();
                         onItemContextMenu(item.recordId ?? item.id, event.clientX, event.clientY);
                       }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          onItemSelect?.(item.recordId ?? item.id);
-                        }
-                      }}
-                      role={onItemSelect ? "button" : undefined}
-                      tabIndex={onItemSelect ? 0 : undefined}
                       style={{
                         "--strip-color": item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
                         background: item.backgroundColor ?? "#d6ecd7",
@@ -1479,6 +1464,21 @@ function CalendarPanel({
                         borderColor: item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
                       } as React.CSSProperties}
                     >
+                      {onItemContextMenu ? (
+                        <button
+                          type="button"
+                          className="calendar-entry-menu"
+                          aria-label={t("entity.options")}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            onItemContextMenu(item.recordId ?? item.id, rect.left, rect.bottom + 4);
+                          }}
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+                      ) : null}
                       <strong>{item.title}</strong>
                       {item.subtitle ? <span>{item.subtitle}</span> : null}
                       {item.timeLabel ? <small>{item.timeLabel}</small> : null}
@@ -2376,15 +2376,16 @@ export function EntityModule({
   }
 
   function openCalendarRecordMenu(recordId: string, clientX: number, clientY: number) {
-    if (!canDelete) {
+    if (!canEdit && !canDelete) {
       return;
     }
 
     setMenuRowId(null);
     setMenuPosition(null);
 
+    const menuItemCount = (canEdit ? 1 : 0) + (canDelete ? 1 : 0);
     const menuWidth = 190;
-    const menuHeight = 64;
+    const menuHeight = menuItemCount * 40 + 16;
     setCalendarMenuState({
       recordId,
       position: computeMenuPosition(clientX, clientY, menuWidth, menuHeight),
@@ -3024,9 +3025,8 @@ export function EntityModule({
               searchControl={searchControl}
               actionsControl={calendarActionsControl}
               onDaySelect={canCreate && !createDisabledReason ? handleCalendarDaySelect : undefined}
-              onItemSelect={canEdit ? handleCalendarItemSelect : undefined}
               onItemLockToggle={canToggleLock ? handleCalendarItemLockToggle : undefined}
-              onItemContextMenu={canDelete ? openCalendarRecordMenu : undefined}
+              onItemContextMenu={canEdit || canDelete ? openCalendarRecordMenu : undefined}
               onItemDrop={moveAction && canEdit ? handleCalendarItemDrop : undefined}
             />
           ) : null}
@@ -3465,14 +3465,29 @@ export function EntityModule({
           role="menu"
           style={{ left: `${calendarMenuState.position.left}px`, top: `${calendarMenuState.position.top}px` }}
         >
-          <button
-            type="button"
-            className="row-menu-item danger"
-            role="menuitem"
-            onClick={() => requestDeleteRecord(calendarMenuState.recordId, rows.find((row) => row.id === calendarMenuState.recordId)?.label ?? calendarMenuState.recordId)}
-          >
-            {t("entity.delete")}
-          </button>
+          {canEdit ? (
+            <button
+              type="button"
+              className="row-menu-item"
+              role="menuitem"
+              onClick={() => {
+                const row = rowsById.get(calendarMenuState.recordId);
+                if (row) openEditSheet(row);
+              }}
+            >
+              {t("entity.edit")}
+            </button>
+          ) : null}
+          {canDelete ? (
+            <button
+              type="button"
+              className="row-menu-item danger"
+              role="menuitem"
+              onClick={() => requestDeleteRecord(calendarMenuState.recordId, rows.find((row) => row.id === calendarMenuState.recordId)?.label ?? calendarMenuState.recordId)}
+            >
+              {t("entity.delete")}
+            </button>
+          ) : null}
         </div>
       ) : null}
 
