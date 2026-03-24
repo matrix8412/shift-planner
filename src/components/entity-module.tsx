@@ -1495,11 +1495,11 @@ function CalendarPanel({
                             onItemLockToggle(item.recordId ?? item.id);
                           }}
                         >
-                          {item.locked ? <Lock size={16} /> : <LockOpen size={16} />}
+                          {item.locked ? <Lock size={20} /> : <LockOpen size={20} />}
                         </button>
                       ) : item.locked ? (
                         <span className="calendar-entry-lock-static">
-                          <Lock size={16} />
+                          <Lock size={20} />
                         </span>
                       ) : null}
                     </article>
