@@ -2138,23 +2138,33 @@ export function EntityModule({
       return statGroups ?? [];
     }
 
-    if (!hasMonthScope) {
+    const hasSearch = normalizedSearch.length > 0;
+
+    if (!hasMonthScope && !hasSearch) {
       return statGroups;
     }
 
-    // Recalculate stat groups based on month-scoped rows
+    const sourceRows = hasMonthScope ? monthScopedRows : displayRows;
+
+    // Recalculate stat groups based on scoped rows
     return statGroups.map((group) => {
       if (!group.groupByField && !group.breakdownField) {
         return group;
       }
 
-      // Build counts from monthScopedRows
+      // Build counts from sourceRows
       if (group.groupByField) {
         // Per-user x shift-type breakdown (e.g. groupByField="userId", breakdownField="shift")
         const labelByGroupValue = new Map<string, string>();
         const countsByGroup = new Map<string, Map<string, number>>();
 
-        for (const row of monthScopedRows) {
+        // Seed all original labels so users with 0 entries still appear
+        for (const originalRow of group.rows) {
+          labelByGroupValue.set(originalRow.label, originalRow.label);
+          countsByGroup.set(originalRow.label, new Map());
+        }
+
+        for (const row of sourceRows) {
           const groupValue = String(getFieldDefaultValue(row, group.groupByField) ?? "");
           const breakdownValue = group.breakdownField ? getCellText(row.cells[group.breakdownField] ?? "") : "";
 
@@ -2163,18 +2173,21 @@ export function EntityModule({
             labelByGroupValue.set(groupValue, userCell ? getCellText(userCell) : groupValue);
           }
 
-          if (!countsByGroup.has(groupValue)) {
-            countsByGroup.set(groupValue, new Map());
+          // Use the display label as key (not the raw groupValue) for consistent merging
+          const displayLabel = labelByGroupValue.get(groupValue) ?? groupValue;
+
+          if (!countsByGroup.has(displayLabel)) {
+            countsByGroup.set(displayLabel, new Map());
           }
-          const shiftMap = countsByGroup.get(groupValue)!;
+          const shiftMap = countsByGroup.get(displayLabel)!;
           shiftMap.set(breakdownValue, (shiftMap.get(breakdownValue) ?? 0) + 1);
         }
 
         const totalColLabel = group.columns[group.columns.length - 1];
         const breakdownCols = group.columns.slice(0, -1);
 
-        const rows = Array.from(countsByGroup.entries())
-          .map(([groupValue, shiftMap]) => {
+        let rows = Array.from(countsByGroup.entries())
+          .map(([label, shiftMap]) => {
             const values: Record<string, string> = {};
             let total = 0;
             for (const col of breakdownCols) {
@@ -2183,9 +2196,14 @@ export function EntityModule({
               total += count;
             }
             values[totalColLabel] = String(total);
-            return { label: labelByGroupValue.get(groupValue) ?? groupValue, values };
+            return { label, values };
           })
           .sort((a, b) => a.label.localeCompare(b.label, "sk"));
+
+        // Apply fulltext filter to stat rows
+        if (hasSearch) {
+          rows = rows.filter((row) => normalizeSearchValue(row.label).includes(normalizedSearch));
+        }
 
         return { ...group, rows };
       }
@@ -2194,22 +2212,27 @@ export function EntityModule({
       const shiftCounts = new Map<string, number>();
       const breakdownField = group.breakdownField!;
 
-      for (const row of monthScopedRows) {
+      for (const row of sourceRows) {
         const cellValue = row.cells[breakdownField] ? getCellText(row.cells[breakdownField]) : "";
         shiftCounts.set(cellValue, (shiftCounts.get(cellValue) ?? 0) + 1);
       }
 
       const countColLabel = group.columns[0];
-      const rows = Array.from(shiftCounts.entries())
+      let rows = Array.from(shiftCounts.entries())
         .filter(([, count]) => count > 0)
         .map(([name, count]) => ({
           label: name,
           values: { [countColLabel]: String(count) },
         }));
 
+      // Apply fulltext filter to stat rows
+      if (hasSearch) {
+        rows = rows.filter((row) => normalizeSearchValue(row.label).includes(normalizedSearch));
+      }
+
       return { ...group, rows };
     });
-  }, [hasMonthScope, monthScopedRows, statGroups]);
+  }, [displayRows, hasMonthScope, monthScopedRows, normalizedSearch, statGroups]);
   const totalTablePages = Math.max(1, Math.ceil(sortedRows.length / rowsPerPage));
   const visibleTablePage = Math.min(tablePage, totalTablePages);
   const paginatedRows = useMemo(() => {
