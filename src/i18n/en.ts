@@ -207,7 +207,6 @@ const en: TranslationDictionary = {
   "offline.description": "The app shell is installed, but this screen needs a network connection or cached data to continue.",
 
   /* ──────────────────── Settings tabs ──────────────────── */
-  "settingsTabs.system": "System",
   "settingsTabs.appearance": "Appearance",
   "settingsTabs.notifications": "Notifications",
   "settingsTabs.ai": "AI",
@@ -425,18 +424,6 @@ const en: TranslationDictionary = {
   "notifToast.saveError": "Notifications",
   "notifToast.testSuccess": "Test notification",
   "notifToast.testError": "Test notification",
-
-  /* ──────────────────── JSON help dialog ──────────────────── */
-  "jsonHelp.button": "Help",
-  "jsonHelp.closeAria": "Close help",
-  "jsonHelp.eyebrow": "JSON help",
-  "jsonHelp.heading": "JSON settings help",
-  "jsonHelp.intro": "These are all system JSON objects that the application currently reads and uses directly in its functionality.",
-  "jsonHelp.close": "Close",
-  "jsonHelp.customKeys": "Custom keys",
-  "jsonHelp.customKeysDescription": "In the General module you can also store your own JSON values under any key. The application will store, export and import them, but without additional implementation it will not use them at runtime.",
-  "jsonHelp.securityNote": "Keys managed through dedicated cards, such as AI runtime or notifications, are not shown in this list for security reasons.",
-  "jsonHelp.supportedTypes": "Supported JSON types: object, array, string, number, boolean, null.",
 
   /* ──────────────────── Permissions definitions ──────────────────── */
   "permissions.schedule": "Schedule",
@@ -766,26 +753,6 @@ const en: TranslationDictionary = {
   "holidays.fieldNamePlaceholder": "Statehood Day",
   "holidays.fieldLocalName": "Local name",
   "holidays.fieldLocalNamePlaceholder": "Deň vzniku SR",
-
-  /* ──────────────────── Module: Settings ──────────────────── */
-  "settings.title": "General",
-  "settings.summary": "Manage general application settings and system keys.",
-  "settings.statTotal": "Settings",
-  "settings.statJson": "JSON objects",
-  "settings.statUpdatedToday": "Updated today",
-  "settings.colKey": "Key",
-  "settings.colValue": "Value",
-  "settings.colUpdated": "Updated",
-  "settings.empty": "A setting with valid JSON will appear here after saving.",
-  "settings.addLabel": "Add new",
-  "settings.sheetTitle": "Add setting",
-  "settings.sheetDescription": "Use a unique key and enter a valid JSON value.",
-  "settings.submitLabel": "Save setting",
-  "settings.search": "Search in settings...",
-  "settings.fieldKey": "Key",
-  "settings.fieldKeyPlaceholder": "reminders.defaultLeadDays",
-  "settings.fieldJsonValue": "JSON value",
-  "settings.fieldJsonPlaceholder": '{\n  "enabled": true\n}',
 
   /* ──────────────────── Module: Schedule ──────────────────── */
   "schedule.title": "Schedule",

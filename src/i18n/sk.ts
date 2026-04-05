@@ -207,7 +207,6 @@ const sk: TranslationDictionary = {
   "offline.description": "Aplikácia je nainštalovaná, ale táto obrazovka vyžaduje sieťové pripojenie alebo uložené dáta.",
 
   /* ──────────────────── Settings tabs ──────────────────── */
-  "settingsTabs.system": "Systém",
   "settingsTabs.appearance": "Vzhľad",
   "settingsTabs.notifications": "Notifikácie",
   "settingsTabs.ai": "AI",
@@ -425,18 +424,6 @@ const sk: TranslationDictionary = {
   "notifToast.saveError": "Notifikácie",
   "notifToast.testSuccess": "Test notifikácie",
   "notifToast.testError": "Test notifikácie",
-
-  /* ──────────────────── JSON help dialog ──────────────────── */
-  "jsonHelp.button": "Help",
-  "jsonHelp.closeAria": "Zavrieť nápovedu",
-  "jsonHelp.eyebrow": "JSON help",
-  "jsonHelp.heading": "Nápoveda k JSON objektom nastavení",
-  "jsonHelp.intro": "Toto sú všetky systémové JSON objekty, ktoré aplikácia aktuálne číta a používa priamo vo funkcionalite.",
-  "jsonHelp.close": "Zavrieť",
-  "jsonHelp.customKeys": "Vlastné kľúče",
-  "jsonHelp.customKeysDescription": "V module Všeobecné môžete ukladať aj vlastné JSON hodnoty pod ľubovoľným kľúčom. Aplikácia ich uchová, exportuje a importuje, ale bez doplnenej implementácie ich nepoužije v runtime správaní.",
-  "jsonHelp.securityNote": "Kľúče spravované cez dedikované karty, ako AI runtime alebo notifikácie, sa v tomto zozname z bezpečnostných dôvodov nezobrazujú.",
-  "jsonHelp.supportedTypes": "Podporované JSON typy: objekt, pole, string, number, boolean, null.",
 
   /* ──────────────────── Permissions definitions ──────────────────── */
   "permissions.schedule": "Rozvrh",
@@ -766,26 +753,6 @@ const sk: TranslationDictionary = {
   "holidays.fieldNamePlaceholder": "Deň vzniku SR",
   "holidays.fieldLocalName": "Lokálny názov",
   "holidays.fieldLocalNamePlaceholder": "Deň vzniku SR",
-
-  /* ──────────────────── Module: Settings ──────────────────── */
-  "settings.title": "Všeobecné",
-  "settings.summary": "Spravujte všeobecné nastavenia aplikácie a systémové kľúče.",
-  "settings.statTotal": "Nastavenia",
-  "settings.statJson": "JSON objekty",
-  "settings.statUpdatedToday": "Aktualizované dnes",
-  "settings.colKey": "Kľúč",
-  "settings.colValue": "Hodnota",
-  "settings.colUpdated": "Aktualizované",
-  "settings.empty": "Nastavenie s validným JSON sa po uložení zobrazí tu.",
-  "settings.addLabel": "Pridať nové",
-  "settings.sheetTitle": "Pridať nastavenie",
-  "settings.sheetDescription": "Použite unikátny kľúč a zadajte validnú JSON hodnotu.",
-  "settings.submitLabel": "Uložiť nastavenie",
-  "settings.search": "Hľadať v nastaveniach...",
-  "settings.fieldKey": "Kľúč",
-  "settings.fieldKeyPlaceholder": "reminders.defaultLeadDays",
-  "settings.fieldJsonValue": "JSON hodnota",
-  "settings.fieldJsonPlaceholder": '{\n  "enabled": true\n}',
 
   /* ──────────────────── Module: Schedule ──────────────────── */
   "schedule.title": "Rozvrh",

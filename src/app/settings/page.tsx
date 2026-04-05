@@ -2,16 +2,10 @@ import { AiAuditLogCard } from "@/components/ai-audit-log-card";
 import { AiSettingsCard } from "@/components/ai-settings-card";
 import { HttpsSettingsCard } from "@/components/https-settings-card";
 import { AccessDenied } from "@/components/access-denied";
-import { EntityModule } from "@/components/entity-module";
 import { NotificationSettingsCard } from "@/components/notification-settings-card";
 import { SettingsTabs } from "@/components/settings-tabs";
-import { SettingsJsonHelp } from "@/components/settings-json-help";
 import {
-  createSettingAction,
-  deleteSettingAction,
-  importSettingsCsvAction,
   sendNotificationTestAction,
-  updateSettingAction,
   upsertAiSettingsAction,
   upsertAiAuditRetentionAction,
   upsertNotificationSettingsAction,
@@ -24,7 +18,6 @@ import { AI_AUDIT_RETENTION_DAYS_KEY, DEFAULT_AI_AUDIT_RETENTION_DAYS } from "@/
 import { getNotificationSettings } from "@/server/config/notification-settings";
 import { getHttpsSettings } from "@/server/config/https-settings";
 import { getShellProfile } from "@/server/config/app-shell";
-import { getSettingsModule } from "@/server/read-models/modules";
 import { getAiAuditRuns } from "@/server/read-models/modules";
 import { env } from "@/server/config/env";
 import { db } from "@/server/db/client";
@@ -34,8 +27,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const currentUser = await getCurrentUser();
-  const [moduleConfig, notificationSettings, aiSettings, httpsSettings, shellProfile, aiAuditRuns] = await Promise.all([
-    getSettingsModule(),
+  const [notificationSettings, aiSettings, httpsSettings, shellProfile, aiAuditRuns] = await Promise.all([
     getNotificationSettings(),
     getAiSettings(),
     getHttpsSettings(),
@@ -63,22 +55,6 @@ export default async function SettingsPage() {
 
   return (
     <SettingsTabs
-      systemContent={
-        <EntityModule
-          {...moduleConfig}
-          action={createSettingAction}
-          editAction={updateSettingAction}
-          deleteAction={deleteSettingAction}
-          importAction={importSettingsCsvAction}
-          headerActions={<SettingsJsonHelp />}
-          hideHeader
-          canCreate={access.canCreate}
-          canEdit={access.canEdit}
-          canDelete={access.canEdit}
-          canImport={access.canImportExport}
-          canExport={access.canImportExport}
-        />
-      }
       appearanceContent={null}
       notificationsContent={
         <NotificationSettingsCard
