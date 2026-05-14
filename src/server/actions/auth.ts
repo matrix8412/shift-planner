@@ -74,7 +74,7 @@ export async function loginAction(_prev: AuthActionState, formData: FormData): P
   }
 
   await createSession(user.id);
-  redirect("/");
+  redirect("/schedule");
 
   // redirect() throws — this line is unreachable but satisfies TypeScript
   return {};

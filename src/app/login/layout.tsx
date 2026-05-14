@@ -13,7 +13,7 @@ export default async function LoginLayout({ children }: { children: React.ReactN
   const userId = await getSessionUserId();
 
   if (userId) {
-    redirect("/");
+    redirect("/schedule");
   }
 
   return <>{children}</>;
