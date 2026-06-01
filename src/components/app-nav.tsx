@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   SlidersHorizontal,
   SunMedium,
+  Trash2,
   UserCog,
   Users,
   X,
@@ -21,6 +22,7 @@ import {
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useI18n } from "@/i18n/context";
+import SearchableSelect from "@/components/searchable-select";
 import { LOCALES, LOCALE_LABELS } from "@/i18n/types";
 import type { Locale } from "@/i18n/types";
 import { updateProfileAction } from "@/server/actions/auth";
@@ -104,6 +106,37 @@ function resolveInitialTheme(): AppTheme {
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
 }
 
+function resizeImage(file: File, maxDim = 512, quality = 0.8): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) {
+        resolve(file);
+        return;
+      }
+      const ratio = Math.min(maxDim / width, maxDim / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.src = url;
+  });
+}
+
 export function AppNav({ profile, allowedRoutes }: AppNavProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -160,8 +193,9 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
     if (!file) return;
     setUploading(true);
     try {
+      const resized = await resizeImage(file);
       const fd = new FormData();
-      fd.append("file", file);
+      fd.append("file", resized);
       fd.append("userId", profile.id);
       const res = await fetch("/api/avatars/upload", { method: "POST", body: fd });
       if (res.ok) {
@@ -171,6 +205,20 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
     } finally {
       setUploading(false);
       if (avatarInputRef.current) avatarInputRef.current.value = "";
+    }
+  }
+
+  async function handleAvatarRemove() {
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("userId", profile.id);
+      const res = await fetch("/api/avatars/delete", { method: "POST", body: fd });
+      if (res.ok) {
+        setAvatarPreview(null);
+      }
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -309,15 +357,28 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
                 hidden
                 onChange={handleAvatarChange}
               />
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => avatarInputRef.current?.click()}
-                disabled={uploading}
-              >
-                <Camera size={16} />
-                {uploading ? t("profile.uploading") : t("profile.uploadPhoto")}
-              </button>
+              <div className="avatar-upload-actions">
+                <button
+                  type="button"
+                  className="button secondary"
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  <Camera size={16} />
+                  {uploading ? t("profile.uploading") : t("profile.uploadPhoto")}
+                </button>
+                {avatarPreview ? (
+                  <button
+                    type="button"
+                    className="button danger"
+                    onClick={handleAvatarRemove}
+                    disabled={uploading}
+                  >
+                    <Trash2 size={16} />
+                    {t("profile.removePhoto")}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             {profileState.error ? <p className="field-error">{profileState.error}</p> : null}
@@ -348,23 +409,26 @@ export function AppNav({ profile, allowedRoutes }: AppNavProps) {
 
               <label className="field">
                 <span className="field-label">{t("profile.fieldTheme")}</span>
-                <select name="preferredTheme" className="field-control" defaultValue={profile.preferredTheme ?? ""}>
-                  <option value="">{t("profile.themeAuto")}</option>
-                  <option value="light">{t("profile.themeLight")}</option>
-                  <option value="dark">{t("profile.themeDark")}</option>
-                </select>
+                <SearchableSelect
+                  name="preferredTheme"
+                  defaultValue={profile.preferredTheme ?? ""}
+                  className="field-control"
+                  options={[
+                    { value: "", label: t("profile.themeAuto") },
+                    { value: "light", label: t("profile.themeLight") },
+                    { value: "dark", label: t("profile.themeDark") },
+                  ]}
+                />
               </label>
 
               <label className="field">
                 <span className="field-label">{t("profile.fieldLocale")}</span>
-                <select name="preferredLocale" className="field-control" defaultValue={profile.preferredLocale ?? ""}>
-                  <option value="">{t("profile.localeAuto")}</option>
-                  {LOCALES.map((loc) => (
-                    <option key={loc} value={loc}>
-                      {LOCALE_LABELS[loc as Locale]}
-                    </option>
-                  ))}
-                </select>
+                <SearchableSelect
+                  name="preferredLocale"
+                  defaultValue={profile.preferredLocale ?? ""}
+                  className="field-control"
+                  options={[{ value: "", label: t("profile.localeAuto") }, ...LOCALES.map((loc) => ({ value: loc, label: LOCALE_LABELS[loc as Locale] }))]}
+                />
               </label>
 
               <button type="submit" className="button" disabled={profilePending}>

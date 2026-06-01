@@ -90,15 +90,27 @@ export type CalendarItem = {
   subtitle?: string;
   timeLabel?: string;
   backgroundColor?: string;
+  stripColor?: string;
   textColor?: string;
   accentColor?: string;
+  darkBackgroundColor?: string;
+  darkStripColor?: string;
+  darkTextColor?: string;
+  darkAccentColor?: string;
   locked?: boolean;
+  sortOrder?: number;
+};
+
+export type HolidayEntry = {
+  date: string;
+  name: string;
+  localName?: string;
 };
 
 export type CalendarConfig = {
   initialMonth: string;
   items: CalendarItem[];
-  holidayDates?: string[];
+  holidays?: HolidayEntry[];
 };
 
 export type FieldOption = {
@@ -109,6 +121,8 @@ export type FieldOption = {
   textColor?: string;
   borderColor?: string;
   validDays?: number[];
+  validHoliday?: boolean;
+  allowedValues?: string[];
 };
 
 type BaseField = {
@@ -155,6 +169,7 @@ export type SelectField = BaseField & {
   allowEmpty?: boolean;
   emptyLabel?: string;
   filterByDate?: string;
+  filterByField?: string;
 };
 
 export type MultiSelectField = BaseField & {

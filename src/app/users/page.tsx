@@ -2,7 +2,7 @@ import { AccessDenied } from "@/components/access-denied";
 import { EntityModule } from "@/components/entity-module";
 import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
-import { createUserAction, deleteUserAction, importUsersCsvAction, updateUserAction } from "@/server/actions/records";
+import { changeUserPasswordAction, createUserAction, deleteUserAction, importUsersCsvAction, updateUserAction } from "@/server/actions/records";
 import { getUsersModule } from "@/server/read-models/modules";
 import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
 
@@ -24,6 +24,7 @@ export default async function UsersPage() {
       initialPageSize={pageSizePrefs.users}
       action={createUserAction}
       editAction={updateUserAction}
+      changePasswordAction={changeUserPasswordAction}
       deleteAction={deleteUserAction}
       importAction={importUsersCsvAction}
       canCreate={access.canCreate}

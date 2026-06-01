@@ -55,14 +55,25 @@ function expandUtcDateRange(startDate: Date, endDate: Date) {
   return days;
 }
 
-async function getHolidayDateValues() {
+async function getHolidays() {
   const holidays = await db.holiday.findMany({
     select: {
       date: true,
+      name: true,
+      localName: true,
     },
   });
 
-  return Array.from(new Set(holidays.map((holiday) => toIsoDate(holiday.date))));
+  const seen = new Set<string>();
+  const result: { date: string; name: string; localName?: string }[] = [];
+  for (const h of holidays) {
+    const iso = toIsoDate(h.date);
+    if (!seen.has(iso)) {
+      seen.add(iso);
+      result.push({ date: iso, name: h.name, localName: h.localName ?? undefined });
+    }
+  }
+  return result;
 }
 
 function formatJson(value: unknown) {
@@ -631,18 +642,27 @@ function vacationStatusCalendarColors(status: VacationStatus) {
         backgroundColor: "#d9efd7",
         accentColor: "#72b16b",
         textColor: "#17381b",
+        darkBackgroundColor: "#1a3318",
+        darkAccentColor: "#72b16b",
+        darkTextColor: "#c8e6c5",
       };
     case VacationStatus.REJECTED:
       return {
         backgroundColor: "#f7d4d1",
         accentColor: "#dc655b",
         textColor: "#5b211c",
+        darkBackgroundColor: "#3b1a17",
+        darkAccentColor: "#dc655b",
+        darkTextColor: "#f0c4c0",
       };
     default:
       return {
         backgroundColor: "#e7eff0",
         accentColor: "#7b9ca3",
         textColor: "#21434b",
+        darkBackgroundColor: "#1a2e34",
+        darkAccentColor: "#7b9ca3",
+        darkTextColor: "#c0d4d8",
       };
   }
 }
@@ -1223,6 +1243,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
         startsAt: shiftType.startsAt,
         endsAt: shiftType.endsAt,
         crossesMidnight: shiftType.crossesMidnight,
+        sortOrder: shiftType.sortOrder,
         isActive: shiftType.isActive,
         ...getShiftValidityFormValues(shiftType.validityDays),
       },
@@ -1234,6 +1255,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
           colorTokens: [buildServiceBadgeToken(shiftType.service)],
         },
         window: `${shiftType.startsAt} - ${shiftType.endsAt}${shiftType.crossesMidnight ? " (+1)" : ""}`,
+        sortOrder: String(shiftType.sortOrder),
         validity: buildShiftValidityCell(shiftType.validityDays),
         status: boolCell(shiftType.isActive, "Aktívna", "Neaktívna"),
       },
@@ -1255,6 +1277,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
       { key: "name", label: tr(d, "shifts.colName") },
       { key: "service", label: tr(d, "shifts.colService") },
       { key: "window", label: tr(d, "shifts.colTime") },
+      { key: "sortOrder", label: tr(d, "shifts.colSortOrder") },
       { key: "validity", label: tr(d, "shifts.colDays") },
       { key: "status", label: tr(d, "shifts.colValidity") },
     ],
@@ -1279,6 +1302,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
       { type: "time", name: "startsAt", label: tr(d, "shifts.fieldStartsAt"), required: true, defaultValue: "08:00" },
       { type: "time", name: "endsAt", label: tr(d, "shifts.fieldEndsAt"), required: true, defaultValue: "20:00" },
       { type: "checkbox", name: "crossesMidnight", label: tr(d, "shifts.fieldCrossesMidnight") },
+      { type: "number", name: "sortOrder", label: tr(d, "shifts.fieldSortOrder"), required: true, defaultValue: 5, min: 1, max: 10, step: 1 },
       ...shiftValidityDefinitions.map((definition, index) => ({
         type: "checkbox" as const,
         name: definition.fieldName,
@@ -1298,7 +1322,7 @@ export async function getShiftsModule(): Promise<EntityModuleConfig> {
 export async function getVacationsModule(): Promise<EntityModuleConfig> {
   const locale = await getServerLocale();
   const d = getDictionary(locale);
-  const [vacations, users, holidayDates] = await Promise.all([
+  const [vacations, users, holidays] = await Promise.all([
     db.vacation.findMany({
       include: {
         user: true,
@@ -1308,7 +1332,7 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
     db.user.findMany({
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),
-    getHolidayDateValues(),
+    getHolidays(),
   ]);
 
   const userOptions = users.map((user) => ({
@@ -1329,9 +1353,22 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
       backgroundColor: colors.backgroundColor,
       accentColor: colors.accentColor,
       textColor: colors.textColor,
+      darkBackgroundColor: colors.darkBackgroundColor,
+      darkAccentColor: colors.darkAccentColor,
+      darkTextColor: colors.darkTextColor,
       locked: vacation.locked,
     }));
   });
+  const pendingLabel = tr(d, "vacations.statColPending");
+  const approvedLabel = tr(d, "vacations.statColApproved");
+  const rejectedLabel = tr(d, "vacations.statColRejected");
+  const totalLabel = tr(d, "vacations.statColTotal");
+  const countLabel = tr(d, "vacations.statColCount");
+  const vacStatusLabel = (status: VacationStatus) =>
+    status === VacationStatus.APPROVED ? approvedLabel
+    : status === VacationStatus.REJECTED ? rejectedLabel
+    : pendingLabel;
+
   const rows = attachAuditRows(
     vacations.map((vacation) => ({
       id: vacation.id,
@@ -1350,10 +1387,34 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
         locked: boolCell(vacation.locked, "Zamknute", "Otvorene"),
         status: vacationStatusCell(vacation.status),
         notes: vacation.notes ?? "-",
+        _vacStatus: vacStatusLabel(vacation.status),
       },
     })),
     auditMap,
   );
+
+  const userVacCounts = new Map<string, { id: string; PENDING: number; APPROVED: number; REJECTED: number }>();
+  for (const vacation of vacations) {
+    const userName = `${vacation.user.firstName} ${vacation.user.lastName}`;
+    if (!userVacCounts.has(userName)) userVacCounts.set(userName, { id: vacation.userId, PENDING: 0, APPROVED: 0, REJECTED: 0 });
+    userVacCounts.get(userName)![vacation.status]++;
+  }
+  const userStatRows = Array.from(userVacCounts.entries())
+    .sort(([a], [b]) => a.localeCompare(b, "sk"))
+    .map(([userName, counts]) => ({
+      label: userName,
+      values: {
+        [pendingLabel]: String(counts.PENDING),
+        [approvedLabel]: String(counts.APPROVED),
+        [rejectedLabel]: String(counts.REJECTED),
+        [totalLabel]: String(counts.PENDING + counts.APPROVED + counts.REJECTED),
+      },
+    }));
+  const statusStatRows = [
+    { label: pendingLabel, values: { [countLabel]: String(vacations.filter((v) => v.status === VacationStatus.PENDING).length) } },
+    { label: approvedLabel, values: { [countLabel]: String(vacations.filter((v) => v.status === VacationStatus.APPROVED).length) } },
+    { label: rejectedLabel, values: { [countLabel]: String(vacations.filter((v) => v.status === VacationStatus.REJECTED).length) } },
+  ].filter((row) => Number(row.values[countLabel]) > 0);
 
   return {
     title: tr(d, "vacations.title"),
@@ -1378,13 +1439,28 @@ export async function getVacationsModule(): Promise<EntityModuleConfig> {
     sheetDescription: tr(d, "vacations.sheetDescription"),
     submitLabel: tr(d, "vacations.submitLabel"),
     searchPlaceholder: tr(d, "vacations.search"),
-    views: ["calendar", "table"],
+    statGroups: [
+      {
+        title: tr(d, "vacations.statByUser"),
+        columns: [pendingLabel, approvedLabel, rejectedLabel, totalLabel],
+        rows: userStatRows,
+        groupByField: "userId",
+        breakdownField: "_vacStatus",
+      },
+      {
+        title: tr(d, "vacations.statByStatus"),
+        columns: [countLabel],
+        rows: statusStatRows,
+        breakdownField: "_vacStatus",
+      },
+    ],
+    views: ["calendar", "table", "stats"],
     defaultView: "calendar",
     monthScopeEnabled: true,
     calendar: {
       initialMonth: toIsoDate(vacations[0]?.startDate ?? todayUtc).slice(0, 7),
       items: calendarItems,
-      holidayDates,
+      holidays,
     },
     fields: [
       { type: "select", name: "userId", label: tr(d, "vacations.fieldUser"), required: true, options: userOptions },
@@ -1595,7 +1671,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
   const locale = await getServerLocale();
   const d = getDictionary(locale);
 
-  const [entries, users, services, shiftTypes, holidayDates] = await Promise.all([
+  const [entries, users, services, shiftTypes, userShiftTypes, holidays] = await Promise.all([
     db.scheduleEntry.findMany({
       include: {
         user: true,
@@ -1619,7 +1695,13 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       },
       orderBy: [{ service: { name: "asc" } }, { startsAt: "asc" }],
     }),
-    getHolidayDateValues(),
+    db.userShiftType.findMany({
+      select: {
+        userId: true,
+        shiftTypeId: true,
+      },
+    }),
+    getHolidays(),
   ]);
 
   const userOptions = users.map((user) => ({
@@ -1642,6 +1724,8 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       value: shiftType.id,
       label: `${shiftType.service.name} / ${shiftType.name} (${shiftType.startsAt}-${shiftType.endsAt})`,
       validDays,
+      validHoliday: validity.holiday,
+      allowedValues: userShiftTypes.filter((assignment) => assignment.shiftTypeId === shiftType.id).map((assignment) => assignment.userId),
     };
   });
   const missingDependencies = [
@@ -1652,10 +1736,19 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
   const auditMap = await getAuditEntryMap("SCHEDULE_ENTRY", entries.map((entry) => entry.id));
   const calendarItems: CalendarItem[] = entries.map((entry) => {
     const fallbackColors = mapServiceCalendarColors(entry.service.name);
+    const baseBackground = entry.service.colorLight ?? fallbackColors.backgroundColor;
+    const opacity = clampOpacity(entry.service.opacityLight, 78);
     const colors = {
-      backgroundColor: entry.service.colorLight ?? fallbackColors.backgroundColor,
+      backgroundColor: hexToRgba(baseBackground, opacity / 100) ?? baseBackground,
       accentColor: entry.service.colorDark ?? fallbackColors.accentColor,
       textColor: entry.service.textColorLight ?? fallbackColors.textColor,
+    };
+    const darkBaseBackground = entry.service.colorDark ?? fallbackColors.backgroundColor;
+    const darkOpacity = clampOpacity(entry.service.opacityDark, 100);
+    const darkColors = {
+      backgroundColor: hexToRgba(darkBaseBackground, darkOpacity / 100) ?? darkBaseBackground,
+      accentColor: entry.service.colorDark ?? fallbackColors.accentColor,
+      textColor: entry.service.textColorDark ?? "#F8FBFB",
     };
 
     return {
@@ -1666,11 +1759,18 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       subtitle: `${entry.user.lastName}, ${entry.user.firstName}`,
       timeLabel: `${entry.shiftType.startsAt} - ${entry.shiftType.endsAt}`,
       backgroundColor: colors.backgroundColor ?? undefined,
+      stripColor: baseBackground,
       accentColor: colors.accentColor ?? undefined,
       textColor: colors.textColor ?? undefined,
+      darkBackgroundColor: darkColors.backgroundColor ?? undefined,
+      darkStripColor: darkBaseBackground,
+      darkAccentColor: darkColors.accentColor ?? undefined,
+      darkTextColor: darkColors.textColor ?? undefined,
       locked: entry.locked,
+      sortOrder: entry.shiftType.sortOrder,
     };
   });
+  calendarItems.sort((a, b) => (a.sortOrder ?? 5) - (b.sortOrder ?? 5));
   const rows = attachAuditRows(
     entries.map((entry) => ({
       id: entry.id,
@@ -1701,6 +1801,13 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
   const shiftTypeNames = shiftTypes.map((st) => `${st.service.name} / ${st.name}`);
   const userShiftCounts = new Map<string, Map<string, number>>();
 
+  for (const user of users) {
+    const userName = `${user.firstName} ${user.lastName}`;
+    if (!userShiftCounts.has(userName)) {
+      userShiftCounts.set(userName, new Map());
+    }
+  }
+
   for (const entry of entries) {
     const userName = `${entry.user.firstName} ${entry.user.lastName}`;
     const shiftName = `${entry.service.name} / ${entry.shiftType.name}`;
@@ -1729,6 +1836,40 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       return { label: userName, values };
     });
 
+  // Build per-user x service breakdown
+  const serviceNames = services.map((s) => s.name);
+  const userServiceCounts = new Map<string, Map<string, number>>();
+
+  for (const user of users) {
+    const userName = `${user.firstName} ${user.lastName}`;
+    if (!userServiceCounts.has(userName)) {
+      userServiceCounts.set(userName, new Map());
+    }
+  }
+
+  for (const entry of entries) {
+    const userName = `${entry.user.firstName} ${entry.user.lastName}`;
+    if (!userServiceCounts.has(userName)) {
+      userServiceCounts.set(userName, new Map());
+    }
+    const userMap = userServiceCounts.get(userName)!;
+    userMap.set(entry.service.name, (userMap.get(entry.service.name) ?? 0) + 1);
+  }
+
+  const userServiceStatRows = Array.from(userServiceCounts.entries())
+    .sort(([a], [b]) => a.localeCompare(b, "sk"))
+    .map(([userName, svcMap]) => {
+      const values: Record<string, string> = {};
+      let total = 0;
+      for (const svcName of serviceNames) {
+        const count = svcMap.get(svcName) ?? 0;
+        values[svcName] = String(count);
+        total += count;
+      }
+      values[tr(d, "schedule.statColTotal")] = String(total);
+      return { label: userName, values };
+    });
+
   // Build per-shift-type totals
   const shiftTotals = new Map<string, number>();
   for (const entry of entries) {
@@ -1744,6 +1885,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     }));
 
   return {
+    moduleKey: "schedule",
     title: tr(d, "schedule.title"),
     summary: tr(d, "schedule.summary"),
     csvFileName: "schedule.csv",
@@ -1759,6 +1901,13 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         rows: userStatRows,
         groupByField: "userId",
         breakdownField: "_shiftStat",
+      },
+      {
+        title: tr(d, "schedule.statByUserService"),
+        columns: [...serviceNames, tr(d, "schedule.statColTotal")],
+        rows: userServiceStatRows,
+        groupByField: "userId",
+        breakdownField: "service",
       },
       {
         title: tr(d, "schedule.statByShift"),
@@ -1789,7 +1938,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
     calendar: {
       initialMonth: toIsoDate(entries[0]?.date ?? todayUtc).slice(0, 7),
       items: calendarItems,
-      holidayDates,
+      holidays,
     },
     fields: [
       { type: "date", name: "date", label: tr(d, "schedule.fieldDate"), required: true },
@@ -1801,7 +1950,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
         required: true,
         options: shiftOptions,
         description: tr(d, "schedule.fieldShiftTypeHint"),
-        filterByDate: "date",
+        filterByField: "userId",
       },
       {
         type: "select",

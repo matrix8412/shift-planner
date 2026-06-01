@@ -1,17 +1,7 @@
-const CACHE_NAME = "pohotovosti-shell-v1";
+const CACHE_NAME = "pohotovosti-shell-v2";
 const APP_SHELL = [
-  "/",
   "/offline",
   "/manifest.webmanifest",
-  "/users",
-  "/roles",
-  "/services",
-  "/shifts",
-  "/vacations",
-  "/conditions",
-  "/holidays",
-  "/settings",
-  "/schedule",
 ];
 
 self.addEventListener("install", (event) => {

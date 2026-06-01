@@ -3,7 +3,7 @@ import { EntityModule } from "@/components/entity-module";
 import { ScheduleGenerateAction } from "@/components/schedule-generate-action";
 import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
-import { createScheduleAction, deleteScheduleAction, generateScheduleAction, importScheduleCsvAction, toggleScheduleLockAction, bulkToggleScheduleLockAction, bulkDeleteScheduleAction, updateScheduleAction } from "@/server/actions/records";
+import { createScheduleAction, deleteScheduleAction, generateScheduleAction, importScheduleCsvAction, moveScheduleEntryAction, toggleScheduleLockAction, bulkToggleScheduleLockAction, bulkDeleteScheduleAction, updateScheduleAction } from "@/server/actions/records";
 import { getAiSettings } from "@/server/config/ai-settings";
 import { getScheduleModule } from "@/server/read-models/modules";
 import { getColumnPreferences, getPageSizePreferences } from "@/server/actions/column-preferences";
@@ -31,13 +31,13 @@ export default async function SchedulePage() {
       toggleLockAction={toggleScheduleLockAction}
       bulkLockAction={bulkToggleScheduleLockAction}
       bulkDeleteAction={bulkDeleteScheduleAction}
-      canCreate={access.canCreate}
+      moveAction={moveScheduleEntryAction}
       canEdit={access.canEdit}
       canDelete={access.canDelete}
       canImport={access.canImportExport}
       canExport={access.canImportExport}
       canToggleLock={access.canEdit}
-      headerActions={
+      primaryAction={
         access.canGenerate ? (
           <ScheduleGenerateAction
             action={generateScheduleAction}

@@ -7,6 +7,7 @@ import { useBrowserNotifications } from "@/components/browser-notification-provi
 import { FormSubmitButton } from "@/components/form-submit-button";
 import type { ActionState } from "@/components/entity-module.types";
 import { useI18n } from "@/i18n/context";
+import SearchableSelect from "@/components/searchable-select";
 
 const initialState: ActionState = {
   status: "idle",
@@ -92,16 +93,17 @@ export function AiSettingsCard({ settings, action, readOnly = false }: AiSetting
         <fieldset disabled={readOnly} className="settings-group">
         <label className="field">
           <span className="field-label">{t("ai.providerLabel")}</span>
-          <select
+          <SearchableSelect
             name="provider"
             value={provider}
+            onChange={(v) => setProvider(String(v) as AiSettingsValue["provider"])}
             className="field-control"
-            onChange={(event) => setProvider(event.currentTarget.value as AiSettingsValue["provider"])}
-          >
-            <option value="openai">OpenAI</option>
-            <option value="anthropic">Anthropic</option>
-            <option value="gemini">Google Gemini</option>
-          </select>
+            options={[
+              { value: "openai", label: "OpenAI" },
+              { value: "anthropic", label: "Anthropic" },
+              { value: "gemini", label: "Google Gemini" },
+            ]}
+          />
         </label>
 
         <div className="settings-grid">

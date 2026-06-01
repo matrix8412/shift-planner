@@ -6,9 +6,10 @@ export const permissionModules = [
     label: "Schedule",
     permissions: [
       { action: "view", label: "View" },
-      { action: "edit", label: "Edit records", description: "Includes locking and unlocking schedule entries." },
+      { action: "edit", label: "Edit records" },
       { action: "create", label: "Add a manual record" },
       { action: "delete", label: "Delete a record" },
+      { action: "lock", label: "Lock / Unlock" },
       { action: "generate", label: "Generate a schedule" },
       { action: "importExport", label: "Import / Export" },
     ],
@@ -18,9 +19,10 @@ export const permissionModules = [
     label: "Vacations",
     permissions: [
       { action: "view", label: "View" },
-      { action: "edit", label: "Edit records", description: "Includes locking and unlocking vacation records." },
+      { action: "edit", label: "Edit records" },
       { action: "create", label: "Add a manual record" },
       { action: "delete", label: "Delete a record" },
+      { action: "lock", label: "Lock / Unlock" },
       { action: "importExport", label: "Import / Export" },
     ],
   },
@@ -123,7 +125,7 @@ export const permissionDefinitions = permissionModules.flatMap((moduleDefinition
         moduleLabel: moduleDefinition.label,
         action: permissionDefinition.action,
         label: permissionDefinition.label,
-        description: "description" in permissionDefinition ? permissionDefinition.description : undefined,
+        description: "description" in permissionDefinition ? (permissionDefinition as { description: string }).description : undefined,
       }) as const,
   ),
 );
@@ -155,7 +157,7 @@ export function getPermissionMatrixSections(): PermissionMatrixSection[] {
     permissions: moduleDefinition.permissions.map((permissionDefinition) => ({
       code: `${moduleDefinition.key}:${permissionDefinition.action}` as PermissionCode,
       label: permissionDefinition.label,
-      description: "description" in permissionDefinition ? permissionDefinition.description : undefined,
+      description: "description" in permissionDefinition ? (permissionDefinition as { description: string }).description : undefined,
     })),
   }));
 }

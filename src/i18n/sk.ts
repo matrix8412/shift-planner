@@ -5,6 +5,9 @@ const sk: TranslationDictionary = {
   "app.title": "Pohotovosti",
   "app.description": "Systém pre správu pracovných pohotovostí.",
   "app.brand": "K",
+  "appVersion.title": "K dispozícii je nová verzia",
+  "appVersion.message": "Na serveri je dostupná novšia verzia aplikácie. Kliknite na aktualizáciu pre načítanie najnovšej verzie.",
+  "appVersion.action": "Aktualizovať",
 
   /* ──────────────────── Navigation ──────────────────── */
   "nav.sectionMain": "Hlavné",
@@ -46,6 +49,11 @@ const sk: TranslationDictionary = {
   "entity.continueEditing": "Pokračovať v úprave",
   "entity.discardChanges": "Zahodiť zmeny",
   "entity.delete": "Odstrániť",
+  "entity.edit": "Upraviť",
+  "entity.changePassword": "Zmeniť heslo",
+  "entity.changePasswordDescription": "Zadajte nové heslo pre tohto používateľa. Existujúce relácie budú odhlásené.",
+  "entity.changePasswordConfirm": "Nastaviť heslo",
+  "entity.options": "Možnosti",
   "entity.confirmDelete": "Naozaj chcete odstrániť tento záznam?",
   "entity.actions": "Akcie",
   "entity.editRow": "Upraviť {label}",
@@ -111,6 +119,7 @@ const sk: TranslationDictionary = {
   "perm.add": "Pridať",
   "perm.edit": "Upraviť",
   "perm.delete": "Odstrániť",
+  "perm.lock": "Zamknúť",
   "perm.import": "Import",
   "perm.export": "Export",
   "perm.generate": "Generovať",
@@ -201,7 +210,6 @@ const sk: TranslationDictionary = {
   "offline.description": "Aplikácia je nainštalovaná, ale táto obrazovka vyžaduje sieťové pripojenie alebo uložené dáta.",
 
   /* ──────────────────── Settings tabs ──────────────────── */
-  "settingsTabs.system": "Systém",
   "settingsTabs.appearance": "Vzhľad",
   "settingsTabs.notifications": "Notifikácie",
   "settingsTabs.ai": "AI",
@@ -302,6 +310,13 @@ const sk: TranslationDictionary = {
   "schedGen.note": "AI vráti len navrhnuté záznamy. Server potom overí validitu zmien pre dané dni, zablokuje kolízie so schválenými dovolenkami a do payloadu pre AI pridá aj historické priradenia používateľov a typov zmien s číslami dní v týždni 1-7 pre spravodlivejšie rozvrhnutie.",
   "schedGen.close": "Zavrieť",
   "schedGen.submit": "Spustiť generovanie",
+
+  /* ──────────────────── Select controls ──────────────────── */
+  "select.searchPlaceholder": "Hľadať...",
+  "select.noOptions": "Žiadne dostupné možnosti",
+  "select.noOptionsSelectUser": "Najprv vyber používateľa",
+  "select.noOptionsSelectDate": "Najprv vyber dátum",
+  "select.noOptionsSelectDay": "Pre tento deň nie sú dostupné žiadne typy zmien",
 
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifikácie",
@@ -413,18 +428,6 @@ const sk: TranslationDictionary = {
   "notifToast.testSuccess": "Test notifikácie",
   "notifToast.testError": "Test notifikácie",
 
-  /* ──────────────────── JSON help dialog ──────────────────── */
-  "jsonHelp.button": "Help",
-  "jsonHelp.closeAria": "Zavrieť nápovedu",
-  "jsonHelp.eyebrow": "JSON help",
-  "jsonHelp.heading": "Nápoveda k JSON objektom nastavení",
-  "jsonHelp.intro": "Toto sú všetky systémové JSON objekty, ktoré aplikácia aktuálne číta a používa priamo vo funkcionalite.",
-  "jsonHelp.close": "Zavrieť",
-  "jsonHelp.customKeys": "Vlastné kľúče",
-  "jsonHelp.customKeysDescription": "V module Všeobecné môžete ukladať aj vlastné JSON hodnoty pod ľubovoľným kľúčom. Aplikácia ich uchová, exportuje a importuje, ale bez doplnenej implementácie ich nepoužije v runtime správaní.",
-  "jsonHelp.securityNote": "Kľúče spravované cez dedikované karty, ako AI runtime alebo notifikácie, sa v tomto zozname z bezpečnostných dôvodov nezobrazujú.",
-  "jsonHelp.supportedTypes": "Podporované JSON typy: objekt, pole, string, number, boolean, null.",
-
   /* ──────────────────── Permissions definitions ──────────────────── */
   "permissions.schedule": "Rozvrh",
   "permissions.vacations": "Dovolenky",
@@ -437,7 +440,7 @@ const sk: TranslationDictionary = {
   "permissions.roles": "Roly",
   "permissions.view": "Zobraziť",
   "permissions.editRecords": "Upraviť záznamy",
-  "permissions.editRecordsDesc": "Vrátane zamknutia a odomknutia záznamov rozvrhu.",
+  "permissions.lockUnlock": "Zamknúť / Odomknúť",
   "permissions.addManual": "Pridať manuálny záznam",
   "permissions.addRecord": "Pridať záznam",
   "permissions.deleteRecord": "Odstrániť záznam",
@@ -646,6 +649,8 @@ const sk: TranslationDictionary = {
   "shifts.fieldStartsAt": "Začína o",
   "shifts.fieldEndsAt": "Končí o",
   "shifts.fieldCrossesMidnight": "Cez polnoc",
+  "shifts.fieldSortOrder": "Poradové číslo",
+  "shifts.colSortOrder": "Poradie",
   "shifts.fieldValidFor": "Platí pre {day}",
   "shifts.fieldValidForGroup": "Platí pre dni",
   "shifts.fieldIsActive": "Zmena je aktívna",
@@ -680,6 +685,13 @@ const sk: TranslationDictionary = {
   "vacations.fieldNotesPlaceholder": "Voliteľné poznámky k žiadosti",
   "vacations.createDisabled": "Najprv vytvorte aspoň jedného používateľa.",
   "vacations.importDisabled": "Najprv vytvorte aspoň jedného používateľa pred importom.",
+  "vacations.statByUser": "Podľa používateľa",
+  "vacations.statByStatus": "Podľa stavu",
+  "vacations.statColPending": "Čakajúce",
+  "vacations.statColApproved": "Schválené",
+  "vacations.statColRejected": "Zamietnuté",
+  "vacations.statColTotal": "Spolu",
+  "vacations.statColCount": "Počet",
 
   /* ──────────────────── Module: Conditions ──────────────────── */
   "conditions.title": "Podmienky",
@@ -708,6 +720,18 @@ const sk: TranslationDictionary = {
   "conditions.fieldIsActive": "Podmienka je aktívna",
   "conditions.fieldDescription": "Popis",
   "conditions.fieldDescriptionPlaceholder": "Opíšte pravidlo alebo obmedzenie",
+  "conditions.aiHelpButton": "Hardkódované pravidlá AI",
+  "conditions.aiHelpEyebrow": "AI generovanie",
+  "conditions.aiHelpTitle": "Vstavaná pravidlá pre AI",
+  "conditions.aiHelpIntro": "Tieto pravidlá sú napevno zabudované v systéme a AI ich vždy dodržiava bez ohľadu na používateľské podmienky.",
+  "conditions.aiHelpClose": "Zavrieť",
+  "conditions.aiRule1": "Výstup je vždy JSON s kľúčmi summary a events.",
+  "conditions.aiRule2": "Každá udalosť musí obsahovať dátum, userId a shiftTypeId.",
+  "conditions.aiRule3": "Používa LEN presné id hodnoty zo vstupu – nikdy si nevymýšľa vlastné.",
+  "conditions.aiRule4": "Priradená zmena musí byť v zozname povolených zmien daného používateľa.",
+  "conditions.aiRule5": "Rešpektuje typy dní zmien, sviatky, schválené dovolenky a zamknuté záznamy.",
+  "conditions.aiRule6": "Zamknuté záznamy sú fixné – AI ich nesmie meniť, duplikovať ani vynechať.",
+  "conditions.aiRule7": "Využíva historické priradenia na spravodlivejšie rozdelenie.",
 
   /* ──────────────────── Module: Holidays ──────────────────── */
   "holidays.title": "Štátne sviatky",
@@ -733,26 +757,6 @@ const sk: TranslationDictionary = {
   "holidays.fieldLocalName": "Lokálny názov",
   "holidays.fieldLocalNamePlaceholder": "Deň vzniku SR",
 
-  /* ──────────────────── Module: Settings ──────────────────── */
-  "settings.title": "Všeobecné",
-  "settings.summary": "Spravujte všeobecné nastavenia aplikácie a systémové kľúče.",
-  "settings.statTotal": "Nastavenia",
-  "settings.statJson": "JSON objekty",
-  "settings.statUpdatedToday": "Aktualizované dnes",
-  "settings.colKey": "Kľúč",
-  "settings.colValue": "Hodnota",
-  "settings.colUpdated": "Aktualizované",
-  "settings.empty": "Nastavenie s validným JSON sa po uložení zobrazí tu.",
-  "settings.addLabel": "Pridať nové",
-  "settings.sheetTitle": "Pridať nastavenie",
-  "settings.sheetDescription": "Použite unikátny kľúč a zadajte validnú JSON hodnotu.",
-  "settings.submitLabel": "Uložiť nastavenie",
-  "settings.search": "Hľadať v nastaveniach...",
-  "settings.fieldKey": "Kľúč",
-  "settings.fieldKeyPlaceholder": "reminders.defaultLeadDays",
-  "settings.fieldJsonValue": "JSON hodnota",
-  "settings.fieldJsonPlaceholder": '{\n  "enabled": true\n}',
-
   /* ──────────────────── Module: Schedule ──────────────────── */
   "schedule.title": "Rozvrh",
   "schedule.summary": "Spravujte a prezerajte si rozvrhy pre aktuálne obdobie.",
@@ -776,7 +780,7 @@ const sk: TranslationDictionary = {
   "schedule.fieldUser": "Používateľ",
   "schedule.fieldService": "Typ služby",
   "schedule.fieldShiftType": "Typ zmeny",
-  "schedule.fieldShiftTypeHint": "Vybraný typ zmeny musí patriť k zvolenej službe.",
+  "schedule.fieldShiftTypeHint": "Vybraný typ zmeny musí patriť k zvolenej službe, byť pridelený vybranému používateľovi a byť platný pre zvolený deň.",
   "schedule.fieldSource": "Zdroj",
   "schedule.optManual": "Manuálne",
   "schedule.optImport": "Import",
@@ -789,6 +793,7 @@ const sk: TranslationDictionary = {
   "schedule.depService": "aspoň jednu službu",
   "schedule.depShift": "aspoň jeden typ zmeny",
   "schedule.statByUser": "Štatistiky podľa používateľov",
+  "schedule.statByUserService": "Štatistiky podľa používateľov a služieb",
   "schedule.statByShift": "Štatistiky podľa typov zmien",
   "schedule.statUser": "Používateľ",
   "schedule.statShift": "Typ zmeny",
@@ -893,8 +898,11 @@ const sk: TranslationDictionary = {
   "action.holidayCreated": "Sviatok bol vytvorený.",
   "action.settingCreated": "Nastavenie bolo vytvorené.",
   "action.scheduleCreated": "Záznam rozvrhu bol vytvorený.",
+  "action.scheduleDuplicateEntry": "Pre tohto používateľa už na {date} existuje záznam rozvrhu.",
+  "action.scheduleShiftTypeDuplicate": "Typ zmeny {shiftTypeName} je na {date} už naplánovaný. Každý typ zmeny možno použiť len raz za deň.",
 
   "action.userUpdated": "Používateľ bol upravený.",
+  "action.userPasswordChanged": "Heslo používateľa bolo zmenené.",
   "action.roleUpdated": "Rola bola upravená.",
   "action.serviceUpdated": "Služba bola upravená.",
   "action.shiftUpdated": "Typ zmeny bol upravený.",
@@ -919,6 +927,10 @@ const sk: TranslationDictionary = {
   "action.scheduleBulkLockUpdated": "Hromadne aktualizovaných {count} záznamov rozvrhu.",
   "action.scheduleBulkDeleteLocked": "{count} vybraných záznamov je zamknutých. Najprv ich odomknite.",
   "action.scheduleBulkDeleted": "Hromadne odstránených {count} záznamov rozvrhu.",
+  "action.scheduleMoved": "Záznam rozvrhu bol presunutý na {date}.",
+  "action.scheduleSwapped": "Záznamy rozvrhu boli vymenené.",
+  "action.scheduleMoveLockedConflict": "Presun nie je možný: na {date} už existuje zamknutý záznam s rovnakým typom zmeny.",
+  "action.scheduleMoveSourceLocked": "Zamknutý záznam nie je možné presunúť. Najprv ho odomknite.",
 
   "action.vacationLockedError": "Záznam dovolenky je zamknutý. Pre odomknutie použite ikonku zámku na zázname.",
   "action.scheduleLockedError": "Záznam rozvrhu je zamknutý. Pre odomknutie použite ikonku zámku na zázname.",
@@ -964,6 +976,7 @@ const sk: TranslationDictionary = {
   "action.aiInvalidShift": "AI vrátilo neplatnú zmenu pre {date}: {error}",
   "action.aiVacationConflict": "AI priradilo používateľa {userName} na {date}, ale tento má schválenú dovolenku.",
   "action.aiDuplicate": "AI vrátilo duplicitné záznamy rozvrhu pre {date}, používateľa {userId} a zmenu {shiftTypeId}.",
+  "action.aiShiftTypeDuplicate": "AI priradilo typ zmeny {shiftTypeId} viackrát na {date}. Každý typ zmeny možno použiť len raz za deň.",
   "action.aiLockedDuplicate": "AI duplikovalo zamknutý záznam pre {date}, používateľa {userId} a zmenu {shiftTypeId}.",
 
   /* ── AI generation success/notifications ── */
@@ -1046,6 +1059,8 @@ const sk: TranslationDictionary = {
   "profile.themeDark": "Tmavá",
   "profile.localeAuto": "Auto",
   "profile.uploadPhoto": "Nahrať fotku",
+  "profile.removePhoto": "Odstrániť fotku",
+  "profile.removing": "Odstraňujem...",
   "profile.uploading": "Nahrávam...",
   "profile.updated": "Profil bol aktualizovaný.",
   "profile.updateError": "Nepodarilo sa aktualizovať profil.",
@@ -1058,6 +1073,31 @@ const sk: TranslationDictionary = {
   /* ──────────────────── Module placeholder ──────────────────── */
   "placeholder.module": "Modul",
   "placeholder.nextSteps": "Ďalšie kroky implementácie",
+
+  /* ──────────────────── HTTPS / Let's Encrypt ──────────────────── */
+  "settingsTabs.https": "HTTPS",
+  "https.eyebrow": "Let's Encrypt / Caddy",
+  "https.title": "Konfigurácia HTTPS",
+  "https.description": "Nastavte automatické TLS certifikáty cez Let's Encrypt. Caddy získava a obnovuje certifikáty automaticky po zadaní domény a ACME emailu.",
+  "https.domainLabel": "Aktuálna doména",
+  "https.statusLabel": "Stav HTTPS",
+  "https.statusConfigured": "Nakonfigurované",
+  "https.statusNotConfigured": "Nenakonfigurované",
+  "https.acmeEmailLabel": "ACME email (Let's Encrypt)",
+  "https.acmeEmailHint": "Emailová adresa na registráciu u Let's Encrypt. Vyžaduje sa pre akceptovanie ACME podmienok. Nechajte prázdne pre vypnutie HTTPS.",
+  "https.httpPortLabel": "HTTP port",
+  "https.httpPortHint": "Port na ktorom Caddy počúva pre bežnú HTTP komunikáciu a HTTP-01 challenge požiadavky od Let's Encrypt. Predvolená hodnota: 80.",
+  "https.httpsPortLabel": "HTTPS port",
+  "https.httpsPortHint": "Port na ktorom Caddy počúva pre TLS šifrovanú komunikáciu. Predvolená hodnota: 443.",
+  "https.renewIntervalLabel": "Interval kontroly obnovy (hodiny)",
+  "https.renewIntervalHint": "Ako často Caddy kontroluje, či certifikát potrebuje obnoviť. Certifikáty sa obnovujú keď im zostáva menej ako ~30 dní. Predvolená hodnota: 12 hodín.",
+  "https.restartNote": "Po uložení aktualizujte HTTP_PORT, HTTPS_PORT, CADDY_HOSTNAME, ACME_EMAIL a CADDY_RENEW_INTERVAL vo vašom .env súbore a reštartujte proxy službu aby sa zmeny prejavili.",
+  "https.envVarsNote": "Príklad: CADDY_HOSTNAME={hostname}  ACME_EMAIL=admin@example.com  HTTP_PORT=80  HTTPS_PORT=443",
+  "https.save": "Uložiť HTTPS nastavenia",
+
+  /* ── HTTPS action messages ── */
+  "action.httpsSettingsSaved": "HTTPS nastavenia boli uložené. Pre aktiváciu reštartujte proxy službu.",
+  "action.reviewHttpsFields": "Skontrolujte polia HTTPS nastavení.",
 };
 
 export default sk;

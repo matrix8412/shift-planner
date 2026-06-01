@@ -1,4 +1,13 @@
-:80 {
+{
+  # How often Caddy checks for certificate renewal (default: 12h).
+  # Certificates are renewed when they have less than ~30 days left.
+  renew_interval {$CADDY_RENEW_INTERVAL:12h}
+}
+
+# Set CADDY_HOSTNAME to your domain (e.g. "example.com") to enable HTTPS.
+# Caddy will automatically obtain a Let's Encrypt certificate for that domain.
+# Leave unset (or ":80") to run HTTP-only on port 80.
+{$CADDY_HOSTNAME::80} {
   encode gzip zstd
 
   @health path /api/health

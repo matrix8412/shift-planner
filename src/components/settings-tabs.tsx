@@ -4,7 +4,7 @@ import { useId, useState, type ReactNode } from "react";
 
 import { useI18n } from "@/i18n/context";
 
-type SettingsTabId = "system" | "appearance" | "notifications" | "ai";
+type SettingsTabId = "appearance" | "notifications" | "ai" | "https";
 
 type SettingsTab = {
   id: SettingsTabId;
@@ -13,17 +13,13 @@ type SettingsTab = {
 };
 
 type SettingsTabsProps = {
-  systemContent: ReactNode;
   appearanceContent: ReactNode;
   notificationsContent: ReactNode;
   aiContent: ReactNode;
+  httpsContent: ReactNode;
 };
 
 const tabsMeta: Omit<SettingsTab, "content">[] = [
-  {
-    id: "system",
-    labelKey: "settingsTabs.system",
-  },
   {
     id: "appearance",
     labelKey: "settingsTabs.appearance",
@@ -36,18 +32,22 @@ const tabsMeta: Omit<SettingsTab, "content">[] = [
     id: "ai",
     labelKey: "settingsTabs.ai",
   },
+  {
+    id: "https",
+    labelKey: "settingsTabs.https",
+  },
 ];
 
-export function SettingsTabs({ systemContent, appearanceContent, notificationsContent, aiContent }: SettingsTabsProps) {
+export function SettingsTabs({ appearanceContent, notificationsContent, aiContent, httpsContent }: SettingsTabsProps) {
   const { t } = useI18n();
-  const [activeTab, setActiveTab] = useState<SettingsTabId>("system");
+  const [activeTab, setActiveTab] = useState<SettingsTabId>("appearance");
   const tabListId = useId();
 
   const tabs: SettingsTab[] = [
-    { ...tabsMeta[0], content: systemContent },
-    { ...tabsMeta[1], content: appearanceContent },
-    { ...tabsMeta[2], content: notificationsContent },
-    { ...tabsMeta[3], content: aiContent },
+    { ...tabsMeta[0], content: appearanceContent },
+    { ...tabsMeta[1], content: notificationsContent },
+    { ...tabsMeta[2], content: aiContent },
+    { ...tabsMeta[3], content: httpsContent },
   ];
 
   const activeTabMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];

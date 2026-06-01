@@ -8,6 +8,7 @@ import { useBrowserNotifications } from "@/components/browser-notification-provi
 import { FormSubmitButton } from "@/components/form-submit-button";
 import type { ActionState } from "@/components/entity-module.types";
 import { useI18n } from "@/i18n/context";
+import SearchableSelect from "@/components/searchable-select";
 import type { NotificationSettings } from "@/server/config/notification-settings";
 
 const initialState: ActionState = {
@@ -125,7 +126,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
       setPushPermission(Notification.permission);
 
       try {
-        const registration = await navigator.serviceWorker.register("/sw.js");
+        const registration = await navigator.serviceWorker.ready;
         const subscription = await registration.pushManager.getSubscription();
 
         if (!ignore) {
@@ -208,7 +209,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
         throw new Error(t("push.notAllowed"));
       }
 
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.ready;
       const existingSubscription = await registration.pushManager.getSubscription();
       const subscription =
         existingSubscription ??
@@ -254,7 +255,7 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
   async function handleUnsubscribeDevice() {
     try {
       setDeviceActionPending(true);
-      const registration = await navigator.serviceWorker.register("/sw.js");
+      const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.getSubscription();
 
       if (!subscription) {
@@ -322,12 +323,17 @@ export function NotificationSettingsCard({ settings, profile, saveAction, testAc
         <div className="settings-grid">
           <label className="field">
             <span className="field-label">{t("notifCard.toastPosition")}</span>
-            <select name="toastPosition" defaultValue={settings.toast.position} className="field-control">
-              <option value="top-right">{t("notifCard.toastTopRight")}</option>
-              <option value="top-left">{t("notifCard.toastTopLeft")}</option>
-              <option value="bottom-right">{t("notifCard.toastBottomRight")}</option>
-              <option value="bottom-left">{t("notifCard.toastBottomLeft")}</option>
-            </select>
+            <SearchableSelect
+              name="toastPosition"
+              defaultValue={settings.toast.position}
+              className="field-control"
+              options={[
+                { value: "top-right", label: t("notifCard.toastTopRight") },
+                { value: "top-left", label: t("notifCard.toastTopLeft") },
+                { value: "bottom-right", label: t("notifCard.toastBottomRight") },
+                { value: "bottom-left", label: t("notifCard.toastBottomLeft") },
+              ]}
+            />
           </label>
 
           <label className="field">

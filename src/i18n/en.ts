@@ -5,6 +5,9 @@ const en: TranslationDictionary = {
   "app.title": "Pohotovosti",
   "app.description": "On-call scheduling management system.",
   "app.brand": "K",
+  "appVersion.title": "New version available",
+  "appVersion.message": "A newer version is available on the server. Click update to reload the latest app.",
+  "appVersion.action": "Update",
 
   /* ──────────────────── Navigation ──────────────────── */
   "nav.sectionMain": "Main",
@@ -46,6 +49,11 @@ const en: TranslationDictionary = {
   "entity.continueEditing": "Continue editing",
   "entity.discardChanges": "Discard changes",
   "entity.delete": "Delete",
+  "entity.edit": "Edit",
+  "entity.changePassword": "Change password",
+  "entity.changePasswordDescription": "Enter a new password for this user. Existing sessions will be signed out.",
+  "entity.changePasswordConfirm": "Set password",
+  "entity.options": "Options",
   "entity.confirmDelete": "Are you sure you want to delete this record?",
   "entity.actions": "Actions",
   "entity.editRow": "Edit {label}",
@@ -111,6 +119,7 @@ const en: TranslationDictionary = {
   "perm.add": "Add",
   "perm.edit": "Edit",
   "perm.delete": "Delete",
+  "perm.lock": "Lock",
   "perm.import": "Import",
   "perm.export": "Export",
   "perm.generate": "Generate",
@@ -201,7 +210,6 @@ const en: TranslationDictionary = {
   "offline.description": "The app shell is installed, but this screen needs a network connection or cached data to continue.",
 
   /* ──────────────────── Settings tabs ──────────────────── */
-  "settingsTabs.system": "System",
   "settingsTabs.appearance": "Appearance",
   "settingsTabs.notifications": "Notifications",
   "settingsTabs.ai": "AI",
@@ -302,6 +310,13 @@ const en: TranslationDictionary = {
   "schedGen.note": "AI will only return proposed records. The server then validates shift validity for given days, blocks collisions with approved vacations, and adds historical user/shift type assignments with weekday numbers 1-7 to the AI payload for fairer scheduling.",
   "schedGen.close": "Close",
   "schedGen.submit": "Start generation",
+
+  /* ──────────────────── Select controls ──────────────────── */
+  "select.searchPlaceholder": "Search...",
+  "select.noOptions": "No available options",
+  "select.noOptionsSelectUser": "Select a user first",
+  "select.noOptionsSelectDate": "Select a date first",
+  "select.noOptionsSelectDay": "No shift types are available for this day",
 
   /* ──────────────────── Notification settings card ──────────────────── */
   "notifCard.eyebrow": "Notifications",
@@ -413,18 +428,6 @@ const en: TranslationDictionary = {
   "notifToast.testSuccess": "Test notification",
   "notifToast.testError": "Test notification",
 
-  /* ──────────────────── JSON help dialog ──────────────────── */
-  "jsonHelp.button": "Help",
-  "jsonHelp.closeAria": "Close help",
-  "jsonHelp.eyebrow": "JSON help",
-  "jsonHelp.heading": "JSON settings help",
-  "jsonHelp.intro": "These are all system JSON objects that the application currently reads and uses directly in its functionality.",
-  "jsonHelp.close": "Close",
-  "jsonHelp.customKeys": "Custom keys",
-  "jsonHelp.customKeysDescription": "In the General module you can also store your own JSON values under any key. The application will store, export and import them, but without additional implementation it will not use them at runtime.",
-  "jsonHelp.securityNote": "Keys managed through dedicated cards, such as AI runtime or notifications, are not shown in this list for security reasons.",
-  "jsonHelp.supportedTypes": "Supported JSON types: object, array, string, number, boolean, null.",
-
   /* ──────────────────── Permissions definitions ──────────────────── */
   "permissions.schedule": "Schedule",
   "permissions.vacations": "Vacations",
@@ -437,7 +440,7 @@ const en: TranslationDictionary = {
   "permissions.roles": "Roles",
   "permissions.view": "View",
   "permissions.editRecords": "Edit records",
-  "permissions.editRecordsDesc": "Includes locking and unlocking schedule entries.",
+  "permissions.lockUnlock": "Lock / Unlock",
   "permissions.addManual": "Add a manual record",
   "permissions.addRecord": "Add a record",
   "permissions.deleteRecord": "Delete a record",
@@ -646,6 +649,8 @@ const en: TranslationDictionary = {
   "shifts.fieldStartsAt": "Starts at",
   "shifts.fieldEndsAt": "Ends at",
   "shifts.fieldCrossesMidnight": "Crosses midnight",
+  "shifts.fieldSortOrder": "Sort order",
+  "shifts.colSortOrder": "Order",
   "shifts.fieldValidFor": "Valid for {day}",
   "shifts.fieldValidForGroup": "Valid for days",
   "shifts.fieldIsActive": "Shift is active",
@@ -680,6 +685,13 @@ const en: TranslationDictionary = {
   "vacations.fieldNotesPlaceholder": "Optional notes for the request",
   "vacations.createDisabled": "Create at least one user first.",
   "vacations.importDisabled": "Create at least one user before importing.",
+  "vacations.statByUser": "By User",
+  "vacations.statByStatus": "By Status",
+  "vacations.statColPending": "Pending",
+  "vacations.statColApproved": "Approved",
+  "vacations.statColRejected": "Rejected",
+  "vacations.statColTotal": "Total",
+  "vacations.statColCount": "Count",
 
   /* ──────────────────── Module: Conditions ──────────────────── */
   "conditions.title": "Conditions",
@@ -708,6 +720,18 @@ const en: TranslationDictionary = {
   "conditions.fieldIsActive": "Condition is active",
   "conditions.fieldDescription": "Description",
   "conditions.fieldDescriptionPlaceholder": "Describe the rule or constraint",
+  "conditions.aiHelpButton": "Hardcoded AI rules",
+  "conditions.aiHelpEyebrow": "AI generation",
+  "conditions.aiHelpTitle": "Built-in AI rules",
+  "conditions.aiHelpIntro": "These rules are hardcoded in the system and the AI always obeys them regardless of user-defined conditions.",
+  "conditions.aiHelpClose": "Close",
+  "conditions.aiRule1": "Output is always JSON with keys summary and events.",
+  "conditions.aiRule2": "Every event must contain date, userId and shiftTypeId.",
+  "conditions.aiRule3": "Uses ONLY the exact id values from the input – never invents its own.",
+  "conditions.aiRule4": "A generated shift must be in the assigned shift types list of the selected user.",
+  "conditions.aiRule5": "Respects shift validity day types, holidays, approved vacations and locked entries.",
+  "conditions.aiRule6": "Locked entries are fixed – AI must not change, duplicate or omit them.",
+  "conditions.aiRule7": "Uses historical assignments for fairer distribution.",
 
   /* ──────────────────── Module: Holidays ──────────────────── */
   "holidays.title": "Public holidays",
@@ -733,26 +757,6 @@ const en: TranslationDictionary = {
   "holidays.fieldLocalName": "Local name",
   "holidays.fieldLocalNamePlaceholder": "Deň vzniku SR",
 
-  /* ──────────────────── Module: Settings ──────────────────── */
-  "settings.title": "General",
-  "settings.summary": "Manage general application settings and system keys.",
-  "settings.statTotal": "Settings",
-  "settings.statJson": "JSON objects",
-  "settings.statUpdatedToday": "Updated today",
-  "settings.colKey": "Key",
-  "settings.colValue": "Value",
-  "settings.colUpdated": "Updated",
-  "settings.empty": "A setting with valid JSON will appear here after saving.",
-  "settings.addLabel": "Add new",
-  "settings.sheetTitle": "Add setting",
-  "settings.sheetDescription": "Use a unique key and enter a valid JSON value.",
-  "settings.submitLabel": "Save setting",
-  "settings.search": "Search in settings...",
-  "settings.fieldKey": "Key",
-  "settings.fieldKeyPlaceholder": "reminders.defaultLeadDays",
-  "settings.fieldJsonValue": "JSON value",
-  "settings.fieldJsonPlaceholder": '{\n  "enabled": true\n}',
-
   /* ──────────────────── Module: Schedule ──────────────────── */
   "schedule.title": "Schedule",
   "schedule.summary": "Manage and view schedules for the current period.",
@@ -776,7 +780,7 @@ const en: TranslationDictionary = {
   "schedule.fieldUser": "User",
   "schedule.fieldService": "Service",
   "schedule.fieldShiftType": "Shift type",
-  "schedule.fieldShiftTypeHint": "The selected shift type must belong to the chosen service.",
+  "schedule.fieldShiftTypeHint": "The selected shift type must belong to the chosen service, be assigned to the selected user, and be valid for the selected date.",
   "schedule.fieldSource": "Source",
   "schedule.optManual": "Manual",
   "schedule.optImport": "Import",
@@ -789,6 +793,7 @@ const en: TranslationDictionary = {
   "schedule.depService": "at least one service",
   "schedule.depShift": "at least one shift type",
   "schedule.statByUser": "Statistics by user",
+  "schedule.statByUserService": "Statistics by user and service",
   "schedule.statByShift": "Statistics by shift type",
   "schedule.statUser": "User",
   "schedule.statShift": "Shift type",
@@ -893,8 +898,11 @@ const en: TranslationDictionary = {
   "action.holidayCreated": "Holiday has been created.",
   "action.settingCreated": "Setting has been created.",
   "action.scheduleCreated": "Schedule record has been created.",
+  "action.scheduleDuplicateEntry": "A schedule entry already exists for this user on {date}.",
+  "action.scheduleShiftTypeDuplicate": "Shift type {shiftTypeName} is already scheduled on {date}. Each shift type can only be used once per day.",
 
   "action.userUpdated": "User has been updated.",
+  "action.userPasswordChanged": "User password has been changed.",
   "action.roleUpdated": "Role has been updated.",
   "action.serviceUpdated": "Service has been updated.",
   "action.shiftUpdated": "Shift type has been updated.",
@@ -919,6 +927,10 @@ const en: TranslationDictionary = {
   "action.scheduleBulkLockUpdated": "Bulk updated {count} schedule records.",
   "action.scheduleBulkDeleteLocked": "{count} selected records are locked. Unlock them first.",
   "action.scheduleBulkDeleted": "Bulk deleted {count} schedule records.",
+  "action.scheduleMoved": "Schedule record has been moved to {date}.",
+  "action.scheduleSwapped": "Schedule records have been swapped.",
+  "action.scheduleMoveLockedConflict": "Cannot move: a locked record with the same shift type already exists on {date}.",
+  "action.scheduleMoveSourceLocked": "Cannot move a locked record. Unlock it first.",
 
   "action.vacationLockedError": "Vacation record is locked. Use the lock icon on the record to unlock it.",
   "action.scheduleLockedError": "Schedule record is locked. Use the lock icon on the record to unlock it.",
@@ -964,6 +976,7 @@ const en: TranslationDictionary = {
   "action.aiInvalidShift": "AI returned an invalid shift for {date}: {error}",
   "action.aiVacationConflict": "AI assigned user {userName} on {date}, but the user has approved vacation for that date.",
   "action.aiDuplicate": "AI returned duplicate schedule rows for {date}, user {userId} and shift {shiftTypeId}.",
+  "action.aiShiftTypeDuplicate": "AI assigned shift type {shiftTypeId} more than once on {date}. Each shift type can only be used once per day.",
   "action.aiLockedDuplicate": "AI duplicated a locked schedule entry for {date}, user {userId} and shift {shiftTypeId}.",
 
   /* ── AI generation success/notifications ── */
@@ -1046,6 +1059,8 @@ const en: TranslationDictionary = {
   "profile.themeDark": "Dark",
   "profile.localeAuto": "Auto",
   "profile.uploadPhoto": "Upload photo",
+  "profile.removePhoto": "Remove photo",
+  "profile.removing": "Removing...",
   "profile.uploading": "Uploading...",
   "profile.updated": "Profile updated.",
   "profile.updateError": "Failed to update the profile.",
@@ -1058,6 +1073,31 @@ const en: TranslationDictionary = {
   /* ──────────────────── Module placeholder ──────────────────── */
   "placeholder.module": "Module",
   "placeholder.nextSteps": "Next implementation steps",
+
+  /* ──────────────────── HTTPS / Let's Encrypt ──────────────────── */
+  "settingsTabs.https": "HTTPS",
+  "https.eyebrow": "Let's Encrypt / Caddy",
+  "https.title": "HTTPS Configuration",
+  "https.description": "Configure automatic TLS certificates via Let's Encrypt. Caddy obtains and renews certificates automatically once a hostname and ACME email are provided.",
+  "https.domainLabel": "Current domain",
+  "https.statusLabel": "HTTPS status",
+  "https.statusConfigured": "Configured",
+  "https.statusNotConfigured": "Not configured",
+  "https.acmeEmailLabel": "ACME email (Let's Encrypt)",
+  "https.acmeEmailHint": "Email address used to register with Let's Encrypt. Required to agree to the ACME terms of service. Leave empty to disable HTTPS.",
+  "https.httpPortLabel": "HTTP port",
+  "https.httpPortHint": "Port on which Caddy listens for plain HTTP traffic and Let's Encrypt HTTP-01 challenge requests. Default: 80.",
+  "https.httpsPortLabel": "HTTPS port",
+  "https.httpsPortHint": "Port on which Caddy listens for TLS-encrypted traffic. Default: 443.",
+  "https.renewIntervalLabel": "Renewal check interval (hours)",
+  "https.renewIntervalHint": "How often Caddy checks whether a certificate needs to be renewed. Certificates are renewed when they have fewer than ~30 days left. Default: 12 hours.",
+  "https.restartNote": "After saving, update HTTP_PORT, HTTPS_PORT, CADDY_HOSTNAME, ACME_EMAIL and CADDY_RENEW_INTERVAL in your .env file and restart the proxy service for changes to take effect.",
+  "https.envVarsNote": "Example: CADDY_HOSTNAME={hostname}  ACME_EMAIL=admin@example.com  HTTP_PORT=80  HTTPS_PORT=443",
+  "https.save": "Save HTTPS settings",
+
+  /* ── HTTPS action messages ── */
+  "action.httpsSettingsSaved": "HTTPS settings have been saved. Restart the proxy service to apply.",
+  "action.reviewHttpsFields": "Review the HTTPS settings fields.",
 };
 
 export default en;

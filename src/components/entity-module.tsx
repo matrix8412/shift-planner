@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, type CSSProperties, type ChangeEvent, type ReactNode, useActionState, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, type CSSProperties, type ChangeEvent, type FormEvent, type ReactNode, useActionState, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowUpDown,
   BarChart3,
@@ -26,6 +26,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { useBrowserNotifications } from "@/components/browser-notification-provider";
+import SearchableSelect from "@/components/searchable-select";
 import { FormSubmitButton } from "@/components/form-submit-button";
 import { useI18n } from "@/i18n/context";
 import { saveColumnPreferences, savePageSizePreference } from "@/server/actions/column-preferences";
@@ -56,11 +57,13 @@ const defaultAuditRowsPerPage = 8;
 type EntityModuleProps = EntityModuleConfig & {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   editAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  changePasswordAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   deleteAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   importAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   toggleLockAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   bulkLockAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   bulkDeleteAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  moveAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   canCreate?: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
@@ -76,6 +79,21 @@ type EntityModuleProps = EntityModuleConfig & {
 type RowMenuPosition = {
   left: number;
   top: number;
+};
+
+type ContextMenuState = {
+  recordId: string;
+  position: RowMenuPosition;
+};
+
+type DeletePromptState = {
+  recordId: string;
+  label: string;
+};
+
+type PasswordPromptState = {
+  recordId: string;
+  label: string;
 };
 
 type FormValue = string | number | boolean | string[] | undefined;
@@ -97,7 +115,7 @@ const monthFormatter = new Intl.DateTimeFormat("sk-SK", {
 });
 
 function normalizeSearchValue(value: string) {
-  return value.trim().toLocaleLowerCase("sk-SK");
+  return value.trim().toLocaleLowerCase("sk-SK").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
 function formatMonthLabel(value: string) {
@@ -170,6 +188,20 @@ function getCellToneClass(cell: EntityCell) {
 
 function getCellText(cell: EntityCell) {
   return typeof cell === "string" ? cell : cell.text;
+}
+
+function formatDisplayDate(value: string, locale: string) {
+  const date = new Date(`${value}T00:00:00Z`);
+  const formatterLocale = locale === "sk" ? "sk-SK" : "en-US";
+
+  return new Intl.DateTimeFormat(formatterLocale, {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+function findScheduleDuplicateRow(rows: EntityRow[], date: string, userId: string) {
+  return rows.find((row) => row.formValues?.date === date && row.formValues?.userId === userId);
 }
 
 function initialsFromName(name: string) {
@@ -590,6 +622,37 @@ function RangeFieldControl({
   );
 }
 
+function resizeImage(file: File, maxDim = 512, quality = 0.8): Promise<File> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) {
+        resolve(file);
+        return;
+      }
+      const ratio = Math.min(maxDim / width, maxDim / height);
+      width = Math.round(width * ratio);
+      height = Math.round(height * ratio);
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          resolve(new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        quality,
+      );
+    };
+    img.src = url;
+  });
+}
+
 function AvatarFieldControl({
   field,
   value,
@@ -616,8 +679,9 @@ function AvatarFieldControl({
 
     setUploading(true);
     try {
+      const resized = await resizeImage(file);
       const formData = new FormData();
-      formData.set("file", file);
+      formData.set("file", resized);
       formData.set("userId", recordId);
 
       const response = await fetch(field.uploadUrl, { method: "POST", body: formData });
@@ -631,6 +695,21 @@ function AvatarFieldControl({
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  }
+
+  async function handleDelete() {
+    if (!recordId) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.set("userId", recordId);
+      const response = await fetch("/api/avatars/delete", { method: "POST", body: formData });
+      if (response.ok) {
+        setPreview(null);
+      }
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -662,6 +741,17 @@ function AvatarFieldControl({
           >
             {uploading ? t("profile.uploading") : t("profile.uploadPhoto")}
           </button>
+          {preview ? (
+            <button
+              type="button"
+              className="button danger"
+              disabled={uploading || !recordId}
+              onClick={handleDelete}
+            >
+              <Trash2 size={16} />
+              {t("profile.removePhoto")}
+            </button>
+          ) : null}
         </div>
       </div>
       {!recordId ? <span className="field-description">{t("profile.avatarSaveFirst")}</span> : null}
@@ -730,12 +820,29 @@ function ColorFieldControl({
   );
 }
 
-function getDateFieldDayOfWeek(formRef: React.RefObject<HTMLFormElement | null>, dateFieldName: string): number | null {
+function getDateFieldInfo(
+  formRef: React.RefObject<HTMLFormElement | null>,
+  dateFieldName: string,
+  holidayDates?: Set<string>,
+): { day: number; isHoliday: boolean } | null {
   const input = formRef.current?.elements.namedItem(dateFieldName);
   if (!(input instanceof HTMLInputElement) || !input.value) return null;
   const date = new Date(input.value + "T00:00:00Z");
   if (Number.isNaN(date.getTime())) return null;
-  return date.getUTCDay();
+  return {
+    day: date.getUTCDay(),
+    isHoliday: holidayDates?.has(input.value) ?? false,
+  };
+}
+
+function getFormFieldValue(formRef: React.RefObject<HTMLFormElement | null>, fieldName: string): string {
+  const field = formRef.current?.elements.namedItem(fieldName);
+
+  if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement || field instanceof HTMLTextAreaElement) {
+    return field.value;
+  }
+
+  return "";
 }
 
 function SelectFieldControl({
@@ -743,82 +850,117 @@ function SelectFieldControl({
   value,
   fieldError,
   formRef,
+  holidayDates,
 }: {
   field: Extract<EntityModuleConfig["fields"][number], { type: "select" }>;
   value?: string;
   fieldError?: string;
   formRef?: React.RefObject<HTMLFormElement | null>;
+  holidayDates?: Set<string>;
 }) {
-  const hasDateFilter = Boolean(field.filterByDate) && field.options.some((option) => option.validDays);
+  const { t } = useI18n();
+  const hasDateFilter = Boolean(field.filterByDate) && field.options.some((option) => option.validDays || option.validHoliday);
+  const hasFieldFilter = Boolean(field.filterByField) && field.options.some((option) => option.allowedValues);
   const [filteredOptions, setFilteredOptions] = useState(field.options);
+  const [noOptionsLabel, setNoOptionsLabel] = useState<string | undefined>();
   const [selectedValue, setSelectedValue] = useState(value ?? field.defaultValue ?? "");
 
   useEffect(() => {
-    if (!hasDateFilter || !formRef?.current || !field.filterByDate) return;
+    if ((!hasDateFilter && !hasFieldFilter) || !formRef?.current) return;
 
     function handleChange() {
-      const day = getDateFieldDayOfWeek(formRef!, field.filterByDate!);
-      if (day === null) {
-        setFilteredOptions(field.options);
-      } else {
-        setFilteredOptions(field.options.filter((option) => !option.validDays || option.validDays.includes(day)));
+      let nextOptions = field.options;
+
+      if (hasFieldFilter && field.filterByField) {
+        const sourceValue = getFormFieldValue(formRef!, field.filterByField);
+        if (!sourceValue) {
+          setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectUser"));
+          return;
+        }
+
+        nextOptions = nextOptions.filter((option) => !option.allowedValues || option.allowedValues.length === 0 || option.allowedValues.includes(sourceValue));
+
+        if (nextOptions.length === 0) {
+          setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectUser"));
+          return;
+        }
       }
+
+      if (hasDateFilter && field.filterByDate) {
+        const dateInfo = getDateFieldInfo(formRef!, field.filterByDate, holidayDates);
+        if (!dateInfo) {
+          setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectDate"));
+          return;
+        }
+
+        nextOptions = nextOptions.filter((option) => {
+          if (option.validDays && !option.validDays.includes(dateInfo.day)) {
+            return false;
+          }
+
+          if (typeof option.validHoliday === "boolean" && option.validHoliday !== dateInfo.isHoliday) {
+            return false;
+          }
+
+          return true;
+        });
+
+        if (nextOptions.length === 0) {
+          setFilteredOptions([]);
+          setNoOptionsLabel(t("select.noOptionsSelectDay"));
+          return;
+        }
+
+        setFilteredOptions(nextOptions);
+        setNoOptionsLabel(undefined);
+        return;
+      }
+
+      setFilteredOptions(nextOptions);
+      setNoOptionsLabel(undefined);
     }
 
-    const dateInput = formRef.current.elements.namedItem(field.filterByDate);
-    if (dateInput instanceof HTMLInputElement) {
-      dateInput.addEventListener("change", handleChange);
-      handleChange();
-      return () => dateInput.removeEventListener("change", handleChange);
-    }
-  }, [hasDateFilter, formRef, field.filterByDate, field.options]);
+    const sourceFields = [
+      field.filterByDate ? formRef.current.elements.namedItem(field.filterByDate) : null,
+      field.filterByField ? formRef.current.elements.namedItem(field.filterByField) : null,
+    ].filter((sourceField): sourceField is HTMLInputElement | HTMLSelectElement =>
+      sourceField instanceof HTMLInputElement || sourceField instanceof HTMLSelectElement,
+    );
+
+    sourceFields.forEach((sourceField) => sourceField.addEventListener("change", handleChange));
+    handleChange();
+
+    return () => sourceFields.forEach((sourceField) => sourceField.removeEventListener("change", handleChange));
+  }, [field.filterByDate, field.filterByField, field.options, formRef, hasDateFilter, hasFieldFilter, holidayDates, t]);
 
   useEffect(() => {
-    if (hasDateFilter && filteredOptions.length > 0 && !filteredOptions.some((option) => option.value === selectedValue)) {
-      setSelectedValue(filteredOptions[0].value);
+    if ((hasDateFilter || hasFieldFilter) && filteredOptions.length > 0 && !filteredOptions.some((option) => option.value === selectedValue)) {
+      setSelectedValue(hasFieldFilter ? "" : filteredOptions[0].value);
+      return;
     }
-  }, [filteredOptions, hasDateFilter, selectedValue]);
 
-  if (hasDateFilter) {
-    return (
-      <label className="field">
-        <span className={fieldLabelClass(field.required)}>{field.label}</span>
-        <select
-          name={field.name}
-          value={selectedValue}
-          onChange={(event) => setSelectedValue(event.target.value)}
-          required={field.required}
-          className="field-control"
-        >
-          {field.allowEmpty ? <option value="">{field.emptyLabel ?? "Vyberte možnosť"}</option> : null}
-          {filteredOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        {field.description ? <span className="field-description">{field.description}</span> : null}
-        {fieldError ? <span className="field-error">{fieldError}</span> : null}
-      </label>
-    );
-  }
+    if ((hasFieldFilter || hasDateFilter) && filteredOptions.length === 0 && selectedValue !== "") {
+      setSelectedValue("");
+    }
+  }, [filteredOptions, hasDateFilter, hasFieldFilter, selectedValue]);
 
   return (
     <label className="field">
       <span className={fieldLabelClass(field.required)}>{field.label}</span>
-      <select
+      <SearchableSelect
         name={field.name}
-        defaultValue={value ?? field.defaultValue ?? ""}
+        options={filteredOptions.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
+        value={selectedValue}
+        onChange={(nextValue) => setSelectedValue(String(nextValue))}
         required={field.required}
         className="field-control"
-      >
-        {field.allowEmpty ? <option value="">{field.emptyLabel ?? "Vyberte možnosť"}</option> : null}
-        {field.options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+        allowEmpty={field.allowEmpty}
+        emptyLabel={field.emptyLabel ?? "Vyberte možnosť"}
+        noOptionsLabel={noOptionsLabel}
+      />
       {field.description ? <span className="field-description">{field.description}</span> : null}
       {fieldError ? <span className="field-error">{fieldError}</span> : null}
     </label>
@@ -846,20 +988,14 @@ function MultiSelectFieldControl({
     return (
       <label className="field">
         <span className={fieldLabelClass(field.required)}>{field.label}</span>
-        <select
+        <SearchableSelect
           name={field.name}
+          options={field.options.map((o) => ({ value: o.value, label: o.label, description: o.description }))}
           defaultValue={initialSelectedValues}
-          required={field.required}
           multiple
-          size={field.size ?? Math.min(8, Math.max(4, field.options.length))}
+          required={field.required}
           className="field-control multiselect-control"
-        >
-          {field.options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        />
         {field.description ? <span className="field-description">{field.description}</span> : null}
         {fieldError ? <span className="field-error">{fieldError}</span> : null}
       </label>
@@ -958,6 +1094,7 @@ function PermissionMatrixFieldControl({
       { id: "create", action: "create", label: t("perm.add") },
       { id: "edit", action: "edit", label: t("perm.edit") },
       { id: "delete", action: "delete", label: t("perm.delete") },
+      { id: "lock", action: "lock", label: t("perm.lock") },
       { id: "import", action: "importExport", label: t("perm.import") },
       { id: "export", action: "importExport", label: t("perm.export") },
       { id: "generate", action: "generate", label: t("perm.generate") },
@@ -1186,9 +1323,9 @@ function CalendarPanel({
   searchControl,
   actionsControl,
   onDaySelect,
-  onItemSelect,
   onItemLockToggle,
-  onBulkLock,
+  onItemContextMenu,
+  onItemDrop,
 }: {
   calendar: CalendarConfig;
   items: CalendarItem[];
@@ -1197,20 +1334,30 @@ function CalendarPanel({
   searchControl?: ReactNode;
   actionsControl?: ReactNode;
   onDaySelect?: (date: string) => void;
-  onItemSelect?: (recordId: string) => void;
   onItemLockToggle?: (recordId: string) => void;
-  onBulkLock?: (locked: boolean) => void;
+  onItemContextMenu?: (recordId: string, clientX: number, clientY: number) => void;
+  onItemDrop?: (recordId: string, targetDate: string) => void;
 }) {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const [dragOverDate, setDragOverDate] = useState<string | null>(null);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
   const activeMonth = month || calendar.initialMonth;
-  const holidayDates = useMemo(() => new Set(calendar.holidayDates ?? []), [calendar.holidayDates]);
+  const holidays = useMemo(
+    () => new Map((calendar.holidays ?? []).map((h) => [h.date, h])),
+    [calendar.holidays],
+  );
   const monthItems = useMemo(() => {
     const grouped = new Map<string, CalendarItem[]>();
 
     items
       .filter((item) => item.date.startsWith(activeMonth))
-      .sort((left, right) => `${left.date}-${left.timeLabel ?? ""}`.localeCompare(`${right.date}-${right.timeLabel ?? ""}`))
-      .forEach((item) => {
+      .sort((left, right) => {
+        const dateComp = left.date.localeCompare(right.date);
+        if (dateComp !== 0) return dateComp;
+        const orderComp = (left.sortOrder ?? 5) - (right.sortOrder ?? 5);
+        if (orderComp !== 0) return orderComp;
+        return (left.timeLabel ?? "").localeCompare(right.timeLabel ?? "");
+      })      .forEach((item) => {
         const existing = grouped.get(item.date) ?? [];
         existing.push(item);
         grouped.set(item.date, existing);
@@ -1227,19 +1374,6 @@ function CalendarPanel({
       <div className="calendar-toolbar">
         <MonthSwitcher month={activeMonth} onMonthChange={onMonthChange} />
 
-        {onBulkLock ? (
-          <div className="calendar-toolbar-bulk">
-            <button type="button" className="calendar-bulk-btn" onClick={() => onBulkLock(true)} title={t("entity.lockAll")}>
-              <Lock size={14} />
-              <span>{t("entity.lockAll")}</span>
-            </button>
-            <button type="button" className="calendar-bulk-btn" onClick={() => onBulkLock(false)} title={t("entity.unlockAll")}>
-              <LockOpen size={14} />
-              <span>{t("entity.unlockAll")}</span>
-            </button>
-          </div>
-        ) : null}
-
         {searchControl ? <div className="calendar-toolbar-search">{searchControl}</div> : null}
         {actionsControl ? <div className="calendar-toolbar-actions">{actionsControl}</div> : null}
       </div>
@@ -1254,12 +1388,17 @@ function CalendarPanel({
 
           {days.map((day) => {
             const dayItems = monthItems.get(day.key) ?? [];
-            const isHoliday = holidayDates.has(day.key);
+            const holidayEntry = holidays.get(day.key);
+            const isHoliday = holidayEntry !== undefined;
+            const holidayName = isHoliday
+              ? ((locale === "sk" ? holidayEntry.localName : undefined) ?? holidayEntry.name)
+              : undefined;
+            const isDragOver = dragOverDate === day.key;
 
             return (
               <article
                 key={day.key}
-                className={`calendar-day${day.inMonth ? "" : " calendar-day-outside"}${isHoliday ? " calendar-day-holiday" : ""}${onDaySelect ? " calendar-day-actionable" : ""}`}
+                className={`calendar-day${day.inMonth ? "" : " calendar-day-outside"}${isHoliday ? " calendar-day-holiday" : ""}${onDaySelect ? " calendar-day-actionable" : ""}${isDragOver ? " calendar-day-drag-over" : ""}`}
                 onClick={() => onDaySelect?.(day.key)}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
@@ -1267,12 +1406,32 @@ function CalendarPanel({
                     onDaySelect?.(day.key);
                   }
                 }}
+                onDragOver={onItemDrop ? (event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = "move";
+                  setDragOverDate(day.key);
+                } : undefined}
+                onDragLeave={onItemDrop ? () => {
+                  setDragOverDate((current) => current === day.key ? null : current);
+                } : undefined}
+                onDrop={onItemDrop ? (event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const recordId = event.dataTransfer.getData("text/x-record-id");
+                  const sourceDate = event.dataTransfer.getData("text/x-source-date");
+                  setDragOverDate(null);
+                  setDraggingItemId(null);
+
+                  if (recordId && sourceDate !== day.key) {
+                    onItemDrop(recordId, day.key);
+                  }
+                } : undefined}
                 role={onDaySelect ? "button" : undefined}
                 tabIndex={onDaySelect ? 0 : undefined}
               >
                 <div
                   className={`calendar-day-head${isHoliday ? " calendar-day-head-holiday" : ""}`}
-                  title={isHoliday ? t("entity.holiday") : undefined}
+                  title={holidayName}
                 >
                   <span className={`calendar-day-number${day.isToday ? " calendar-day-number-today" : ""}`}>{day.date.getUTCDate()}</span>
                   <span className="calendar-day-weekday">{formatWeekdayLabel(day.date)}</span>
@@ -1282,48 +1441,80 @@ function CalendarPanel({
                   {dayItems.map((item) => (
                     <article
                       key={item.id}
-                      className={`calendar-entry-card${onItemSelect ? " calendar-entry-card-actionable" : ""}`}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        onItemSelect?.(item.recordId ?? item.id);
-                      }}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" || event.key === " ") {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          onItemSelect?.(item.recordId ?? item.id);
+                      className={`calendar-entry-card${draggingItemId === (item.recordId ?? item.id) ? " calendar-entry-card-dragging" : ""}`}
+                      draggable={onItemDrop && !item.locked ? true : undefined}
+                      onDragStart={onItemDrop ? (event) => {
+                        const recordId = item.recordId ?? item.id;
+                        event.dataTransfer.setData("text/x-record-id", recordId);
+                        event.dataTransfer.setData("text/x-source-date", item.date);
+                        event.dataTransfer.effectAllowed = "move";
+                        setDraggingItemId(recordId);
+                      } : undefined}
+                      onDragEnd={onItemDrop ? () => {
+                        setDraggingItemId(null);
+                        setDragOverDate(null);
+                      } : undefined}
+                      onClick={(event) => event.stopPropagation()}
+                      onContextMenu={(event) => {
+                        if (!onItemContextMenu) {
+                          return;
                         }
+
+                        event.preventDefault();
+                        event.stopPropagation();
+                        onItemContextMenu(item.recordId ?? item.id, event.clientX, event.clientY);
                       }}
-                      role={onItemSelect ? "button" : undefined}
-                      tabIndex={onItemSelect ? 0 : undefined}
                       style={{
-                        background: item.backgroundColor ?? "#d6ecd7",
-                        color: item.textColor ?? "#17353c",
-                        borderColor: item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
-                      }}
+                        "--strip-color": item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        "--card-bg": item.backgroundColor ?? "#d6ecd7",
+                        "--card-text": item.textColor ?? "#17353c",
+                        "--card-border": item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        "--dark-strip-color": item.darkStripColor ?? item.darkAccentColor ?? item.darkBackgroundColor ?? item.stripColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        "--dark-card-bg": item.darkBackgroundColor ?? item.backgroundColor ?? "#d6ecd7",
+                        "--dark-card-text": item.darkTextColor ?? item.textColor ?? "#17353c",
+                        "--dark-card-border": item.darkAccentColor ?? item.darkBackgroundColor ?? item.accentColor ?? item.backgroundColor ?? "#a9c8bf",
+                        background: "var(--card-bg)",
+                        color: "var(--card-text)",
+                        borderColor: "var(--card-border)",
+                      } as React.CSSProperties}
                     >
-                      <div className="calendar-entry-head">
-                        <strong>{item.title}</strong>
-                        {onItemLockToggle ? (
-                          <button
-                            type="button"
-                            className={`calendar-entry-lock ${item.locked ? "locked" : "unlocked"}`}
-                            aria-label={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
-                            title={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              event.stopPropagation();
-                              onItemLockToggle(item.recordId ?? item.id);
-                            }}
-                          >
-                            {item.locked ? <Lock size={16} /> : <LockOpen size={16} />}
-                          </button>
-                        ) : item.locked ? (
-                          <Lock size={15} />
-                        ) : null}
-                      </div>
+                      {onItemContextMenu ? (
+                        <button
+                          type="button"
+                          className="calendar-entry-menu"
+                          aria-label={t("entity.options")}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            const rect = event.currentTarget.getBoundingClientRect();
+                            onItemContextMenu(item.recordId ?? item.id, rect.left, rect.bottom + 4);
+                          }}
+                        >
+                          <MoreVertical size={14} />
+                        </button>
+                      ) : null}
+                      <strong>{item.title}</strong>
                       {item.subtitle ? <span>{item.subtitle}</span> : null}
                       {item.timeLabel ? <small>{item.timeLabel}</small> : null}
+                      {onItemLockToggle ? (
+                        <button
+                          type="button"
+                          className={`calendar-entry-lock ${item.locked ? "locked" : "unlocked"}`}
+                          aria-label={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
+                          title={item.locked ? t("entity.unlockRecord") : t("entity.lockRecord")}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            onItemLockToggle(item.recordId ?? item.id);
+                          }}
+                        >
+                          {item.locked ? <Lock size={18} /> : <LockOpen size={18} />}
+                        </button>
+                      ) : item.locked ? (
+                        <span className="calendar-entry-lock-static">
+                          <Lock size={18} />
+                        </span>
+                      ) : null}
                     </article>
                   ))}
                 </div>
@@ -1359,11 +1550,13 @@ export function EntityModule({
   sheetTabs,
   action,
   editAction,
+  changePasswordAction,
   deleteAction,
   importAction,
   toggleLockAction,
   bulkLockAction,
   bulkDeleteAction,
+  moveAction,
   canCreate = true,
   canEdit: canEditProp,
   canDelete: canDeleteProp,
@@ -1391,6 +1584,9 @@ export function EntityModule({
   const [editingRow, setEditingRow] = useState<EntityRow | null>(null);
   const [menuRowId, setMenuRowId] = useState<string | null>(null);
   const [menuPosition, setMenuPosition] = useState<RowMenuPosition | null>(null);
+  const [calendarMenuState, setCalendarMenuState] = useState<ContextMenuState | null>(null);
+  const [deletePromptState, setDeletePromptState] = useState<DeletePromptState | null>(null);
+  const [passwordPromptState, setPasswordPromptState] = useState<PasswordPromptState | null>(null);
   const [auditRow, setAuditRow] = useState<EntityRow | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [createPrefillValues, setCreatePrefillValues] = useState<Record<string, FormValue>>({});
@@ -1399,6 +1595,7 @@ export function EntityModule({
   const [tablePage, setTablePage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(initialPageSize && pageSizeOptions.includes(initialPageSize) ? initialPageSize : defaultRowsPerPage);
   const [tableSort, setTableSort] = useState<TableSortState | null>(null);
+  const [statsSort, setStatsSort] = useState<Map<string, TableSortState>>(new Map());
   const [isSheetDirty, setIsSheetDirty] = useState(false);
   const [isUnsavedChangesDialogOpen, setIsUnsavedChangesDialogOpen] = useState(false);
   const [lockOverrides, setLockOverrides] = useState<Record<string, boolean>>({});
@@ -1410,6 +1607,7 @@ export function EntityModule({
   const visibleColumns = useMemo(() => columns.filter((col) => !hiddenColumns.has(col.key)), [columns, hiddenColumns]);
   const [createState, createFormAction] = useActionState(action, initialActionState);
   const [editState, editFormAction] = useActionState(editAction ?? action, initialActionState);
+  const [changePasswordState, changePasswordFormAction] = useActionState(changePasswordAction ?? action, initialActionState);
   const [deleteState, deleteFormAction] = useActionState(deleteAction ?? action, initialActionState);
   const [importState, importFormAction] = useActionState(importAction ?? action, initialActionState);
   const [toggleLockState, toggleLockFormAction] = useActionState(toggleLockAction ?? action, initialActionState);
@@ -1417,6 +1615,7 @@ export function EntityModule({
   const [bulkDeleteState, bulkDeleteFormAction] = useActionState(bulkDeleteAction ?? action, initialActionState);
   const menuHostRef = useRef<HTMLDivElement | null>(null);
   const rowMenuRef = useRef<HTMLDivElement | null>(null);
+  const calendarMenuRef = useRef<HTMLDivElement | null>(null);
   const actionMenuRef = useRef<HTMLDivElement | null>(null);
   const importInputRef = useRef<HTMLInputElement | null>(null);
   const sheetFormRef = useRef<HTMLFormElement | null>(null);
@@ -1425,7 +1624,10 @@ export function EntityModule({
   const lockTogglePendingRef = useRef(false);
   const handledActionStatesRef = useRef({
     create: createState,
+    createError: createState,
     edit: editState,
+    changePassword: changePasswordState,
+    changePasswordError: changePasswordState,
     delete: deleteState,
     deleteError: deleteState,
     import: importState,
@@ -1439,8 +1641,9 @@ export function EntityModule({
   });
   const hasAuditMenu = rows.some((row) => row.auditEntries !== undefined);
   const canEdit = (canEditProp ?? Boolean(editAction)) && Boolean(editAction);
+  const canChangePassword = Boolean(changePasswordAction);
   const canDelete = (canDeleteProp ?? Boolean(deleteAction)) && Boolean(deleteAction);
-  const isOverlayOpen = isSheetOpen || auditRow !== null || isUnsavedChangesDialogOpen;
+  const isOverlayOpen = isSheetOpen || auditRow !== null || isUnsavedChangesDialogOpen || deletePromptState !== null || passwordPromptState !== null;
   const deferredSearchValue = useDeferredValue(searchValue);
   const normalizedSearch = normalizeSearchValue(deferredSearchValue);
   const availableViews = useMemo<ModuleView[]>(() => {
@@ -1460,6 +1663,7 @@ export function EntityModule({
     [fields, sheetTabs],
   );
   const fieldNameSet = useMemo(() => new Set(allSheetFields.map((field) => field.name)), [allSheetFields]);
+  const holidayDates = useMemo(() => new Set((calendar?.holidays ?? []).map((holiday) => holiday.date)), [calendar?.holidays]);
   const hasLockedValues = useMemo(
     () => rows.some((row) => Object.prototype.hasOwnProperty.call(row.formValues, "locked")),
     [rows],
@@ -1470,10 +1674,10 @@ export function EntityModule({
   );
   const canToggleLock = (canToggleLockProp ?? Boolean(toggleLockAction)) && Boolean(toggleLockAction) && hasLockedValues;
   const canImport = (canImportProp ?? Boolean(importAction)) && Boolean(importAction);
-  const hasActionDropdown = canImport || canExport || Boolean(bulkLockAction) || Boolean(bulkDeleteAction);
+  const hasActionDropdown = canImport || canExport || Boolean(bulkDeleteAction);
   const canBulkLock = Boolean(bulkLockAction) && canToggleLock;
   const canBulkDelete = Boolean(bulkDeleteAction) && canDelete;
-  const hasContextMenu = canDelete || hasAuditMenu;
+  const hasContextMenu = canDelete || hasAuditMenu || canChangePassword;
   const hasRowActions = canEdit || hasContextMenu;
   const activeSheetTabs = useMemo<SheetTab[]>(() => {
     const configuredTabs =
@@ -1546,6 +1750,7 @@ export function EntityModule({
   useEffect(() => {
     const hasNewCreateSuccess = createState.status === "success" && handledActionStatesRef.current.create !== createState;
     const hasNewEditSuccess = editState.status === "success" && handledActionStatesRef.current.edit !== editState;
+    const hasNewChangePasswordSuccess = changePasswordState.status === "success" && handledActionStatesRef.current.changePassword !== changePasswordState;
     const hasNewDeleteSuccess = deleteState.status === "success" && handledActionStatesRef.current.delete !== deleteState;
     const hasNewImportSuccess = importState.status === "success" && handledActionStatesRef.current.import !== importState;
     const hasNewToggleSuccess = toggleLockState.status === "success" && handledActionStatesRef.current.toggleLock !== toggleLockState;
@@ -1554,12 +1759,13 @@ export function EntityModule({
     const nextSuccessMessage =
       (hasNewCreateSuccess ? createState.message : undefined) ??
       (hasNewEditSuccess ? editState.message : undefined) ??
+      (hasNewChangePasswordSuccess ? changePasswordState.message : undefined) ??
       (hasNewDeleteSuccess ? deleteState.message : undefined) ??
       (hasNewImportSuccess ? importState.message : undefined) ??
       (hasNewToggleSuccess ? toggleLockState.message : undefined) ??
       (hasNewBulkLockSuccess ? bulkLockState.message : undefined) ??
       (hasNewBulkDeleteSuccess ? bulkDeleteState.message : undefined);
-    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess;
+    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewChangePasswordSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess;
 
     if (hasNewSuccess) {
       if (nextSuccessMessage) {
@@ -1584,6 +1790,7 @@ export function EntityModule({
       setCreatePrefillValues({});
       setIsSheetDirty(false);
       setIsUnsavedChangesDialogOpen(false);
+      setPasswordPromptState(null);
       if (!hasNewToggleSuccess && !hasNewBulkLockSuccess) {
         setLockOverrides({});
       }
@@ -1603,6 +1810,7 @@ export function EntityModule({
 
     handledActionStatesRef.current.create = createState;
     handledActionStatesRef.current.edit = editState;
+    handledActionStatesRef.current.changePassword = changePasswordState;
     handledActionStatesRef.current.delete = deleteState;
     handledActionStatesRef.current.import = importState;
     handledActionStatesRef.current.toggleLock = toggleLockState;
@@ -1611,6 +1819,7 @@ export function EntityModule({
   }, [
     bulkDeleteState,
     bulkLockState,
+    changePasswordState,
     createState,
     deleteState,
     editState,
@@ -1619,6 +1828,32 @@ export function EntityModule({
     router,
     toggleLockState,
   ]);
+
+  useEffect(() => {
+    const hasNewCreateError = createState.status === "error" && handledActionStatesRef.current.createError !== createState;
+
+    if (hasNewCreateError && createState.message) {
+      notify({
+        tone: "error",
+        message: createState.message,
+      });
+    }
+
+    handledActionStatesRef.current.createError = createState;
+  }, [createState, notify]);
+
+  useEffect(() => {
+    const hasNewChangePasswordError = changePasswordState.status === "error" && handledActionStatesRef.current.changePasswordError !== changePasswordState;
+
+    if (hasNewChangePasswordError && changePasswordState.message) {
+      notify({
+        tone: "error",
+        message: changePasswordState.message,
+      });
+    }
+
+    handledActionStatesRef.current.changePasswordError = changePasswordState;
+  }, [changePasswordState, notify]);
 
   useEffect(() => {
     const hasNewDeleteError = deleteState.status === "error" && handledActionStatesRef.current.deleteError !== deleteState;
@@ -1736,20 +1971,32 @@ export function EntityModule({
           return;
         }
 
+        if (deletePromptState) {
+          event.preventDefault();
+          setDeletePromptState(null);
+          return;
+        }
+
+        if (passwordPromptState) {
+          event.preventDefault();
+          setPasswordPromptState(null);
+          return;
+        }
+
         if (isSheetOpen) {
           event.preventDefault();
           requestSheetClose();
           return;
         }
         setAuditRow(null);
-        setMenuRowId(null);
+        closeAllMenus();
         setActionMenuOpen(false);
       }
     };
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [isSheetDirty, isSheetOpen, isUnsavedChangesDialogOpen]);
+  }, [deletePromptState, isSheetDirty, isSheetOpen, isUnsavedChangesDialogOpen, passwordPromptState]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -1758,6 +2005,10 @@ export function EntityModule({
       if (menuRowId && !menuHostRef.current?.contains(target) && !rowMenuRef.current?.contains(target)) {
         setMenuRowId(null);
         setMenuPosition(null);
+      }
+
+      if (calendarMenuState && !calendarMenuRef.current?.contains(target)) {
+        setCalendarMenuState(null);
       }
 
       if (actionMenuOpen && !actionMenuRef.current?.contains(target)) {
@@ -1771,7 +2022,7 @@ export function EntityModule({
 
     window.addEventListener("pointerdown", handlePointerDown);
     return () => window.removeEventListener("pointerdown", handlePointerDown);
-  }, [actionMenuOpen, columnMenuOpen, menuRowId]);
+  }, [actionMenuOpen, calendarMenuState, columnMenuOpen, menuRowId]);
 
   useEffect(() => {
     if (deletedRowIds.size > 0) {
@@ -1923,23 +2174,33 @@ export function EntityModule({
       return statGroups ?? [];
     }
 
-    if (!hasMonthScope) {
+    const hasSearch = normalizedSearch.length > 0;
+
+    if (!hasMonthScope && !hasSearch) {
       return statGroups;
     }
 
-    // Recalculate stat groups based on month-scoped rows
+    const sourceRows = hasMonthScope ? monthScopedRows : displayRows;
+
+    // Recalculate stat groups based on scoped rows
     return statGroups.map((group) => {
       if (!group.groupByField && !group.breakdownField) {
         return group;
       }
 
-      // Build counts from monthScopedRows
+      // Build counts from sourceRows
       if (group.groupByField) {
         // Per-user x shift-type breakdown (e.g. groupByField="userId", breakdownField="shift")
         const labelByGroupValue = new Map<string, string>();
         const countsByGroup = new Map<string, Map<string, number>>();
 
-        for (const row of monthScopedRows) {
+        // Seed all original labels so users with 0 entries still appear
+        for (const originalRow of group.rows) {
+          labelByGroupValue.set(originalRow.label, originalRow.label);
+          countsByGroup.set(originalRow.label, new Map());
+        }
+
+        for (const row of sourceRows) {
           const groupValue = String(getFieldDefaultValue(row, group.groupByField) ?? "");
           const breakdownValue = group.breakdownField ? getCellText(row.cells[group.breakdownField] ?? "") : "";
 
@@ -1948,18 +2209,21 @@ export function EntityModule({
             labelByGroupValue.set(groupValue, userCell ? getCellText(userCell) : groupValue);
           }
 
-          if (!countsByGroup.has(groupValue)) {
-            countsByGroup.set(groupValue, new Map());
+          // Use the display label as key (not the raw groupValue) for consistent merging
+          const displayLabel = labelByGroupValue.get(groupValue) ?? groupValue;
+
+          if (!countsByGroup.has(displayLabel)) {
+            countsByGroup.set(displayLabel, new Map());
           }
-          const shiftMap = countsByGroup.get(groupValue)!;
+          const shiftMap = countsByGroup.get(displayLabel)!;
           shiftMap.set(breakdownValue, (shiftMap.get(breakdownValue) ?? 0) + 1);
         }
 
         const totalColLabel = group.columns[group.columns.length - 1];
         const breakdownCols = group.columns.slice(0, -1);
 
-        const rows = Array.from(countsByGroup.entries())
-          .map(([groupValue, shiftMap]) => {
+        let rows = Array.from(countsByGroup.entries())
+          .map(([label, shiftMap]) => {
             const values: Record<string, string> = {};
             let total = 0;
             for (const col of breakdownCols) {
@@ -1968,9 +2232,14 @@ export function EntityModule({
               total += count;
             }
             values[totalColLabel] = String(total);
-            return { label: labelByGroupValue.get(groupValue) ?? groupValue, values };
+            return { label, values };
           })
           .sort((a, b) => a.label.localeCompare(b.label, "sk"));
+
+        // Apply fulltext filter to stat rows
+        if (hasSearch) {
+          rows = rows.filter((row) => normalizeSearchValue(row.label).includes(normalizedSearch));
+        }
 
         return { ...group, rows };
       }
@@ -1979,22 +2248,27 @@ export function EntityModule({
       const shiftCounts = new Map<string, number>();
       const breakdownField = group.breakdownField!;
 
-      for (const row of monthScopedRows) {
+      for (const row of sourceRows) {
         const cellValue = row.cells[breakdownField] ? getCellText(row.cells[breakdownField]) : "";
         shiftCounts.set(cellValue, (shiftCounts.get(cellValue) ?? 0) + 1);
       }
 
       const countColLabel = group.columns[0];
-      const rows = Array.from(shiftCounts.entries())
+      let rows = Array.from(shiftCounts.entries())
         .filter(([, count]) => count > 0)
         .map(([name, count]) => ({
           label: name,
           values: { [countColLabel]: String(count) },
         }));
 
+      // Apply fulltext filter to stat rows
+      if (hasSearch) {
+        rows = rows.filter((row) => normalizeSearchValue(row.label).includes(normalizedSearch));
+      }
+
       return { ...group, rows };
     });
-  }, [hasMonthScope, monthScopedRows, statGroups]);
+  }, [displayRows, hasMonthScope, monthScopedRows, normalizedSearch, statGroups]);
   const totalTablePages = Math.max(1, Math.ceil(sortedRows.length / rowsPerPage));
   const visibleTablePage = Math.min(tablePage, totalTablePages);
   const paginatedRows = useMemo(() => {
@@ -2056,14 +2330,40 @@ export function EntityModule({
     forceCloseSheet();
   }
 
-  function openAuditRow(row: EntityRow) {
-    setAuditRow(row);
+  function closeAllMenus() {
     setMenuRowId(null);
     setMenuPosition(null);
+    setCalendarMenuState(null);
   }
 
-  function confirmDelete() {
-    return window.confirm(t("entity.confirmDelete"));
+  function openAuditRow(row: EntityRow) {
+    setAuditRow(row);
+    closeAllMenus();
+  }
+
+  function requestDeleteRecord(recordId: string, label: string) {
+    closeAllMenus();
+    setDeletePromptState({ recordId, label });
+  }
+
+  function requestPasswordChange(recordId: string, label: string) {
+    closeAllMenus();
+    setPasswordPromptState({ recordId, label });
+  }
+
+  function confirmDeleteRecord() {
+    if (!deletePromptState) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("id", deletePromptState.recordId);
+    pendingDeleteIdRef.current = deletePromptState.recordId;
+    setDeletePromptState(null);
+
+    startTransition(() => {
+      deleteFormAction(formData);
+    });
   }
 
   function openCreateSheet(prefillValues?: Record<string, FormValue>) {
@@ -2089,9 +2389,44 @@ export function EntityModule({
     setCreatePrefillValues({});
     setIsSheetOpen(true);
     setIsUnsavedChangesDialogOpen(false);
-    setMenuRowId(null);
-    setMenuPosition(null);
+    closeAllMenus();
     setActionMenuOpen(false);
+  }
+
+  function computeMenuPosition(left: number, top: number, menuWidth: number, menuHeight: number) {
+    const viewportPadding = 12;
+    const nextLeft = Math.max(viewportPadding, Math.min(left, window.innerWidth - menuWidth - viewportPadding));
+    const nextTop = Math.max(viewportPadding, Math.min(top, window.innerHeight - menuHeight - viewportPadding));
+
+    return { left: nextLeft, top: nextTop };
+  }
+
+  function handleSheetSubmit(event: FormEvent<HTMLFormElement>) {
+    if (moduleKey !== "schedule" || sheetMode !== "create") {
+      return;
+    }
+
+    const formData = new FormData(event.currentTarget);
+    const date = String(formData.get("date") ?? "").trim();
+    const userId = String(formData.get("userId") ?? "").trim();
+
+    if (!date || !userId) {
+      return;
+    }
+
+    const duplicateRow = findScheduleDuplicateRow(rows, date, userId);
+
+    if (!duplicateRow) {
+      return;
+    }
+
+    event.preventDefault();
+    notify({
+      tone: "error",
+      message: t("action.scheduleDuplicateEntry", {
+        date: formatDisplayDate(date, locale),
+      }),
+    });
   }
 
   function handleCalendarDaySelect(dateValue: string) {
@@ -2110,6 +2445,23 @@ export function EntityModule({
     }
 
     openCreateSheet(prefillValues);
+  }
+
+  function openCalendarRecordMenu(recordId: string, clientX: number, clientY: number) {
+    if (!canEdit && !canDelete) {
+      return;
+    }
+
+    setMenuRowId(null);
+    setMenuPosition(null);
+
+    const menuItemCount = (canEdit ? 1 : 0) + (canDelete ? 1 : 0);
+    const menuWidth = 190;
+    const menuHeight = menuItemCount * 40 + 16;
+    setCalendarMenuState({
+      recordId,
+      position: computeMenuPosition(clientX, clientY, menuWidth, menuHeight),
+    });
   }
 
   function handleCalendarItemSelect(itemId: string) {
@@ -2144,6 +2496,32 @@ export function EntityModule({
       toggleLockFormAction(formData);
     });
   }
+
+  const handleCalendarItemDrop = useCallback((recordId: string, targetDate: string) => {
+    if (!moveAction) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("id", recordId);
+    formData.set("targetDate", targetDate);
+
+    startTransition(async () => {
+      const result = await moveAction(initialActionState, formData);
+
+      if (result.status === "success") {
+        if (result.message) {
+          notify({ tone: "success", message: result.message });
+        }
+
+        startTransition(() => {
+          router.refresh();
+        });
+      } else if (result.status === "error" && result.message) {
+        notify({ tone: "error", message: result.message });
+      }
+    });
+  }, [moveAction, notify, router]);
 
   function handleBulkLock(locked: boolean) {
     if (!canBulkLock || !selectedMonth) {
@@ -2216,11 +2594,13 @@ export function EntityModule({
       return;
     }
 
+    setCalendarMenuState(null);
+
     const rect = trigger.getBoundingClientRect();
     const menuWidth = 190;
     const menuHeight = (row.auditEntries !== undefined ? 48 : 0) + (canDelete ? 48 : 0) + 16;
-    const viewportPadding = 12;
     const offset = 8;
+    const viewportPadding = 12;
     const left = Math.max(viewportPadding, Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - viewportPadding));
     const shouldOpenUpward = rect.bottom + offset + menuHeight > window.innerHeight - viewportPadding;
     const top = shouldOpenUpward
@@ -2297,6 +2677,19 @@ export function EntityModule({
     });
   }
 
+  function toggleStatsSort(groupTitle: string, columnKey: string) {
+    setStatsSort((current) => {
+      const next = new Map(current);
+      const existing = next.get(groupTitle);
+      if (!existing || existing.columnKey !== columnKey) {
+        next.set(groupTitle, { columnKey, direction: "asc" });
+      } else {
+        next.set(groupTitle, { columnKey, direction: existing.direction === "asc" ? "desc" : "asc" });
+      }
+      return next;
+    });
+  }
+
   function toggleColumnVisibility(columnKey: string) {
     setHiddenColumns((current) => {
       const next = new Set(current);
@@ -2369,7 +2762,8 @@ export function EntityModule({
           field={field}
           value={String((sheetMode === "edit" ? currentValue : (currentValue ?? field.defaultValue)) ?? "")}
           fieldError={fieldError}
-          formRef={field.filterByDate ? sheetFormRef : undefined}
+          formRef={field.filterByDate || field.filterByField ? sheetFormRef : undefined}
+          holidayDates={holidayDates}
         />
       );
     }
@@ -2450,6 +2844,30 @@ export function EntityModule({
   }
 
   function renderFormFields(formFields: FormField[]): ReactNode[] {
+    const avatarFieldIndex = formFields.findIndex((field) => field.type === "avatar" && field.name === "avatarUrl");
+    const firstNameIndex = formFields.findIndex((field) => field.name === "firstName");
+    const lastNameIndex = formFields.findIndex((field) => field.name === "lastName");
+
+    if (avatarFieldIndex >= 0 && firstNameIndex >= 0 && lastNameIndex >= 0) {
+      const avatarField = formFields[avatarFieldIndex];
+      const firstNameField = formFields[firstNameIndex];
+      const lastNameField = formFields[lastNameIndex];
+      const identityIndices = new Set([avatarFieldIndex, firstNameIndex, lastNameIndex]);
+
+      const remainingFields = formFields.filter((_, index) => !identityIndices.has(index));
+
+      return [
+        <div key="user-identity" className="user-sheet-identity-grid">
+          <div className="user-sheet-avatar-col">{renderFormField(avatarField)}</div>
+          <div className="user-sheet-name-col">
+            {renderFormField(firstNameField)}
+            {renderFormField(lastNameField)}
+          </div>
+        </div>,
+        ...renderFormFields(remainingFields),
+      ];
+    }
+
     const result: ReactNode[] = [];
     let i = 0;
 
@@ -2517,6 +2935,26 @@ export function EntityModule({
       </div>
     ) : null;
 
+  const bulkLockControl =
+    canBulkLock && selectedMonth ? (
+      <div className="calendar-toolbar-bulk">
+        <button type="button" className="calendar-bulk-btn calendar-bulk-btn-lock" onClick={() => handleBulkLock(true)} title={t("entity.lockAll")}>
+          <Lock size={16} />
+        </button>
+        <button type="button" className="calendar-bulk-btn calendar-bulk-btn-unlock" onClick={() => handleBulkLock(false)} title={t("entity.unlockAll")}>
+          <LockOpen size={16} />
+        </button>
+      </div>
+    ) : null;
+
+  const calendarActionsControl =
+    bulkLockControl || viewSwitcherControl ? (
+      <>
+        {bulkLockControl}
+        {viewSwitcherControl}
+      </>
+    ) : null;
+
   return (
     <>
       <section className="module-page stack">
@@ -2573,34 +3011,7 @@ export function EntityModule({
                         {t("entity.exportCsv")}
                       </button>
                     ) : null}
-                    {canBulkLock && selectedMonth ? (
-                      <>
-                        <button
-                          type="button"
-                          className="action-dropdown-item"
-                          role="menuitem"
-                          onClick={() => {
-                            setActionMenuOpen(false);
-                            handleBulkLock(true);
-                          }}
-                        >
-                          <Lock size={16} />
-                          {t("entity.lockAll")}
-                        </button>
-                        <button
-                          type="button"
-                          className="action-dropdown-item"
-                          role="menuitem"
-                          onClick={() => {
-                            setActionMenuOpen(false);
-                            handleBulkLock(false);
-                          }}
-                        >
-                          <LockOpen size={16} />
-                          {t("entity.unlockAll")}
-                        </button>
-                      </>
-                    ) : null}
+
                   </div>
                 ) : null}
 
@@ -2639,6 +3050,7 @@ export function EntityModule({
               </div>
 
               <div className="module-toolbar-actions">
+                {bulkLockControl}
                 {activeView === "table" && columns.length > 1 ? (
                   <div className="column-toggle-wrapper" ref={columnMenuRef}>
                     <button
@@ -2683,32 +3095,65 @@ export function EntityModule({
               month={selectedMonth}
               onMonthChange={setSelectedMonth}
               searchControl={searchControl}
-              actionsControl={viewSwitcherControl}
+              actionsControl={calendarActionsControl}
               onDaySelect={canCreate && !createDisabledReason ? handleCalendarDaySelect : undefined}
-              onItemSelect={canEdit ? handleCalendarItemSelect : undefined}
               onItemLockToggle={canToggleLock ? handleCalendarItemLockToggle : undefined}
-              onBulkLock={canBulkLock ? handleBulkLock : undefined}
+              onItemContextMenu={canEdit || canDelete ? openCalendarRecordMenu : undefined}
+              onItemDrop={moveAction && canEdit ? handleCalendarItemDrop : undefined}
             />
           ) : null}
 
           {activeView === "stats" ? (
             <div className="stats-view-stack">
-              {displayStatGroups.map((group) =>
-                group.rows.length > 0 ? (
+              {displayStatGroups.map((group) => {
+                if (group.rows.length === 0) return null;
+                const groupSortState = statsSort.get(group.title);
+                const sortedStatRows = groupSortState
+                  ? [...group.rows].sort((a, b) => {
+                      const dir = groupSortState.direction === "asc" ? 1 : -1;
+                      const aVal = groupSortState.columnKey === "__label" ? a.label : (a.values[groupSortState.columnKey] ?? "0");
+                      const bVal = groupSortState.columnKey === "__label" ? b.label : (b.values[groupSortState.columnKey] ?? "0");
+                      const aNum = Number(aVal);
+                      const bNum = Number(bVal);
+                      if (!isNaN(aNum) && !isNaN(bNum)) return (aNum - bNum) * dir;
+                      return String(aVal).localeCompare(String(bVal), locale, { numeric: true, sensitivity: "base" }) * dir;
+                    })
+                  : group.rows;
+                return (
                   <div key={group.title} className="stat-group">
                     <h3 className="stat-group-title">{group.title}</h3>
                     <div className="table-shell">
                       <table className="records-table">
                         <thead>
                           <tr>
-                            <th />
-                            {group.columns.map((col) => (
-                              <th key={col}>{col}</th>
-                            ))}
+                            <th aria-sort={groupSortState?.columnKey === "__label" ? (groupSortState.direction === "asc" ? "ascending" : "descending") : "none"}>
+                              <button type="button" className={`table-heading-button${groupSortState?.columnKey === "__label" ? " active" : ""}`} onClick={() => toggleStatsSort(group.title, "__label")}>
+                                <span className="table-heading">
+                                  <span className="table-sort-indicator" aria-hidden="true">
+                                    {groupSortState?.columnKey === "__label" ? (groupSortState.direction === "asc" ? "↑" : "↓") : <ArrowUpDown size={14} />}
+                                  </span>
+                                </span>
+                              </button>
+                            </th>
+                            {group.columns.map((col) => {
+                              const isActive = groupSortState?.columnKey === col;
+                              return (
+                                <th key={col} aria-sort={isActive ? (groupSortState.direction === "asc" ? "ascending" : "descending") : "none"}>
+                                  <button type="button" className={`table-heading-button${isActive ? " active" : ""}`} onClick={() => toggleStatsSort(group.title, col)}>
+                                    <span className="table-heading">
+                                      {col}
+                                      <span className="table-sort-indicator" aria-hidden="true">
+                                        {isActive ? (groupSortState.direction === "asc" ? "↑" : "↓") : <ArrowUpDown size={14} />}
+                                      </span>
+                                    </span>
+                                  </button>
+                                </th>
+                              );
+                            })}
                           </tr>
                         </thead>
                         <tbody>
-                          {group.rows.map((row) => (
+                          {sortedStatRows.map((row) => (
                             <tr key={row.label}>
                               <td><strong>{row.label}</strong></td>
                               {group.columns.map((col) => (
@@ -2720,8 +3165,8 @@ export function EntityModule({
                       </table>
                     </div>
                   </div>
-                ) : null,
-              )}
+                );
+              })}
             </div>
           ) : null}
 
@@ -2882,22 +3327,20 @@ export function EntityModule({
                     <div className="table-pagination-left">
                       <label className="table-page-size-label">
                         {t("entity.rowsPerPage")}
-                        <select
-                          className="table-page-size-select"
-                          value={rowsPerPage}
-                          onChange={(event) => {
-                            const next = Number(event.target.value);
-                            setRowsPerPage(next);
-                            setTablePage(1);
-                            if (moduleKey) {
-                              savePageSizePreference(moduleKey, next);
-                            }
-                          }}
-                        >
-                          {pageSizeOptions.map((size) => (
-                            <option key={size} value={size}>{size}</option>
-                          ))}
-                        </select>
+                        <SearchableSelect
+                            name="rowsPerPage"
+                            value={String(rowsPerPage)}
+                            onChange={(v) => {
+                              const next = Number(v);
+                              setRowsPerPage(next);
+                              setTablePage(1);
+                              if (moduleKey) {
+                                savePageSizePreference(moduleKey, next);
+                              }
+                            }}
+                            className="table-page-size-select"
+                            options={pageSizeOptions.map((size) => ({ value: String(size), label: String(size) }))}
+                          />
                       </label>
                       {totalTablePages > 1 ? (
                         <p className="table-pagination-summary">
@@ -2968,7 +3411,7 @@ export function EntityModule({
               </button>
             </div>
 
-            <form action={activeFormAction} className="sheet-form" ref={sheetFormRef} onChange={syncSheetDirtyState} onInput={syncSheetDirtyState}>
+            <form action={activeFormAction} className="sheet-form" ref={sheetFormRef} onChange={syncSheetDirtyState} onInput={syncSheetDirtyState} onSubmit={handleSheetSubmit}>
               {sheetMode === "edit" && editingRow ? <input type="hidden" name="id" value={editingRow.id} /> : null}
               {activeSheetTabs.length > 1 ? (
                 <div className="sheet-tab-strip" role="tablist" aria-label="Form sections">
@@ -3046,6 +3489,81 @@ export function EntityModule({
         </div>
       ) : null}
 
+      {deletePromptState ? (
+        <div className="confirm-layer" role="presentation">
+          <button type="button" className="confirm-backdrop" aria-label={t("entity.closeConfirm")} onClick={() => setDeletePromptState(null)} />
+          <section className="confirm-dialog" aria-modal="true" role="dialog" aria-labelledby="delete-confirm-title">
+            <div className="stack-tight">
+              <p className="eyebrow">{t("entity.delete")}</p>
+              <h2 id="delete-confirm-title">{deletePromptState.label}</h2>
+              <p className="muted">{t("entity.confirmDelete")}</p>
+            </div>
+            <div className="confirm-actions">
+              <button type="button" className="button secondary" onClick={() => setDeletePromptState(null)}>
+                {t("entity.cancel")}
+              </button>
+              <button type="button" className="button danger" onClick={confirmDeleteRecord}>
+                {t("entity.delete")}
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {passwordPromptState ? (
+        <div className="confirm-layer" role="presentation">
+          <button type="button" className="confirm-backdrop" aria-label={t("entity.closeConfirm")} onClick={() => setPasswordPromptState(null)} />
+          <section className="confirm-dialog" aria-modal="true" role="dialog" aria-labelledby="password-confirm-title">
+            <div className="stack-tight">
+              <p className="eyebrow">{t("entity.changePassword")}</p>
+              <h2 id="password-confirm-title">{passwordPromptState.label}</h2>
+              <p className="muted">{t("entity.changePasswordDescription")}</p>
+            </div>
+            <form action={changePasswordFormAction} className="stack-tight">
+              <input type="hidden" name="id" value={passwordPromptState.recordId} />
+              <div className="field">
+                <label className="field-label" htmlFor="change-password-input">
+                  {t("auth.newPassword")}
+                </label>
+                <input
+                  id="change-password-input"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  className="field-control"
+                  placeholder={t("auth.newPasswordHint")}
+                />
+                {changePasswordState.fieldErrors?.password?.[0] ? <span className="field-error">{changePasswordState.fieldErrors.password[0]}</span> : null}
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="change-password-confirm-input">
+                  {t("auth.confirmPassword")}
+                </label>
+                <input
+                  id="change-password-confirm-input"
+                  name="passwordConfirm"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  className="field-control"
+                  placeholder={t("auth.confirmPasswordPlaceholder")}
+                />
+                {changePasswordState.fieldErrors?.passwordConfirm?.[0] ? <span className="field-error">{changePasswordState.fieldErrors.passwordConfirm[0]}</span> : null}
+              </div>
+              <div className="confirm-actions">
+                <button type="button" className="button secondary" onClick={() => setPasswordPromptState(null)}>
+                  {t("entity.cancel")}
+                </button>
+                <FormSubmitButton label={t("entity.changePasswordConfirm")} />
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
       {activeMenuRow && menuPosition ? (
         <div ref={rowMenuRef} className="row-menu" role="menu" style={{ left: `${menuPosition.left}px`, top: `${menuPosition.top}px` }}>
           {activeMenuRow.auditEntries !== undefined ? (
@@ -3053,22 +3571,58 @@ export function EntityModule({
               {t("audit.contextMenu")}
             </button>
           ) : null}
+          {canChangePassword ? (
+            <button
+              type="button"
+              className="row-menu-item"
+              role="menuitem"
+              onClick={() => requestPasswordChange(activeMenuRow.id, activeMenuRow.label ?? activeMenuRow.id)}
+            >
+              {t("entity.changePassword")}
+            </button>
+          ) : null}
           {canDelete ? (
-            <form
-              action={deleteFormAction}
-              onSubmit={(event) => {
-                if (!confirmDelete()) {
-                  event.preventDefault();
-                  return;
-                }
-                pendingDeleteIdRef.current = activeMenuRow.id;
+            <button
+              type="button"
+              className="row-menu-item danger"
+              role="menuitem"
+              onClick={() => requestDeleteRecord(activeMenuRow.id, activeMenuRow.label ?? activeMenuRow.id)}
+            >
+              {t("entity.delete")}
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {calendarMenuState ? (
+        <div
+          ref={calendarMenuRef}
+          className="row-menu calendar-record-menu"
+          role="menu"
+          style={{ left: `${calendarMenuState.position.left}px`, top: `${calendarMenuState.position.top}px` }}
+        >
+          {canEdit ? (
+            <button
+              type="button"
+              className="row-menu-item"
+              role="menuitem"
+              onClick={() => {
+                const row = rowsById.get(calendarMenuState.recordId);
+                if (row) openEditSheet(row);
               }}
             >
-              <input type="hidden" name="id" value={activeMenuRow.id} />
-              <button type="submit" className="row-menu-item danger" role="menuitem">
-                {t("entity.delete")}
-              </button>
-            </form>
+              {t("entity.edit")}
+            </button>
+          ) : null}
+          {canDelete ? (
+            <button
+              type="button"
+              className="row-menu-item danger"
+              role="menuitem"
+              onClick={() => requestDeleteRecord(calendarMenuState.recordId, rows.find((row) => row.id === calendarMenuState.recordId)?.label ?? calendarMenuState.recordId)}
+            >
+              {t("entity.delete")}
+            </button>
           ) : null}
         </div>
       ) : null}

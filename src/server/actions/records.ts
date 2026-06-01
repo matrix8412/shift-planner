@@ -8,10 +8,12 @@ import type { ActionState } from "@/components/entity-module.types";
 import { createAiProvider } from "@/server/ai";
 import { requirePermission } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth/index";
+import { hashPassword } from "@/server/auth/password";
 import { ensurePermissionCatalog, permissionCatalog, type PermissionCode } from "@/server/auth/permissions";
 import { aiSettingsSchema, defaultAiSettings, getAiSettings } from "@/server/config/ai-settings";
 import { defaultNotificationSettings, getNotificationSettings, notificationSettingsSchema } from "@/server/config/notification-settings";
-import { AI_SETTINGS_KEY, BROWSER_NOTIFICATION_SETTINGS_KEY, NOTIFICATION_SETTINGS_KEY, isManagedSettingKey } from "@/server/config/managed-settings";
+import { httpsSettingsSchema, defaultHttpsSettings, getHttpsSettings } from "@/server/config/https-settings";
+import { AI_SETTINGS_KEY, BROWSER_NOTIFICATION_SETTINGS_KEY, NOTIFICATION_SETTINGS_KEY, HTTPS_SETTINGS_KEY, isManagedSettingKey } from "@/server/config/managed-settings";
 import { AI_AUDIT_RETENTION_DAYS_KEY, DEFAULT_AI_AUDIT_RETENTION_DAYS } from "@/server/config/ai-audit-retention";
 import { db } from "@/server/db/client";
 import { dispatchNotification } from "@/server/notifications";
@@ -339,6 +341,11 @@ const userSchema = z.object({
   notificationDays: z.number().int().min(0, "Must be zero or higher.").max(365, "Must be 365 or lower."),
 });
 
+const userPasswordChangeSchema = z.object({
+  password: z.string().min(8, "Password must have at least 8 characters."),
+  passwordConfirm: z.string().min(1, "Confirm password."),
+});
+
 const roleSchema = z.object({
   code: z.string().trim().min(1, "Code is required.").max(60, "Code is too long."),
   name: z.string().trim().min(1, "Name is required.").max(120, "Name is too long."),
@@ -364,6 +371,7 @@ const shiftSchema = z.object({
   startsAt: z.string().regex(timePattern, "Use HH:MM format."),
   endsAt: z.string().regex(timePattern, "Use HH:MM format."),
   crossesMidnight: z.boolean(),
+  sortOrder: z.number().int().min(1, "Sort order must be between 1 and 10.").max(10, "Sort order must be between 1 and 10."),
   validityDays: z.record(z.string(), z.boolean()),
   isActive: z.boolean(),
 });
@@ -508,6 +516,16 @@ function getWeekdayLabel(date: Date) {
 function getWeekdayNumber(date: Date) {
   const day = date.getUTCDay();
   return day === 0 ? 7 : day;
+}
+
+function formatDisplayDateValue(value: string, locale: string) {
+  const date = parseUtcDate(value);
+  const formatterLocale = locale === "sk" ? "sk-SK" : "en-US";
+
+  return new Intl.DateTimeFormat(formatterLocale, {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(date);
 }
 
 function toAiProviderKind(provider: "openai" | "anthropic" | "gemini") {
@@ -1006,6 +1024,7 @@ export async function createShiftAction(_: ActionState, formData: FormData): Pro
     startsAt: parseOptionalString(formData.get("startsAt")) ?? "",
     endsAt: parseOptionalString(formData.get("endsAt")) ?? "",
     crossesMidnight: parseBoolean(formData, "crossesMidnight"),
+    sortOrder: Number.parseInt(parseOptionalString(formData.get("sortOrder")) ?? "5", 10),
     validityDays: parseShiftValidityFormData(formData),
     isActive: parseBoolean(formData, "isActive"),
   });
@@ -1036,6 +1055,7 @@ export async function createShiftAction(_: ActionState, formData: FormData): Pro
         startsAt: shiftType.startsAt,
         endsAt: shiftType.endsAt,
         crossesMidnight: shiftType.crossesMidnight,
+        sortOrder: shiftType.sortOrder,
         validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
         isActive: shiftType.isActive,
       }, "CREATE", actorId);
@@ -1337,6 +1357,63 @@ export async function updateUserAction(_: ActionState, formData: FormData): Prom
   }
 }
 
+export async function changeUserPasswordAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const actorId = await requireCurrentPermission("users:edit");
+  const d = await getDict();
+  const id = parseRequiredId(formData);
+
+  if (!id) {
+    return missingIdState(d);
+  }
+
+  const parsed = userPasswordChangeSchema.safeParse({
+    password: parseOptionalString(formData.get("password")) ?? "",
+    passwordConfirm: parseOptionalString(formData.get("passwordConfirm")) ?? "",
+  });
+
+  if (!parsed.success) {
+    return errorState(tr(d, "action.reviewFields"), parseZodError(parsed));
+  }
+
+  const { password, passwordConfirm } = parsed.data;
+
+  if (password !== passwordConfirm) {
+    return errorState(tr(d, "action.reviewFields"), {
+      passwordConfirm: [tr(d, "auth.passwordsMismatch")],
+    });
+  }
+
+  try {
+    const passwordHash = await hashPassword(password);
+
+    await db.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id },
+        data: { passwordHash },
+      });
+
+      await tx.session.deleteMany({
+        where: { userId: id },
+      });
+
+      await writeAuditLog(
+        tx,
+        "USER",
+        user.id,
+        {
+          passwordChanged: true,
+        },
+        "UPDATE",
+        actorId,
+      );
+    });
+
+    return successState(tr(d, "action.userPasswordChanged"), "/users");
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
 export async function updateRoleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("roles:edit");
   const d = await getDict();
@@ -1472,6 +1549,7 @@ export async function updateShiftAction(_: ActionState, formData: FormData): Pro
     startsAt: parseOptionalString(formData.get("startsAt")) ?? "",
     endsAt: parseOptionalString(formData.get("endsAt")) ?? "",
     crossesMidnight: parseBoolean(formData, "crossesMidnight"),
+    sortOrder: Number.parseInt(parseOptionalString(formData.get("sortOrder")) ?? "5", 10),
     validityDays: parseShiftValidityFormData(formData),
     isActive: parseBoolean(formData, "isActive"),
   });
@@ -1511,6 +1589,7 @@ export async function updateShiftAction(_: ActionState, formData: FormData): Pro
           startsAt: shiftType.startsAt,
           endsAt: shiftType.endsAt,
           crossesMidnight: shiftType.crossesMidnight,
+          sortOrder: shiftType.sortOrder,
           validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
           isActive: shiftType.isActive,
         },
@@ -2080,6 +2159,43 @@ export async function upsertAiAuditRetentionAction(_: ActionState, formData: For
   }
 }
 
+export async function upsertHttpsSettingsAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  await requireCurrentPermission("settings:edit");
+  const d = await getDict();
+
+  try {
+    const currentSettings = await getHttpsSettings().catch(() => defaultHttpsSettings);
+    const httpPort = Number.parseInt(parseOptionalString(formData.get("httpPort")) ?? String(currentSettings.httpPort), 10);
+    const httpsPort = Number.parseInt(parseOptionalString(formData.get("httpsPort")) ?? String(currentSettings.httpsPort), 10);
+    const renewIntervalHours = Number.parseInt(parseOptionalString(formData.get("renewIntervalHours")) ?? String(currentSettings.renewIntervalHours), 10);
+    const parsed = httpsSettingsSchema.safeParse({
+      acmeEmail: parseOptionalString(formData.get("acmeEmail")) ?? "",
+      httpPort: Number.isNaN(httpPort) ? currentSettings.httpPort : httpPort,
+      httpsPort: Number.isNaN(httpsPort) ? currentSettings.httpsPort : httpsPort,
+      renewIntervalHours: Number.isNaN(renewIntervalHours) ? currentSettings.renewIntervalHours : renewIntervalHours,
+    });
+
+    if (!parsed.success) {
+      return errorState(tr(d, "action.reviewHttpsFields"), parseZodError(parsed));
+    }
+
+    await db.appSetting.upsert({
+      where: { key: HTTPS_SETTINGS_KEY },
+      update: { value: parsed.data },
+      create: { key: HTTPS_SETTINGS_KEY, value: parsed.data },
+    });
+
+    revalidatePath("/settings");
+
+    return {
+      status: "success",
+      message: tr(d, "action.httpsSettingsSaved"),
+    };
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
 export async function generateScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("schedule:generate");
   const d = await getDict();
@@ -2222,6 +2338,25 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
     }
 
     const availableUserIdSet = new Set(availableUsers.map((user) => user.id));
+
+    // Build short aliases (u1, u2... and sh1, sh2...) to prevent the AI from
+    // hallucinating opaque CUID strings — the model needs to echo ids back in
+    // the output, so short predictable aliases are far more reliable.
+    const userAliasById = new Map<string, string>();
+    const aliasToUserId = new Map<string, string>();
+    availableUsers.forEach((user, index) => {
+      const alias = `u${index + 1}`;
+      userAliasById.set(user.id, alias);
+      aliasToUserId.set(alias, user.id);
+    });
+    const shiftTypeAliasById = new Map<string, string>();
+    const aliasToShiftTypeId = new Map<string, string>();
+    shiftTypes.forEach((st, index) => {
+      const alias = `sh${index + 1}`;
+      shiftTypeAliasById.set(st.id, alias);
+      aliasToShiftTypeId.set(alias, st.id);
+    });
+
     const holidayMap = new Map(holidays.map((holiday) => [toIsoDate(holiday.date), holiday]));
     const calendarDays = getDateRange(startDate, endDate).map((date) => {
       const isoDate = toIsoDate(date);
@@ -2242,10 +2377,15 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       endDate: parsed.data.endDate,
       fairnessLookbackDays: parsed.data.fairnessLookbackDays,
       calendarDays,
-      users: availableUsers,
+      users: availableUsers.map((user) => ({
+        id: userAliasById.get(user.id)!,
+        name: user.name,
+        assignedShiftTypeIds: user.assignedShiftTypeIds
+          .map((id) => shiftTypeAliasById.get(id))
+          .filter((alias): alias is string => alias !== undefined),
+      })),
       shiftTypes: shiftTypes.map((shiftType) => ({
-        id: shiftType.id,
-        serviceId: shiftType.serviceId,
+        id: shiftTypeAliasById.get(shiftType.id)!,
         serviceName: shiftType.service.name,
         name: shiftType.name,
         startsAt: shiftType.startsAt,
@@ -2268,7 +2408,7 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         country: holiday.country,
       })),
       vacations: vacations.map((vacation) => ({
-        userId: vacation.userId,
+        userId: userAliasById.get(vacation.userId) ?? vacation.userId,
         userName: `${vacation.user.firstName} ${vacation.user.lastName}`,
         startDate: toIsoDate(vacation.startDate),
         endDate: toIsoDate(vacation.endDate),
@@ -2276,8 +2416,8 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       })),
       lockedEntries: lockedEntries.map((entry) => ({
         date: toIsoDate(entry.date),
-        userId: entry.userId,
-        shiftTypeId: entry.shiftTypeId,
+        userId: userAliasById.get(entry.userId) ?? entry.userId,
+        shiftTypeId: shiftTypeAliasById.get(entry.shiftTypeId) ?? entry.shiftTypeId,
         note: entry.note ?? undefined,
       })),
       historicalAssignments: historicalAssignments
@@ -2285,8 +2425,8 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         .map((entry) => ({
           date: toIsoDate(entry.date),
           weekdayNumber: getWeekdayNumber(entry.date),
-          userId: entry.userId,
-          shiftTypeId: entry.shiftTypeId,
+          userId: userAliasById.get(entry.userId)!,
+          shiftTypeId: shiftTypeAliasById.get(entry.shiftTypeId)!,
         })),
     };
     const aiRunInput = JSON.parse(JSON.stringify(input)) as Prisma.InputJsonValue;
@@ -2336,6 +2476,16 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
       return errorState(parseActionError(error, d));
     }
 
+    // Remap short aliases back to real database IDs before validation
+    draft = {
+      ...draft,
+      events: draft.events.map((event) => ({
+        ...event,
+        userId: aliasToUserId.get(event.userId) ?? event.userId,
+        shiftTypeId: aliasToShiftTypeId.get(event.shiftTypeId) ?? event.shiftTypeId,
+      })),
+    };
+
     if (draft.events.length === 0) {
       return failAiRun(tr(d, "action.aiNoResults"));
     }
@@ -2343,7 +2493,10 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
     const userMap = new Map(availableUsers.map((user) => [user.id, user]));
     const holidayDates = new Set(holidays.map((holiday) => toIsoDate(holiday.date)));
     const lockedSignatureSet = new Set(lockedEntries.map((entry) => `${toIsoDate(entry.date)}::${entry.userId}::${entry.shiftTypeId}`));
+    // Tracks date::shiftTypeId to enforce one shift type per day globally
+    const lockedShiftTypeOnDaySet = new Set(lockedEntries.map((entry) => `${toIsoDate(entry.date)}::${entry.shiftTypeId}`));
     const generatedSignatureSet = new Set<string>();
+    const generatedShiftTypeOnDaySet = new Set<string>();
     const validEvents: typeof draft.events = [];
     const skippedReasons: string[] = [];
     const auditEntries: Array<{ date: string; userId: string | null; userName: string | null; shiftTypeId: string | null; shiftTypeName: string | null; accepted: boolean; reason: string | null }> = [];
@@ -2412,7 +2565,16 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
         continue;
       }
 
+      const shiftTypeOnDayKey = `${event.date}::${event.shiftTypeId}`;
+      if (lockedShiftTypeOnDaySet.has(shiftTypeOnDayKey) || generatedShiftTypeOnDaySet.has(shiftTypeOnDayKey)) {
+        const reason = tr(d, "action.aiShiftTypeDuplicate", { shiftTypeId: event.shiftTypeId, date: event.date });
+        skippedReasons.push(reason);
+        auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: false, reason });
+        continue;
+      }
+
       generatedSignatureSet.add(signature);
+      generatedShiftTypeOnDaySet.add(shiftTypeOnDayKey);
       validEvents.push(event);
       auditEntries.push({ date: event.date, userId: event.userId, userName: user.name, shiftTypeId: event.shiftTypeId, shiftTypeName: shiftType.name, accepted: true, reason: null });
     }
@@ -2541,7 +2703,8 @@ export async function generateScheduleAction(_: ActionState, formData: FormData)
 
 export async function createScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("schedule:create");
-  const d = await getDict();
+  const locale = await getServerLocale();
+  const d = getDictionary(locale);
   const parsed = scheduleSchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
     userId: parseOptionalString(formData.get("userId")) ?? "",
@@ -2560,7 +2723,13 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
       id: parsed.data.shiftTypeId,
     },
     select: {
+      name: true,
       serviceId: true,
+      service: {
+        select: {
+          name: true,
+        },
+      },
       validityDays: true,
     },
   });
@@ -2586,6 +2755,43 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
     return errorState(validityError, {
       shiftTypeId: [validityError],
     });
+  }
+
+  const duplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      userId: parsed.data.userId,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (duplicateEntry) {
+    const duplicateMessage = tr(d, "action.scheduleDuplicateEntry", {
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+
+    return errorState(duplicateMessage, {
+      date: [duplicateMessage],
+      userId: [duplicateMessage],
+    });
+  }
+
+  const shiftTypeDuplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      shiftTypeId: parsed.data.shiftTypeId,
+    },
+    select: { id: true },
+  });
+
+  if (shiftTypeDuplicateEntry) {
+    const msg = tr(d, "action.scheduleShiftTypeDuplicate", {
+      shiftTypeName: shiftType.name,
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+    return errorState(msg, { shiftTypeId: [msg] });
   }
 
   try {
@@ -2642,7 +2848,8 @@ export async function createScheduleAction(_: ActionState, formData: FormData): 
 
 export async function updateScheduleAction(_: ActionState, formData: FormData): Promise<ActionState> {
   const actorId = await requireCurrentPermission("schedule:edit");
-  const d = await getDict();
+  const locale = await getServerLocale();
+  const d = getDictionary(locale);
   const id = parseRequiredId(formData);
   const parsed = scheduleSchema.safeParse({
     date: parseOptionalString(formData.get("date")) ?? "",
@@ -2681,7 +2888,13 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
       id: parsed.data.shiftTypeId,
     },
     select: {
+      name: true,
       serviceId: true,
+      service: {
+        select: {
+          name: true,
+        },
+      },
       validityDays: true,
     },
   });
@@ -2707,6 +2920,43 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
     return errorState(validityError, {
       shiftTypeId: [validityError],
     });
+  }
+
+  const duplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      userId: parsed.data.userId,
+      id: { not: id },
+    },
+    select: { id: true },
+  });
+
+  if (duplicateEntry) {
+    const duplicateMessage = tr(d, "action.scheduleDuplicateEntry", {
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+
+    return errorState(duplicateMessage, {
+      date: [duplicateMessage],
+      userId: [duplicateMessage],
+    });
+  }
+
+  const shiftTypeDuplicateEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: scheduleDate,
+      shiftTypeId: parsed.data.shiftTypeId,
+      id: { not: id },
+    },
+    select: { id: true },
+  });
+
+  if (shiftTypeDuplicateEntry) {
+    const msg = tr(d, "action.scheduleShiftTypeDuplicate", {
+      shiftTypeName: shiftType.name,
+      date: formatDisplayDateValue(parsed.data.date, locale),
+    });
+    return errorState(msg, { shiftTypeId: [msg] });
   }
 
   try {
@@ -2764,6 +3014,148 @@ export async function updateScheduleAction(_: ActionState, formData: FormData): 
     });
 
     return successState(tr(d, "action.scheduleUpdated"), "/schedule");
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
+export async function moveScheduleEntryAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const actorId = await requireCurrentPermission("schedule:edit");
+  const locale = await getServerLocale();
+  const d = getDictionary(locale);
+
+  const id = parseOptionalString(formData.get("id"))?.trim();
+  const targetDate = parseOptionalString(formData.get("targetDate"))?.trim();
+
+  if (!id || !targetDate) {
+    return errorState(tr(d, "action.missingId"));
+  }
+
+  const entry = await db.scheduleEntry.findUnique({
+    where: { id },
+    include: { user: true, service: true, shiftType: true },
+  });
+
+  if (!entry) {
+    return missingIdState(d);
+  }
+
+  if (entry.locked) {
+    return errorState(tr(d, "action.scheduleMoveSourceLocked"));
+  }
+
+  const parsedTargetDate = parseUtcDate(targetDate);
+  const sourceDate = entry.date;
+
+  // Check if the shift type is valid for the target day
+  const holiday = await db.holiday.findUnique({
+    where: { date: parsedTargetDate },
+    select: { id: true },
+  });
+  const validityError = getScheduleValidityError(entry.shiftType.validityDays, parsedTargetDate, Boolean(holiday), d);
+
+  if (validityError) {
+    return errorState(validityError);
+  }
+
+  // Check for same-user duplicate on target date (but not the same entry)
+  const userDuplicate = await db.scheduleEntry.findFirst({
+    where: {
+      date: parsedTargetDate,
+      userId: entry.userId,
+      id: { not: id },
+    },
+    select: { id: true },
+  });
+
+  if (userDuplicate) {
+    return errorState(tr(d, "action.scheduleDuplicateEntry", {
+      date: formatDisplayDateValue(targetDate, locale),
+    }));
+  }
+
+  // Check for shift-type conflict on target date
+  const conflictEntry = await db.scheduleEntry.findFirst({
+    where: {
+      date: parsedTargetDate,
+      shiftTypeId: entry.shiftTypeId,
+      id: { not: id },
+    },
+    include: { user: true, service: true, shiftType: true },
+  });
+
+  if (conflictEntry) {
+    // If the conflicting entry is locked, block the move
+    if (conflictEntry.locked) {
+      return errorState(tr(d, "action.scheduleMoveLockedConflict", {
+        date: formatDisplayDateValue(targetDate, locale),
+      }));
+    }
+
+    // If the conflicting entry is unlocked, swap dates between the two entries
+    // Also check that the conflict entry's shift type is valid for the source date
+    const sourceHoliday = await db.holiday.findUnique({
+      where: { date: sourceDate },
+      select: { id: true },
+    });
+    const reverseValidityError = getScheduleValidityError(conflictEntry.shiftType.validityDays, sourceDate, Boolean(sourceHoliday), d);
+
+    if (reverseValidityError) {
+      return errorState(reverseValidityError);
+    }
+
+    // Check that the conflict entry's user doesn't already have an entry on the source date
+    const reverseUserDuplicate = await db.scheduleEntry.findFirst({
+      where: {
+        date: sourceDate,
+        userId: conflictEntry.userId,
+        id: { not: conflictEntry.id },
+      },
+      select: { id: true },
+    });
+
+    if (reverseUserDuplicate) {
+      return errorState(tr(d, "action.scheduleDuplicateEntry", {
+        date: formatDisplayDateValue(sourceDate.toISOString().slice(0, 10), locale),
+      }));
+    }
+
+    try {
+      await db.$transaction(async (tx) => {
+        // Move source entry to target date
+        await tx.scheduleEntry.update({
+          where: { id: entry.id },
+          data: { date: parsedTargetDate },
+        });
+
+        // Move conflict entry to source date
+        await tx.scheduleEntry.update({
+          where: { id: conflictEntry.id },
+          data: { date: sourceDate },
+        });
+
+        await writeAuditLog(tx, "SCHEDULE_ENTRY", entry.id, { date: parsedTargetDate.toISOString() }, "UPDATE", actorId);
+        await writeAuditLog(tx, "SCHEDULE_ENTRY", conflictEntry.id, { date: sourceDate.toISOString() }, "UPDATE", actorId);
+      });
+
+      return successState(tr(d, "action.scheduleSwapped"), "/schedule");
+    } catch (error) {
+      return errorState(parseActionError(error, d));
+    }
+  }
+
+  // No conflict — simple move
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.scheduleEntry.update({
+        where: { id: entry.id },
+        data: { date: parsedTargetDate },
+      });
+
+      await writeAuditLog(tx, "SCHEDULE_ENTRY", entry.id, { date: parsedTargetDate.toISOString() }, "UPDATE", actorId);
+    });
+
+    return successState(tr(d, "action.scheduleMoved", { date: formatDisplayDateValue(targetDate, locale) }), "/schedule");
   } catch (error) {
     return errorState(parseActionError(error, d));
   }
@@ -3058,6 +3450,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
       "startsAt",
       "endsAt",
       "crossesMidnight",
+      "sortOrder",
       "validOnMon",
       "validOnTue",
       "validOnWed",
@@ -3081,6 +3474,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
           startsAt: getRequiredCsvValue(record, "startsAt"),
           endsAt: getRequiredCsvValue(record, "endsAt"),
           crossesMidnight: parseCsvBoolean(record.crossesMidnight),
+          sortOrder: parseCsvInteger(record.sortOrder, 5),
           validityDays: buildShiftValidityFromFieldValues({
             validOnMon: parseCsvBoolean(record.validOnMon, true),
             validOnTue: parseCsvBoolean(record.validOnTue, true),
@@ -3128,6 +3522,7 @@ export async function importShiftsCsvAction(_: ActionState, formData: FormData):
             startsAt: shiftType.startsAt,
             endsAt: shiftType.endsAt,
             crossesMidnight: shiftType.crossesMidnight,
+            sortOrder: shiftType.sortOrder,
             validityDays: shiftType.validityDays as Prisma.InputJsonValue | null,
             isActive: shiftType.isActive,
           },
@@ -3504,6 +3899,20 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
           throw new Error(`Schedule entry "${record.date ?? "unknown"}" is locked.`);
         }
 
+        // Enforce one shift type per day globally (skip if this is an update of the same row)
+        const shiftTypeOnDayConflict = await tx.scheduleEntry.findFirst({
+          where: {
+            date,
+            shiftTypeId: shiftType.id,
+            ...(existing ? { id: { not: existing.id } } : {}),
+          },
+          select: { id: true },
+        });
+
+        if (shiftTypeOnDayConflict) {
+          throw new Error(`Shift type "${shiftType.id}" is already scheduled on ${parsed.data.date}. Each shift type can only be used once per day.`);
+        }
+
         const entry = existing
           ? await tx.scheduleEntry.update({
               where: { id: existing.id },
@@ -3561,7 +3970,7 @@ export async function importScheduleCsvAction(_: ActionState, formData: FormData
 }
 
 export async function toggleVacationLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const actorId = await requireCurrentPermission("vacations:edit");
+  const actorId = await requireCurrentPermission("vacations:lock");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3610,7 +4019,7 @@ export async function toggleVacationLockAction(_: ActionState, formData: FormDat
 }
 
 export async function toggleScheduleLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const actorId = await requireCurrentPermission("schedule:edit");
+  const actorId = await requireCurrentPermission("schedule:lock");
   const d = await getDict();
   const id = parseRequiredId(formData);
 
@@ -3660,7 +4069,7 @@ export async function toggleScheduleLockAction(_: ActionState, formData: FormDat
 }
 
 export async function bulkToggleScheduleLockAction(_: ActionState, formData: FormData): Promise<ActionState> {
-  const actorId = await requireCurrentPermission("schedule:edit");
+  const actorId = await requireCurrentPermission("schedule:lock");
   const d = await getDict();
   const month = parseOptionalString(formData.get("month"));
   const locked = formData.get("locked") === "true";
