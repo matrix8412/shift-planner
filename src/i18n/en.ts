@@ -50,6 +50,9 @@ const en: TranslationDictionary = {
   "entity.discardChanges": "Discard changes",
   "entity.delete": "Delete",
   "entity.edit": "Edit",
+  "entity.changePassword": "Change password",
+  "entity.changePasswordDescription": "Enter a new password for this user. Existing sessions will be signed out.",
+  "entity.changePasswordConfirm": "Set password",
   "entity.options": "Options",
   "entity.confirmDelete": "Are you sure you want to delete this record?",
   "entity.actions": "Actions",
@@ -899,6 +902,7 @@ const en: TranslationDictionary = {
   "action.scheduleShiftTypeDuplicate": "Shift type {shiftTypeName} is already scheduled on {date}. Each shift type can only be used once per day.",
 
   "action.userUpdated": "User has been updated.",
+  "action.userPasswordChanged": "User password has been changed.",
   "action.roleUpdated": "Role has been updated.",
   "action.serviceUpdated": "Service has been updated.",
   "action.shiftUpdated": "Shift type has been updated.",

@@ -57,6 +57,7 @@ const defaultAuditRowsPerPage = 8;
 type EntityModuleProps = EntityModuleConfig & {
   action: (state: ActionState, formData: FormData) => Promise<ActionState>;
   editAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
+  changePasswordAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   deleteAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   importAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
   toggleLockAction?: (state: ActionState, formData: FormData) => Promise<ActionState>;
@@ -86,6 +87,11 @@ type ContextMenuState = {
 };
 
 type DeletePromptState = {
+  recordId: string;
+  label: string;
+};
+
+type PasswordPromptState = {
   recordId: string;
   label: string;
 };
@@ -1544,6 +1550,7 @@ export function EntityModule({
   sheetTabs,
   action,
   editAction,
+  changePasswordAction,
   deleteAction,
   importAction,
   toggleLockAction,
@@ -1579,6 +1586,7 @@ export function EntityModule({
   const [menuPosition, setMenuPosition] = useState<RowMenuPosition | null>(null);
   const [calendarMenuState, setCalendarMenuState] = useState<ContextMenuState | null>(null);
   const [deletePromptState, setDeletePromptState] = useState<DeletePromptState | null>(null);
+  const [passwordPromptState, setPasswordPromptState] = useState<PasswordPromptState | null>(null);
   const [auditRow, setAuditRow] = useState<EntityRow | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
   const [createPrefillValues, setCreatePrefillValues] = useState<Record<string, FormValue>>({});
@@ -1599,6 +1607,7 @@ export function EntityModule({
   const visibleColumns = useMemo(() => columns.filter((col) => !hiddenColumns.has(col.key)), [columns, hiddenColumns]);
   const [createState, createFormAction] = useActionState(action, initialActionState);
   const [editState, editFormAction] = useActionState(editAction ?? action, initialActionState);
+  const [changePasswordState, changePasswordFormAction] = useActionState(changePasswordAction ?? action, initialActionState);
   const [deleteState, deleteFormAction] = useActionState(deleteAction ?? action, initialActionState);
   const [importState, importFormAction] = useActionState(importAction ?? action, initialActionState);
   const [toggleLockState, toggleLockFormAction] = useActionState(toggleLockAction ?? action, initialActionState);
@@ -1617,6 +1626,8 @@ export function EntityModule({
     create: createState,
     createError: createState,
     edit: editState,
+    changePassword: changePasswordState,
+    changePasswordError: changePasswordState,
     delete: deleteState,
     deleteError: deleteState,
     import: importState,
@@ -1630,8 +1641,9 @@ export function EntityModule({
   });
   const hasAuditMenu = rows.some((row) => row.auditEntries !== undefined);
   const canEdit = (canEditProp ?? Boolean(editAction)) && Boolean(editAction);
+  const canChangePassword = Boolean(changePasswordAction);
   const canDelete = (canDeleteProp ?? Boolean(deleteAction)) && Boolean(deleteAction);
-  const isOverlayOpen = isSheetOpen || auditRow !== null || isUnsavedChangesDialogOpen || deletePromptState !== null;
+  const isOverlayOpen = isSheetOpen || auditRow !== null || isUnsavedChangesDialogOpen || deletePromptState !== null || passwordPromptState !== null;
   const deferredSearchValue = useDeferredValue(searchValue);
   const normalizedSearch = normalizeSearchValue(deferredSearchValue);
   const availableViews = useMemo<ModuleView[]>(() => {
@@ -1665,7 +1677,7 @@ export function EntityModule({
   const hasActionDropdown = canImport || canExport || Boolean(bulkDeleteAction);
   const canBulkLock = Boolean(bulkLockAction) && canToggleLock;
   const canBulkDelete = Boolean(bulkDeleteAction) && canDelete;
-  const hasContextMenu = canDelete || hasAuditMenu;
+  const hasContextMenu = canDelete || hasAuditMenu || canChangePassword;
   const hasRowActions = canEdit || hasContextMenu;
   const activeSheetTabs = useMemo<SheetTab[]>(() => {
     const configuredTabs =
@@ -1738,6 +1750,7 @@ export function EntityModule({
   useEffect(() => {
     const hasNewCreateSuccess = createState.status === "success" && handledActionStatesRef.current.create !== createState;
     const hasNewEditSuccess = editState.status === "success" && handledActionStatesRef.current.edit !== editState;
+    const hasNewChangePasswordSuccess = changePasswordState.status === "success" && handledActionStatesRef.current.changePassword !== changePasswordState;
     const hasNewDeleteSuccess = deleteState.status === "success" && handledActionStatesRef.current.delete !== deleteState;
     const hasNewImportSuccess = importState.status === "success" && handledActionStatesRef.current.import !== importState;
     const hasNewToggleSuccess = toggleLockState.status === "success" && handledActionStatesRef.current.toggleLock !== toggleLockState;
@@ -1746,12 +1759,13 @@ export function EntityModule({
     const nextSuccessMessage =
       (hasNewCreateSuccess ? createState.message : undefined) ??
       (hasNewEditSuccess ? editState.message : undefined) ??
+      (hasNewChangePasswordSuccess ? changePasswordState.message : undefined) ??
       (hasNewDeleteSuccess ? deleteState.message : undefined) ??
       (hasNewImportSuccess ? importState.message : undefined) ??
       (hasNewToggleSuccess ? toggleLockState.message : undefined) ??
       (hasNewBulkLockSuccess ? bulkLockState.message : undefined) ??
       (hasNewBulkDeleteSuccess ? bulkDeleteState.message : undefined);
-    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess;
+    const hasNewSuccess = hasNewCreateSuccess || hasNewEditSuccess || hasNewChangePasswordSuccess || hasNewDeleteSuccess || hasNewImportSuccess || hasNewToggleSuccess || hasNewBulkLockSuccess || hasNewBulkDeleteSuccess;
 
     if (hasNewSuccess) {
       if (nextSuccessMessage) {
@@ -1776,6 +1790,7 @@ export function EntityModule({
       setCreatePrefillValues({});
       setIsSheetDirty(false);
       setIsUnsavedChangesDialogOpen(false);
+      setPasswordPromptState(null);
       if (!hasNewToggleSuccess && !hasNewBulkLockSuccess) {
         setLockOverrides({});
       }
@@ -1795,6 +1810,7 @@ export function EntityModule({
 
     handledActionStatesRef.current.create = createState;
     handledActionStatesRef.current.edit = editState;
+    handledActionStatesRef.current.changePassword = changePasswordState;
     handledActionStatesRef.current.delete = deleteState;
     handledActionStatesRef.current.import = importState;
     handledActionStatesRef.current.toggleLock = toggleLockState;
@@ -1803,6 +1819,7 @@ export function EntityModule({
   }, [
     bulkDeleteState,
     bulkLockState,
+    changePasswordState,
     createState,
     deleteState,
     editState,
@@ -1824,6 +1841,19 @@ export function EntityModule({
 
     handledActionStatesRef.current.createError = createState;
   }, [createState, notify]);
+
+  useEffect(() => {
+    const hasNewChangePasswordError = changePasswordState.status === "error" && handledActionStatesRef.current.changePasswordError !== changePasswordState;
+
+    if (hasNewChangePasswordError && changePasswordState.message) {
+      notify({
+        tone: "error",
+        message: changePasswordState.message,
+      });
+    }
+
+    handledActionStatesRef.current.changePasswordError = changePasswordState;
+  }, [changePasswordState, notify]);
 
   useEffect(() => {
     const hasNewDeleteError = deleteState.status === "error" && handledActionStatesRef.current.deleteError !== deleteState;
@@ -1947,6 +1977,12 @@ export function EntityModule({
           return;
         }
 
+        if (passwordPromptState) {
+          event.preventDefault();
+          setPasswordPromptState(null);
+          return;
+        }
+
         if (isSheetOpen) {
           event.preventDefault();
           requestSheetClose();
@@ -1960,7 +1996,7 @@ export function EntityModule({
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [deletePromptState, isSheetDirty, isSheetOpen, isUnsavedChangesDialogOpen]);
+  }, [deletePromptState, isSheetDirty, isSheetOpen, isUnsavedChangesDialogOpen, passwordPromptState]);
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
@@ -2308,6 +2344,11 @@ export function EntityModule({
   function requestDeleteRecord(recordId: string, label: string) {
     closeAllMenus();
     setDeletePromptState({ recordId, label });
+  }
+
+  function requestPasswordChange(recordId: string, label: string) {
+    closeAllMenus();
+    setPasswordPromptState({ recordId, label });
   }
 
   function confirmDeleteRecord() {
@@ -3469,11 +3510,75 @@ export function EntityModule({
         </div>
       ) : null}
 
+      {passwordPromptState ? (
+        <div className="confirm-layer" role="presentation">
+          <button type="button" className="confirm-backdrop" aria-label={t("entity.closeConfirm")} onClick={() => setPasswordPromptState(null)} />
+          <section className="confirm-dialog" aria-modal="true" role="dialog" aria-labelledby="password-confirm-title">
+            <div className="stack-tight">
+              <p className="eyebrow">{t("entity.changePassword")}</p>
+              <h2 id="password-confirm-title">{passwordPromptState.label}</h2>
+              <p className="muted">{t("entity.changePasswordDescription")}</p>
+            </div>
+            <form action={changePasswordFormAction} className="stack-tight">
+              <input type="hidden" name="id" value={passwordPromptState.recordId} />
+              <div className="field">
+                <label className="field-label" htmlFor="change-password-input">
+                  {t("auth.newPassword")}
+                </label>
+                <input
+                  id="change-password-input"
+                  name="password"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  className="field-control"
+                  placeholder={t("auth.newPasswordHint")}
+                />
+                {changePasswordState.fieldErrors?.password?.[0] ? <span className="field-error">{changePasswordState.fieldErrors.password[0]}</span> : null}
+              </div>
+              <div className="field">
+                <label className="field-label" htmlFor="change-password-confirm-input">
+                  {t("auth.confirmPassword")}
+                </label>
+                <input
+                  id="change-password-confirm-input"
+                  name="passwordConfirm"
+                  type="password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
+                  className="field-control"
+                  placeholder={t("auth.confirmPasswordPlaceholder")}
+                />
+                {changePasswordState.fieldErrors?.passwordConfirm?.[0] ? <span className="field-error">{changePasswordState.fieldErrors.passwordConfirm[0]}</span> : null}
+              </div>
+              <div className="confirm-actions">
+                <button type="button" className="button secondary" onClick={() => setPasswordPromptState(null)}>
+                  {t("entity.cancel")}
+                </button>
+                <FormSubmitButton label={t("entity.changePasswordConfirm")} />
+              </div>
+            </form>
+          </section>
+        </div>
+      ) : null}
+
       {activeMenuRow && menuPosition ? (
         <div ref={rowMenuRef} className="row-menu" role="menu" style={{ left: `${menuPosition.left}px`, top: `${menuPosition.top}px` }}>
           {activeMenuRow.auditEntries !== undefined ? (
             <button type="button" className="row-menu-item" role="menuitem" onClick={() => openAuditRow(activeMenuRow)}>
               {t("audit.contextMenu")}
+            </button>
+          ) : null}
+          {canChangePassword ? (
+            <button
+              type="button"
+              className="row-menu-item"
+              role="menuitem"
+              onClick={() => requestPasswordChange(activeMenuRow.id, activeMenuRow.label ?? activeMenuRow.id)}
+            >
+              {t("entity.changePassword")}
             </button>
           ) : null}
           {canDelete ? (

@@ -8,6 +8,7 @@ import type { ActionState } from "@/components/entity-module.types";
 import { createAiProvider } from "@/server/ai";
 import { requirePermission } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth/index";
+import { hashPassword } from "@/server/auth/password";
 import { ensurePermissionCatalog, permissionCatalog, type PermissionCode } from "@/server/auth/permissions";
 import { aiSettingsSchema, defaultAiSettings, getAiSettings } from "@/server/config/ai-settings";
 import { defaultNotificationSettings, getNotificationSettings, notificationSettingsSchema } from "@/server/config/notification-settings";
@@ -338,6 +339,11 @@ const userSchema = z.object({
   preferredTheme: z.string().trim().max(40, "Theme is too long.").optional(),
   notificationsEnabled: z.boolean(),
   notificationDays: z.number().int().min(0, "Must be zero or higher.").max(365, "Must be 365 or lower."),
+});
+
+const userPasswordChangeSchema = z.object({
+  password: z.string().min(8, "Password must have at least 8 characters."),
+  passwordConfirm: z.string().min(1, "Confirm password."),
 });
 
 const roleSchema = z.object({
@@ -1346,6 +1352,63 @@ export async function updateUserAction(_: ActionState, formData: FormData): Prom
     });
 
     return successState(tr(d, "action.userUpdated"), "/users");
+  } catch (error) {
+    return errorState(parseActionError(error, d));
+  }
+}
+
+export async function changeUserPasswordAction(_: ActionState, formData: FormData): Promise<ActionState> {
+  const actorId = await requireCurrentPermission("users:edit");
+  const d = await getDict();
+  const id = parseRequiredId(formData);
+
+  if (!id) {
+    return missingIdState(d);
+  }
+
+  const parsed = userPasswordChangeSchema.safeParse({
+    password: parseOptionalString(formData.get("password")) ?? "",
+    passwordConfirm: parseOptionalString(formData.get("passwordConfirm")) ?? "",
+  });
+
+  if (!parsed.success) {
+    return errorState(tr(d, "action.reviewFields"), parseZodError(parsed));
+  }
+
+  const { password, passwordConfirm } = parsed.data;
+
+  if (password !== passwordConfirm) {
+    return errorState(tr(d, "action.reviewFields"), {
+      passwordConfirm: [tr(d, "auth.passwordsMismatch")],
+    });
+  }
+
+  try {
+    const passwordHash = await hashPassword(password);
+
+    await db.$transaction(async (tx) => {
+      const user = await tx.user.update({
+        where: { id },
+        data: { passwordHash },
+      });
+
+      await tx.session.deleteMany({
+        where: { userId: id },
+      });
+
+      await writeAuditLog(
+        tx,
+        "USER",
+        user.id,
+        {
+          passwordChanged: true,
+        },
+        "UPDATE",
+        actorId,
+      );
+    });
+
+    return successState(tr(d, "action.userPasswordChanged"), "/users");
   } catch (error) {
     return errorState(parseActionError(error, d));
   }

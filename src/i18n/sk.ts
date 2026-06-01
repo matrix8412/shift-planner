@@ -50,6 +50,9 @@ const sk: TranslationDictionary = {
   "entity.discardChanges": "Zahodiť zmeny",
   "entity.delete": "Odstrániť",
   "entity.edit": "Upraviť",
+  "entity.changePassword": "Zmeniť heslo",
+  "entity.changePasswordDescription": "Zadajte nové heslo pre tohto používateľa. Existujúce relácie budú odhlásené.",
+  "entity.changePasswordConfirm": "Nastaviť heslo",
   "entity.options": "Možnosti",
   "entity.confirmDelete": "Naozaj chcete odstrániť tento záznam?",
   "entity.actions": "Akcie",
@@ -899,6 +902,7 @@ const sk: TranslationDictionary = {
   "action.scheduleShiftTypeDuplicate": "Typ zmeny {shiftTypeName} je na {date} už naplánovaný. Každý typ zmeny možno použiť len raz za deň.",
 
   "action.userUpdated": "Používateľ bol upravený.",
+  "action.userPasswordChanged": "Heslo používateľa bolo zmenené.",
   "action.roleUpdated": "Rola bola upravená.",
   "action.serviceUpdated": "Služba bola upravená.",
   "action.shiftUpdated": "Typ zmeny bol upravený.",
