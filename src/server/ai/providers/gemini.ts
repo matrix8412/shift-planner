@@ -3,6 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { AiProvider, ScheduleDraftInput, ScheduleDraftOutput } from "@/server/ai/contracts";
 import { buildScheduleGenerationPrompt, getScheduleGenerationSystemPrompt, parseScheduleGenerationResponse } from "@/server/ai/schedule-generation";
 
+const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
+
 export class GeminiProvider implements AiProvider {
   readonly name = "gemini" as const;
   private readonly client: GoogleGenerativeAI;
@@ -13,7 +15,7 @@ export class GeminiProvider implements AiProvider {
 
   async generateScheduleDraft(input: ScheduleDraftInput): Promise<ScheduleDraftOutput> {
     const model = this.client.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: DEFAULT_GEMINI_MODEL,
       systemInstruction: getScheduleGenerationSystemPrompt(),
       generationConfig: {
         responseMimeType: "application/json",
