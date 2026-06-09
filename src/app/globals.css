@@ -2248,6 +2248,68 @@ ul {
   animation: fade-in 180ms ease-out;
 }
 
+.schedule-export-dialog {
+  width: min(720px, calc(100vw - 32px));
+  max-height: min(760px, calc(100dvh - 32px));
+  overflow-y: auto;
+}
+
+.schedule-export-header {
+  margin-bottom: 4px;
+}
+
+.schedule-export-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.schedule-export-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid rgba(199, 218, 221, 0.92);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  cursor: grab;
+  transition: border-color 160ms ease, transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease;
+}
+
+.schedule-export-item.drag-over {
+  border-color: rgba(62, 143, 151, 0.78);
+  box-shadow: 0 14px 28px rgba(62, 143, 151, 0.14);
+  transform: translateY(-1px);
+}
+
+.schedule-export-item.is-disabled {
+  opacity: 0.65;
+}
+
+.schedule-export-item-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+  cursor: pointer;
+}
+
+.schedule-export-item-main span {
+  overflow-wrap: anywhere;
+}
+
+.schedule-export-item-handle {
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+}
+
+.schedule-export-summary {
+  font-size: 0.92rem;
+}
+
 .schedule-generation-overview {
   margin-top: -4px;
 }
@@ -4184,4 +4246,3 @@ ul {
   color: var(--muted);
   font-family: monospace;
 }
-

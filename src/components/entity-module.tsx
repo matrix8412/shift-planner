@@ -70,7 +70,7 @@ type EntityModuleProps = EntityModuleConfig & {
   canImport?: boolean;
   canExport?: boolean;
   canToggleLock?: boolean;
-  headerActions?: ReactNode;
+  headerActions?: ReactNode | ((state: { selectedMonth: string; activeView: ModuleView }) => ReactNode);
   primaryAction?: ReactNode;
   preSurfaceContent?: ReactNode;
   hideHeader?: boolean;
@@ -2954,6 +2954,13 @@ export function EntityModule({
         {viewSwitcherControl}
       </>
     ) : null;
+  const resolvedHeaderActions =
+    typeof headerActions === "function"
+      ? headerActions({
+          selectedMonth,
+          activeView,
+        })
+      : headerActions;
 
   return (
     <>
@@ -2967,7 +2974,7 @@ export function EntityModule({
           ) : null}
 
           <div className="module-header-actions">
-            {headerActions}
+            {resolvedHeaderActions}
 
             {primaryAction || canCreate || hasActionDropdown ? (
               <div className="split-action" ref={actionMenuRef}>
