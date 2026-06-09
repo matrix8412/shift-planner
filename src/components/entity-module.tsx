@@ -2974,7 +2974,6 @@ export function EntityModule({
             {scheduleExportEnabled ? (
               <ScheduleExportAction
                 rows={rows}
-                calendarItems={calendar?.items ?? []}
                 selectedMonth={selectedMonth}
                 isOpen={isScheduleExportDialogOpen}
                 onOpenChange={setIsScheduleExportDialogOpen}

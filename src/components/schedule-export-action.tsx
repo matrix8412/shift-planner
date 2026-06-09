@@ -1,15 +1,14 @@
 "use client";
 
-import { Download, GripVertical, X } from "lucide-react";
+import { Download, GripVertical, Plus, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useBrowserNotifications } from "@/components/browser-notification-provider";
-import type { CalendarItem, EntityCell, EntityRow } from "@/components/entity-module.types";
+import type { EntityCell, EntityRow } from "@/components/entity-module.types";
 import { useI18n } from "@/i18n/context";
 
 type ScheduleExportActionProps = {
   rows: EntityRow[];
-  calendarItems: CalendarItem[];
   selectedMonth: string;
   menuItem?: boolean;
   onOpen?: () => void;
@@ -18,18 +17,26 @@ type ScheduleExportActionProps = {
   renderTrigger?: boolean;
 };
 
-type ExportColumn = {
+type ShiftTypeOption = {
   id: string;
   label: string;
-  enabled: boolean;
-  backgroundColor?: string;
-  textColor?: string;
+};
+
+type ExportGroup = {
+  id: string;
+  label: string;
+  shiftTypeIds: string[];
 };
 
 type ExportDayRow = {
   dateKey: string;
   dateLabel: string;
   assignments: Record<string, string[]>;
+};
+
+type ExportData = {
+  shiftTypes: ShiftTypeOption[];
+  dayRows: ExportDayRow[];
 };
 
 type XlsxFile = {
@@ -42,7 +49,6 @@ const crcTable = createCrcTable();
 
 export function ScheduleExportAction({
   rows,
-  calendarItems,
   selectedMonth,
   menuItem = false,
   onOpen,
@@ -52,16 +58,21 @@ export function ScheduleExportAction({
 }: ScheduleExportActionProps) {
   const { t } = useI18n();
   const { notify } = useBrowserNotifications();
-  const exportData = useMemo(() => buildScheduleExportData(rows, calendarItems, selectedMonth), [calendarItems, rows, selectedMonth]);
+  const exportData = useMemo(() => buildScheduleExportData(rows, selectedMonth), [rows, selectedMonth]);
   const defaultExportFileName = buildMonthFileName(t("schedule.exportDefaultFileName"), selectedMonth);
   const defaultSheetName = t("schedule.exportDefaultSheetName");
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [fileName, setFileName] = useState(defaultExportFileName);
   const [sheetName, setSheetName] = useState(defaultSheetName);
-  const [columns, setColumns] = useState<ExportColumn[]>(exportData.columns);
-  const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null);
-  const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const [groups, setGroups] = useState<ExportGroup[]>(buildInitialGroups(exportData.shiftTypes));
+  const [draggedGroupId, setDraggedGroupId] = useState<string | null>(null);
+  const [dragOverGroupId, setDragOverGroupId] = useState<string | null>(null);
   const isOpen = controlledIsOpen ?? internalIsOpen;
+  const assignedShiftTypeIds = useMemo(() => new Set(groups.flatMap((group) => group.shiftTypeIds)), [groups]);
+  const unassignedShiftTypes = useMemo(
+    () => exportData.shiftTypes.filter((shiftType) => !assignedShiftTypeIds.has(shiftType.id)),
+    [assignedShiftTypeIds, exportData.shiftTypes],
+  );
 
   function setIsOpen(nextValue: boolean) {
     if (controlledIsOpen === undefined) {
@@ -72,8 +83,8 @@ export function ScheduleExportAction({
   }
 
   useEffect(() => {
-    setColumns(exportData.columns);
-  }, [exportData.columns]);
+    setGroups(buildInitialGroups(exportData.shiftTypes));
+  }, [exportData.shiftTypes]);
 
   useEffect(() => {
     setFileName(defaultExportFileName);
@@ -101,25 +112,21 @@ export function ScheduleExportAction({
       return;
     }
 
-    setColumns(exportData.columns);
+    setGroups(buildInitialGroups(exportData.shiftTypes));
     setFileName(defaultExportFileName);
     setSheetName(defaultSheetName);
     onOpen?.();
     setIsOpen(true);
   }
 
-  function handleColumnToggle(columnId: string) {
-    setColumns((current) => current.map((column) => (column.id === columnId ? { ...column, enabled: !column.enabled } : column)));
-  }
-
-  function moveColumn(fromId: string, toId: string) {
+  function moveGroup(fromId: string, toId: string) {
     if (fromId === toId) {
       return;
     }
 
-    setColumns((current) => {
-      const fromIndex = current.findIndex((column) => column.id === fromId);
-      const toIndex = current.findIndex((column) => column.id === toId);
+    setGroups((current) => {
+      const fromIndex = current.findIndex((group) => group.id === fromId);
+      const toIndex = current.findIndex((group) => group.id === toId);
 
       if (fromIndex < 0 || toIndex < 0) {
         return current;
@@ -132,20 +139,57 @@ export function ScheduleExportAction({
     });
   }
 
-  function handleExport() {
-    const enabledColumns = columns.filter((column) => column.enabled);
+  function updateGroupLabel(groupId: string, label: string) {
+    setGroups((current) => current.map((group) => (group.id === groupId ? { ...group, label } : group)));
+  }
 
-    if (enabledColumns.length === 0) {
+  function updateGroupShiftTypes(groupId: string, shiftTypeIds: string[]) {
+    setGroups((current) => {
+      const filteredIds = Array.from(new Set(shiftTypeIds));
+      return current.map((group) => {
+        if (group.id === groupId) {
+          return { ...group, shiftTypeIds: filteredIds };
+        }
+
+        return {
+          ...group,
+          shiftTypeIds: group.shiftTypeIds.filter((shiftTypeId) => !filteredIds.includes(shiftTypeId)),
+        };
+      });
+    });
+  }
+
+  function addGroup() {
+    setGroups((current) => [
+      ...current,
+      {
+        id: createGroupId(),
+        label: t("schedule.exportGroupDefaultLabel", { index: current.length + 1 }),
+        shiftTypeIds: [],
+      },
+    ]);
+  }
+
+  function removeGroup(groupId: string) {
+    setGroups((current) => current.filter((group) => group.id !== groupId));
+  }
+
+  function handleExport() {
+    const activeGroups = groups.filter((group) => group.shiftTypeIds.length > 0);
+
+    if (activeGroups.length === 0) {
       notify({ tone: "error", message: t("schedule.exportSelectColumn") });
       return;
     }
 
     try {
       const workbookRows = [
-        [t("schedule.exportDateColumn"), ...enabledColumns.map((column) => column.label)],
+        [t("schedule.exportDateColumn"), ...activeGroups.map((group) => group.label.trim() || t("schedule.exportUntitledGroup"))],
         ...exportData.dayRows.map((dayRow) => [
           dayRow.dateLabel,
-          ...enabledColumns.map((column) => (dayRow.assignments[column.id] ?? []).join(", ")),
+          ...activeGroups.map((group) =>
+            group.shiftTypeIds.flatMap((shiftTypeId) => dayRow.assignments[shiftTypeId] ?? []).join(", "),
+          ),
         ]),
       ];
       const workbook = buildWorkbookFile({
@@ -154,10 +198,6 @@ export function ScheduleExportAction({
         sheetName,
         defaultSheetName,
         rows: workbookRows,
-        columnStyles: enabledColumns.map((column) => ({
-          backgroundColor: column.backgroundColor,
-          textColor: column.textColor,
-        })),
       });
       const blob = new Blob([workbook], {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -221,55 +261,113 @@ export function ScheduleExportAction({
             </div>
 
             <div className="field">
-              <div className="stack-tight">
-                <span className="field-label">{t("schedule.exportColumns")}</span>
-                <span className="field-description">{t("schedule.exportColumnsHint")}</span>
+              <div className="schedule-export-groups-header">
+                <div className="stack-tight">
+                  <span className="field-label">{t("schedule.exportColumns")}</span>
+                  <span className="field-description">{t("schedule.exportColumnsHint")}</span>
+                </div>
+                <button type="button" className="button secondary schedule-export-add-group" onClick={addGroup}>
+                  <Plus size={16} />
+                  {t("schedule.exportAddGroup")}
+                </button>
               </div>
 
+              {unassignedShiftTypes.length > 0 ? (
+                <div className="schedule-export-unassigned muted">
+                  <strong>{t("schedule.exportUnassigned")}</strong>
+                  <span>{unassignedShiftTypes.map((shiftType) => shiftType.label).join(", ")}</span>
+                </div>
+              ) : null}
+
               <div className="schedule-export-list" role="list">
-                {columns.map((column) => (
-                  <div
-                    key={column.id}
-                    className={`schedule-export-item${dragOverColumnId === column.id ? " drag-over" : ""}${column.enabled ? "" : " is-disabled"}`}
-                    role="listitem"
-                    draggable
-                    onDragStart={() => {
-                      setDraggedColumnId(column.id);
-                      setDragOverColumnId(column.id);
-                    }}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      setDragOverColumnId(column.id);
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      if (draggedColumnId) {
-                        moveColumn(draggedColumnId, column.id);
-                      }
-                      setDraggedColumnId(null);
-                      setDragOverColumnId(null);
-                    }}
-                    onDragEnd={() => {
-                      setDraggedColumnId(null);
-                      setDragOverColumnId(null);
-                    }}
-                  >
-                    <label className="schedule-export-item-main">
-                      <input type="checkbox" checked={column.enabled} onChange={() => handleColumnToggle(column.id)} />
-                      <span>{column.label}</span>
-                    </label>
-                    <span className="schedule-export-item-handle" aria-hidden="true">
-                      <GripVertical size={18} />
-                    </span>
-                  </div>
-                ))}
+                {groups.map((group, index) => {
+                  const availableShiftTypes = exportData.shiftTypes.filter(
+                    (shiftType) => !assignedShiftTypeIds.has(shiftType.id) || group.shiftTypeIds.includes(shiftType.id),
+                  );
+
+                  return (
+                    <div
+                      key={group.id}
+                      className={`schedule-export-item schedule-export-group${dragOverGroupId === group.id ? " drag-over" : ""}`}
+                      role="listitem"
+                      draggable
+                      onDragStart={() => {
+                        setDraggedGroupId(group.id);
+                        setDragOverGroupId(group.id);
+                      }}
+                      onDragOver={(event) => {
+                        event.preventDefault();
+                        setDragOverGroupId(group.id);
+                      }}
+                      onDrop={(event) => {
+                        event.preventDefault();
+                        if (draggedGroupId) {
+                          moveGroup(draggedGroupId, group.id);
+                        }
+                        setDraggedGroupId(null);
+                        setDragOverGroupId(null);
+                      }}
+                      onDragEnd={() => {
+                        setDraggedGroupId(null);
+                        setDragOverGroupId(null);
+                      }}
+                    >
+                      <div className="schedule-export-group-head">
+                        <span className="schedule-export-item-handle" aria-hidden="true">
+                          <GripVertical size={18} />
+                        </span>
+                        <label className="field schedule-export-group-label">
+                          <span className="field-label">{t("schedule.exportGroupLabel", { index: index + 1 })}</span>
+                          <input
+                            type="text"
+                            className="field-control"
+                            value={group.label}
+                            onChange={(event) => updateGroupLabel(group.id, event.currentTarget.value)}
+                            placeholder={t("schedule.exportGroupDefaultLabel", { index: index + 1 })}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className="button secondary schedule-export-group-remove"
+                          onClick={() => removeGroup(group.id)}
+                          disabled={groups.length <= 1}
+                          title={t("schedule.exportRemoveGroup")}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      <label className="field">
+                        <span className="field-label">{t("schedule.exportGroupAssignments")}</span>
+                        <select
+                          multiple
+                          className="field-control multiselect-control"
+                          value={group.shiftTypeIds}
+                          onChange={(event) =>
+                            updateGroupShiftTypes(
+                              group.id,
+                              Array.from(event.currentTarget.selectedOptions, (option) => option.value),
+                            )
+                          }
+                        >
+                          {availableShiftTypes.map((shiftType) => (
+                            <option key={shiftType.id} value={shiftType.id}>
+                              {shiftType.label}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="field-description">{t("schedule.exportGroupAssignmentsHint")}</span>
+                      </label>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
             <div className="schedule-export-summary muted">
               {t("schedule.exportSummary", {
                 days: exportData.dayRows.length,
-                columns: columns.filter((column) => column.enabled).length,
+                columns: groups.filter((group) => group.shiftTypeIds.length > 0).length,
               })}
             </div>
 
@@ -289,22 +387,21 @@ export function ScheduleExportAction({
   );
 }
 
-function buildScheduleExportData(rows: EntityRow[], calendarItems: CalendarItem[], selectedMonth: string) {
-  const colorByRecordId = new Map(
-    calendarItems.map((item) => [
-      item.recordId ?? item.id,
-      {
-        backgroundColor: item.stripColor ?? item.backgroundColor,
-        textColor: item.textColor,
-      },
-    ]),
-  );
+function buildInitialGroups(shiftTypes: ShiftTypeOption[]) {
+  return shiftTypes.map((shiftType) => ({
+    id: createGroupId(),
+    label: shiftType.label,
+    shiftTypeIds: [shiftType.id],
+  }));
+}
+
+function buildScheduleExportData(rows: EntityRow[], selectedMonth: string): ExportData {
   const sortedRows = [...rows].sort((a, b) => {
     const left = typeof a.formValues?.date === "string" ? a.formValues.date : "";
     const right = typeof b.formValues?.date === "string" ? b.formValues.date : "";
     return left.localeCompare(right);
   });
-  const columnMap = new Map<string, ExportColumn>();
+  const shiftTypeMap = new Map<string, ShiftTypeOption>();
   const dayMap = new Map<string, ExportDayRow>();
 
   for (const row of sortedRows) {
@@ -320,17 +417,13 @@ function buildScheduleExportData(rows: EntityRow[], calendarItems: CalendarItem[
     const shiftLabel = getCellText(row.cells.shift);
     const userLabel = getCellText(row.cells.user);
     const note = typeof row.formValues?.note === "string" ? row.formValues.note.trim() : "";
-    const columnLabel = serviceLabel && shiftLabel ? `${serviceLabel} / ${shiftLabel}` : shiftLabel || serviceLabel || shiftTypeId;
+    const shiftTypeLabel = serviceLabel && shiftLabel ? `${serviceLabel} / ${shiftLabel}` : shiftLabel || serviceLabel || shiftTypeId;
     const assignmentLabel = note ? `${userLabel} (${note})` : userLabel;
-    const calendarColors = colorByRecordId.get(row.id);
 
-    if (!columnMap.has(shiftTypeId)) {
-      columnMap.set(shiftTypeId, {
+    if (!shiftTypeMap.has(shiftTypeId)) {
+      shiftTypeMap.set(shiftTypeId, {
         id: shiftTypeId,
-        label: columnLabel,
-        enabled: true,
-        backgroundColor: calendarColors?.backgroundColor,
-        textColor: calendarColors?.textColor,
+        label: shiftTypeLabel,
       });
     }
 
@@ -349,9 +442,13 @@ function buildScheduleExportData(rows: EntityRow[], calendarItems: CalendarItem[
   }
 
   return {
-    columns: Array.from(columnMap.values()).sort((a, b) => a.label.localeCompare(b.label)),
+    shiftTypes: Array.from(shiftTypeMap.values()).sort((a, b) => a.label.localeCompare(b.label)),
     dayRows: Array.from(dayMap.values()).sort((a, b) => a.dateKey.localeCompare(b.dateKey)),
   };
+}
+
+function createGroupId() {
+  return `group-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function getCellText(cell: EntityCell | undefined) {
@@ -391,12 +488,10 @@ function buildWorkbookFile(input: {
   sheetName: string;
   defaultSheetName: string;
   rows: string[][];
-  columnStyles: Array<{ backgroundColor?: string; textColor?: string }>;
 }) {
   const sheetName = sanitizeSheetName(input.sheetName, input.defaultSheetName);
   const createdAt = new Date().toISOString();
   const columnWidths = getColumnWidths(input.rows);
-  const styleCatalog = buildStyleCatalog(input.columnStyles);
   const files: XlsxFile[] = [
     {
       path: "[Content_Types].xml",
@@ -457,18 +552,18 @@ function buildWorkbookFile(input: {
     },
     {
       path: "xl/styles.xml",
-      content: encodeXml(buildStylesXml(styleCatalog)),
+      content: encodeXml(buildStylesXml()),
     },
     {
       path: "xl/worksheets/sheet1.xml",
-      content: encodeXml(buildWorksheetXml(input.rows, columnWidths, styleCatalog.headerStyleIndexes)),
+      content: encodeXml(buildWorksheetXml(input.rows, columnWidths)),
     },
   ];
 
   return createZipArchive(files);
 }
 
-function buildWorksheetXml(rows: string[][], columnWidths: number[], headerStyleIndexes: number[]) {
+function buildWorksheetXml(rows: string[][], columnWidths: number[]) {
   const lastColumnIndex = Math.max(rows[0]?.length ?? 1, 1);
   const lastCellRef = `${toColumnName(lastColumnIndex)}${Math.max(rows.length, 1)}`;
   const colsXml = columnWidths
@@ -479,7 +574,7 @@ function buildWorksheetXml(rows: string[][], columnWidths: number[], headerStyle
       const cellsXml = row
         .map((value, columnIndex) => {
           const cellRef = `${toColumnName(columnIndex + 1)}${rowIndex + 1}`;
-          const styleId = rowIndex === 0 ? (headerStyleIndexes[columnIndex] ?? 1) : 0;
+          const styleId = rowIndex === 0 ? 1 : 0;
           return `<c r="${cellRef}" t="inlineStr" s="${styleId}"><is><t xml:space="preserve">${escapeXml(value)}</t></is></c>`;
         })
         .join("");
@@ -649,66 +744,16 @@ function calculateCrc32(input: Uint8Array) {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function buildStyleCatalog(columnStyles: Array<{ backgroundColor?: string; textColor?: string }>) {
-  const fonts = ['<font><sz val="11"/><name val="Calibri"/><family val="2"/></font>'];
-  const fontMap = new Map<string, number>();
-  const fills = ['<fill><patternFill patternType="none"/></fill>', '<fill><patternFill patternType="gray125"/></fill>'];
-  const fillMap = new Map<string, number>();
-  const cellXfs = ['<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>'];
-  const headerStyleIndexes: number[] = [1];
-
-  const defaultHeaderFontKey = "bold|FF000000";
-  fonts.push('<font><b/><sz val="11"/><color rgb="FF000000"/><name val="Calibri"/><family val="2"/></font>');
-  fontMap.set(defaultHeaderFontKey, 1);
-  cellXfs.push('<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>');
-
-  for (const style of columnStyles) {
-    const background = normalizeExcelColor(style.backgroundColor);
-    const text = normalizeExcelColor(style.textColor) ?? "FF111111";
-
-    if (!background) {
-      headerStyleIndexes.push(1);
-      continue;
-    }
-
-    const fontKey = `bold|${text}`;
-    let fontId = fontMap.get(fontKey);
-    if (fontId === undefined) {
-      fontId = fonts.length;
-      fonts.push(`<font><b/><sz val="11"/><color rgb="${text}"/><name val="Calibri"/><family val="2"/></font>`);
-      fontMap.set(fontKey, fontId);
-    }
-
-    let fillId = fillMap.get(background);
-    if (fillId === undefined) {
-      fillId = fills.length;
-      fills.push(
-        `<fill><patternFill patternType="solid"><fgColor rgb="${background}"/><bgColor indexed="64"/></patternFill></fill>`,
-      );
-      fillMap.set(background, fillId);
-    }
-
-    const xfId = cellXfs.length;
-    cellXfs.push(`<xf numFmtId="0" fontId="${fontId}" fillId="${fillId}" borderId="0" xfId="0" applyFont="1" applyFill="1"/>`);
-    headerStyleIndexes.push(xfId);
-  }
-
-  return {
-    fonts,
-    fills,
-    cellXfs,
-    headerStyleIndexes,
-  };
-}
-
-function buildStylesXml(styleCatalog: { fonts: string[]; fills: string[]; cellXfs: string[] }) {
+function buildStylesXml() {
   return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-  <fonts count="${styleCatalog.fonts.length}">
-    ${styleCatalog.fonts.join("")}
+  <fonts count="2">
+    <font><sz val="11"/><name val="Calibri"/><family val="2"/></font>
+    <font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font>
   </fonts>
-  <fills count="${styleCatalog.fills.length}">
-    ${styleCatalog.fills.join("")}
+  <fills count="2">
+    <fill><patternFill patternType="none"/></fill>
+    <fill><patternFill patternType="gray125"/></fill>
   </fills>
   <borders count="1">
     <border><left/><right/><top/><bottom/><diagonal/></border>
@@ -716,48 +761,12 @@ function buildStylesXml(styleCatalog: { fonts: string[]; fills: string[]; cellXf
   <cellStyleXfs count="1">
     <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
   </cellStyleXfs>
-  <cellXfs count="${styleCatalog.cellXfs.length}">
-    ${styleCatalog.cellXfs.join("")}
+  <cellXfs count="2">
+    <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+    <xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
   </cellXfs>
   <cellStyles count="1">
     <cellStyle name="Normal" xfId="0" builtinId="0"/>
   </cellStyles>
 </styleSheet>`;
-}
-
-function normalizeExcelColor(color: string | undefined) {
-  if (!color) {
-    return undefined;
-  }
-
-  const value = color.trim();
-  const hexMatch = value.match(/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i);
-  if (hexMatch) {
-    const hex = hexMatch[1];
-    if (hex.length === 3) {
-      const expanded = hex
-        .split("")
-        .map((char) => char + char)
-        .join("");
-      return `FF${expanded.toUpperCase()}`;
-    }
-
-    if (hex.length === 6) {
-      return `FF${hex.toUpperCase()}`;
-    }
-
-    return hex.toUpperCase();
-  }
-
-  const rgbMatch = value.match(/^rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
-  if (rgbMatch) {
-    const [, r, g, b] = rgbMatch;
-    return `FF${toHexChannel(Number(r))}${toHexChannel(Number(g))}${toHexChannel(Number(b))}`;
-  }
-
-  return undefined;
-}
-
-function toHexChannel(value: number) {
-  return Math.max(0, Math.min(255, value)).toString(16).toUpperCase().padStart(2, "0");
 }
