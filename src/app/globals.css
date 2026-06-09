@@ -2249,9 +2249,17 @@ ul {
 }
 
 .schedule-export-dialog {
-  width: min(720px, calc(100vw - 32px));
-  max-height: min(760px, calc(100dvh - 32px));
-  overflow-y: auto;
+  width: min(820px, 100vw);
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  border-radius: 0;
+  box-shadow: -24px 0 60px rgba(41, 69, 80, 0.12);
+  animation: slide-in-right 220ms ease-out;
+}
+
+.schedule-export-content {
+  flex: 1;
 }
 
 .schedule-export-header {
@@ -2349,6 +2357,11 @@ ul {
 
 .schedule-export-summary {
   font-size: 0.92rem;
+}
+
+.schedule-export-actions {
+  margin-top: auto;
+  padding-top: 8px;
 }
 
 @media (max-width: 720px) {

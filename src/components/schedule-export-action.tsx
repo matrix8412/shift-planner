@@ -228,9 +228,9 @@ export function ScheduleExportAction({
       ) : null}
 
       {isOpen ? (
-        <div className="confirm-layer" role="presentation">
-          <button type="button" className="confirm-backdrop" aria-label={t("schedule.exportClose")} onClick={() => setIsOpen(false)} />
-          <section className="confirm-dialog schedule-export-dialog" aria-modal="true" role="dialog" aria-labelledby="schedule-export-title">
+        <div className="sheet-layer" role="presentation">
+          <button type="button" className="sheet-backdrop" aria-label={t("schedule.exportClose")} onClick={() => setIsOpen(false)} />
+          <section className="sheet-panel schedule-export-dialog" aria-modal="true" role="dialog" aria-labelledby="schedule-export-title">
             <div className="sheet-header schedule-export-header">
               <div className="stack-tight">
                 <p className="eyebrow">{t("schedule.exportXlsx")}</p>
@@ -242,143 +242,145 @@ export function ScheduleExportAction({
               </button>
             </div>
 
-            <div className="stack-tight">
-              <label className="field">
-                <span className="field-label">{t("schedule.exportFileName")}</span>
-                <input
-                  type="text"
-                  className="field-control"
-                  value={fileName}
-                  onChange={(event) => setFileName(event.currentTarget.value)}
-                  placeholder={defaultExportFileName}
-                />
-              </label>
+            <div className="schedule-export-content stack">
+              <div className="stack-tight">
+                <label className="field">
+                  <span className="field-label">{t("schedule.exportFileName")}</span>
+                  <input
+                    type="text"
+                    className="field-control"
+                    value={fileName}
+                    onChange={(event) => setFileName(event.currentTarget.value)}
+                    placeholder={defaultExportFileName}
+                  />
+                </label>
 
-              <label className="field">
-                <span className="field-label">{t("schedule.exportSheetName")}</span>
-                <input type="text" className="field-control" value={sheetName} onChange={(event) => setSheetName(event.currentTarget.value)} />
-              </label>
-            </div>
-
-            <div className="field">
-              <div className="schedule-export-groups-header">
-                <div className="stack-tight">
-                  <span className="field-label">{t("schedule.exportColumns")}</span>
-                  <span className="field-description">{t("schedule.exportColumnsHint")}</span>
-                </div>
-                <button type="button" className="button secondary schedule-export-add-group" onClick={addGroup}>
-                  <Plus size={16} />
-                  {t("schedule.exportAddGroup")}
-                </button>
+                <label className="field">
+                  <span className="field-label">{t("schedule.exportSheetName")}</span>
+                  <input type="text" className="field-control" value={sheetName} onChange={(event) => setSheetName(event.currentTarget.value)} />
+                </label>
               </div>
 
-              {unassignedShiftTypes.length > 0 ? (
-                <div className="schedule-export-unassigned muted">
-                  <strong>{t("schedule.exportUnassigned")}</strong>
-                  <span>{unassignedShiftTypes.map((shiftType) => shiftType.label).join(", ")}</span>
+              <div className="field">
+                <div className="schedule-export-groups-header">
+                  <div className="stack-tight">
+                    <span className="field-label">{t("schedule.exportColumns")}</span>
+                    <span className="field-description">{t("schedule.exportColumnsHint")}</span>
+                  </div>
+                  <button type="button" className="button secondary schedule-export-add-group" onClick={addGroup}>
+                    <Plus size={16} />
+                    {t("schedule.exportAddGroup")}
+                  </button>
                 </div>
-              ) : null}
 
-              <div className="schedule-export-list" role="list">
-                {groups.map((group, index) => {
-                  const availableShiftTypes = exportData.shiftTypes.filter(
-                    (shiftType) => !assignedShiftTypeIds.has(shiftType.id) || group.shiftTypeIds.includes(shiftType.id),
-                  );
+                {unassignedShiftTypes.length > 0 ? (
+                  <div className="schedule-export-unassigned muted">
+                    <strong>{t("schedule.exportUnassigned")}</strong>
+                    <span>{unassignedShiftTypes.map((shiftType) => shiftType.label).join(", ")}</span>
+                  </div>
+                ) : null}
 
-                  return (
-                    <div
-                      key={group.id}
-                      className={`schedule-export-item schedule-export-group${dragOverGroupId === group.id ? " drag-over" : ""}`}
-                      role="listitem"
-                      draggable
-                      onDragStart={() => {
-                        setDraggedGroupId(group.id);
-                        setDragOverGroupId(group.id);
-                      }}
-                      onDragOver={(event) => {
-                        event.preventDefault();
-                        setDragOverGroupId(group.id);
-                      }}
-                      onDrop={(event) => {
-                        event.preventDefault();
-                        if (draggedGroupId) {
-                          moveGroup(draggedGroupId, group.id);
-                        }
-                        setDraggedGroupId(null);
-                        setDragOverGroupId(null);
-                      }}
-                      onDragEnd={() => {
-                        setDraggedGroupId(null);
-                        setDragOverGroupId(null);
-                      }}
-                    >
-                      <div className="schedule-export-group-head">
-                        <span className="schedule-export-item-handle" aria-hidden="true">
-                          <GripVertical size={18} />
-                        </span>
-                        <label className="field schedule-export-group-label">
-                          <span className="field-label">{t("schedule.exportGroupLabel", { index: index + 1 })}</span>
-                          <input
-                            type="text"
-                            className="field-control"
-                            value={group.label}
-                            onChange={(event) => updateGroupLabel(group.id, event.currentTarget.value)}
-                            placeholder={t("schedule.exportGroupDefaultLabel", { index: index + 1 })}
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          className="button secondary schedule-export-group-remove"
-                          onClick={() => removeGroup(group.id)}
-                          disabled={groups.length <= 1}
-                          title={t("schedule.exportRemoveGroup")}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
+                <div className="schedule-export-list" role="list">
+                  {groups.map((group, index) => {
+                    const availableShiftTypes = exportData.shiftTypes.filter(
+                      (shiftType) => !assignedShiftTypeIds.has(shiftType.id) || group.shiftTypeIds.includes(shiftType.id),
+                    );
 
-                      <label className="field">
-                        <span className="field-label">{t("schedule.exportGroupAssignments")}</span>
-                        <select
-                          multiple
-                          className="field-control multiselect-control"
-                          value={group.shiftTypeIds}
-                          onChange={(event) =>
-                            updateGroupShiftTypes(
-                              group.id,
-                              Array.from(event.currentTarget.selectedOptions, (option) => option.value),
-                            )
+                    return (
+                      <div
+                        key={group.id}
+                        className={`schedule-export-item schedule-export-group${dragOverGroupId === group.id ? " drag-over" : ""}`}
+                        role="listitem"
+                        draggable
+                        onDragStart={() => {
+                          setDraggedGroupId(group.id);
+                          setDragOverGroupId(group.id);
+                        }}
+                        onDragOver={(event) => {
+                          event.preventDefault();
+                          setDragOverGroupId(group.id);
+                        }}
+                        onDrop={(event) => {
+                          event.preventDefault();
+                          if (draggedGroupId) {
+                            moveGroup(draggedGroupId, group.id);
                           }
-                        >
-                          {availableShiftTypes.map((shiftType) => (
-                            <option key={shiftType.id} value={shiftType.id}>
-                              {shiftType.label}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="field-description">{t("schedule.exportGroupAssignmentsHint")}</span>
-                      </label>
-                    </div>
-                  );
+                          setDraggedGroupId(null);
+                          setDragOverGroupId(null);
+                        }}
+                        onDragEnd={() => {
+                          setDraggedGroupId(null);
+                          setDragOverGroupId(null);
+                        }}
+                      >
+                        <div className="schedule-export-group-head">
+                          <span className="schedule-export-item-handle" aria-hidden="true">
+                            <GripVertical size={18} />
+                          </span>
+                          <label className="field schedule-export-group-label">
+                            <span className="field-label">{t("schedule.exportGroupLabel", { index: index + 1 })}</span>
+                            <input
+                              type="text"
+                              className="field-control"
+                              value={group.label}
+                              onChange={(event) => updateGroupLabel(group.id, event.currentTarget.value)}
+                              placeholder={t("schedule.exportGroupDefaultLabel", { index: index + 1 })}
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="button secondary schedule-export-group-remove"
+                            onClick={() => removeGroup(group.id)}
+                            disabled={groups.length <= 1}
+                            title={t("schedule.exportRemoveGroup")}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+
+                        <label className="field">
+                          <span className="field-label">{t("schedule.exportGroupAssignments")}</span>
+                          <select
+                            multiple
+                            className="field-control multiselect-control"
+                            value={group.shiftTypeIds}
+                            onChange={(event) =>
+                              updateGroupShiftTypes(
+                                group.id,
+                                Array.from(event.currentTarget.selectedOptions, (option) => option.value),
+                              )
+                            }
+                          >
+                            {availableShiftTypes.map((shiftType) => (
+                              <option key={shiftType.id} value={shiftType.id}>
+                                {shiftType.label}
+                              </option>
+                            ))}
+                          </select>
+                          <span className="field-description">{t("schedule.exportGroupAssignmentsHint")}</span>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="schedule-export-summary muted">
+                {t("schedule.exportSummary", {
+                  days: exportData.dayRows.length,
+                  columns: groups.filter((group) => group.shiftTypeIds.length > 0).length,
                 })}
               </div>
-            </div>
 
-            <div className="schedule-export-summary muted">
-              {t("schedule.exportSummary", {
-                days: exportData.dayRows.length,
-                columns: groups.filter((group) => group.shiftTypeIds.length > 0).length,
-              })}
-            </div>
-
-            <div className="confirm-actions">
-              <button type="button" className="button secondary" onClick={() => setIsOpen(false)}>
-                {t("entity.cancel")}
-              </button>
-              <button type="button" className="button" onClick={handleExport}>
-                <Download size={18} />
-                {t("schedule.exportDownload")}
-              </button>
+              <div className="confirm-actions schedule-export-actions">
+                <button type="button" className="button secondary" onClick={() => setIsOpen(false)}>
+                  {t("entity.cancel")}
+                </button>
+                <button type="button" className="button" onClick={handleExport}>
+                  <Download size={18} />
+                  {t("schedule.exportDownload")}
+                </button>
+              </div>
             </div>
           </section>
         </div>
