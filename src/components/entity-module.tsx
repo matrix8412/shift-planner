@@ -28,6 +28,7 @@ import { useRouter } from "next/navigation";
 import { useBrowserNotifications } from "@/components/browser-notification-provider";
 import SearchableSelect from "@/components/searchable-select";
 import { FormSubmitButton } from "@/components/form-submit-button";
+import { ScheduleExportAction } from "@/components/schedule-export-action";
 import { useI18n } from "@/i18n/context";
 import { saveColumnPreferences, savePageSizePreference } from "@/server/actions/column-preferences";
 import type {
@@ -70,7 +71,8 @@ type EntityModuleProps = EntityModuleConfig & {
   canImport?: boolean;
   canExport?: boolean;
   canToggleLock?: boolean;
-  headerActions?: ReactNode | ((state: { selectedMonth: string; activeView: ModuleView }) => ReactNode);
+  scheduleExportEnabled?: boolean;
+  headerActions?: ReactNode;
   primaryAction?: ReactNode;
   preSurfaceContent?: ReactNode;
   hideHeader?: boolean;
@@ -1563,6 +1565,7 @@ export function EntityModule({
   canImport: canImportProp,
   canExport = true,
   canToggleLock: canToggleLockProp,
+  scheduleExportEnabled = false,
   createDisabledReason,
   importDisabledReason,
   searchPlaceholder,
@@ -2954,13 +2957,6 @@ export function EntityModule({
         {viewSwitcherControl}
       </>
     ) : null;
-  const resolvedHeaderActions =
-    typeof headerActions === "function"
-      ? headerActions({
-          selectedMonth,
-          activeView,
-        })
-      : headerActions;
 
   return (
     <>
@@ -2974,7 +2970,8 @@ export function EntityModule({
           ) : null}
 
           <div className="module-header-actions">
-            {resolvedHeaderActions}
+            {scheduleExportEnabled ? <ScheduleExportAction rows={rows} calendarItems={calendar?.items ?? []} selectedMonth={selectedMonth} /> : null}
+            {headerActions}
 
             {primaryAction || canCreate || hasActionDropdown ? (
               <div className="split-action" ref={actionMenuRef}>

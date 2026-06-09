@@ -20,7 +20,9 @@ export function middleware(request: NextRequest) {
   const sessionCookie = request.cookies.get("pohotovosti.session");
 
   if (!sessionCookie?.value) {
-    const loginUrl = new URL("/login", request.url);
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = "/login";
+    loginUrl.search = "";
     return NextResponse.redirect(loginUrl);
   }
 

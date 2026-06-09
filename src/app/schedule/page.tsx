@@ -1,6 +1,5 @@
 import { AccessDenied } from "@/components/access-denied";
 import { EntityModule } from "@/components/entity-module";
-import { ScheduleExportAction } from "@/components/schedule-export-action";
 import { ScheduleGenerateAction } from "@/components/schedule-generate-action";
 import { getModuleAccess } from "@/server/auth/access";
 import { getCurrentUser } from "@/server/auth";
@@ -38,13 +37,7 @@ export default async function SchedulePage() {
       canImport={access.canImportExport}
       canExport={false}
       canToggleLock={access.canEdit}
-      headerActions={
-        access.canImportExport
-          ? ({ selectedMonth }) => (
-              <ScheduleExportAction rows={moduleConfig.rows} calendarItems={moduleConfig.calendar?.items ?? []} selectedMonth={selectedMonth} />
-            )
-          : null
-      }
+      scheduleExportEnabled={access.canImportExport}
       primaryAction={
         access.canGenerate ? (
           <ScheduleGenerateAction
