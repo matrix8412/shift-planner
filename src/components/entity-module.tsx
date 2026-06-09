@@ -2970,7 +2970,6 @@ export function EntityModule({
           ) : null}
 
           <div className="module-header-actions">
-            {scheduleExportEnabled ? <ScheduleExportAction rows={rows} calendarItems={calendar?.items ?? []} selectedMonth={selectedMonth} /> : null}
             {headerActions}
 
             {primaryAction || canCreate || hasActionDropdown ? (
@@ -3014,6 +3013,15 @@ export function EntityModule({
                         <Download size={16} />
                         {t("entity.exportCsv")}
                       </button>
+                    ) : null}
+                    {scheduleExportEnabled ? (
+                      <ScheduleExportAction
+                        rows={rows}
+                        calendarItems={calendar?.items ?? []}
+                        selectedMonth={selectedMonth}
+                        menuItem
+                        onOpen={() => setActionMenuOpen(false)}
+                      />
                     ) : null}
 
                   </div>

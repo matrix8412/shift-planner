@@ -35,7 +35,7 @@ export default async function SchedulePage() {
       canEdit={access.canEdit}
       canDelete={access.canDelete}
       canImport={access.canImportExport}
-      canExport={false}
+      canExport={access.canImportExport}
       canToggleLock={access.canEdit}
       scheduleExportEnabled={access.canImportExport}
       primaryAction={

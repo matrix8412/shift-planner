@@ -11,6 +11,8 @@ type ScheduleExportActionProps = {
   rows: EntityRow[];
   calendarItems: CalendarItem[];
   selectedMonth: string;
+  menuItem?: boolean;
+  onOpen?: () => void;
 };
 
 type ExportColumn = {
@@ -35,7 +37,7 @@ type XlsxFile = {
 const encoder = new TextEncoder();
 const crcTable = createCrcTable();
 
-export function ScheduleExportAction({ rows, calendarItems, selectedMonth }: ScheduleExportActionProps) {
+export function ScheduleExportAction({ rows, calendarItems, selectedMonth, menuItem = false, onOpen }: ScheduleExportActionProps) {
   const { t } = useI18n();
   const { notify } = useBrowserNotifications();
   const exportData = useMemo(() => buildScheduleExportData(rows, calendarItems, selectedMonth), [calendarItems, rows, selectedMonth]);
@@ -81,6 +83,7 @@ export function ScheduleExportAction({ rows, calendarItems, selectedMonth }: Sch
     setColumns(exportData.columns);
     setFileName(defaultExportFileName);
     setSheetName(defaultSheetName);
+    onOpen?.();
     setIsOpen(true);
   }
 
@@ -156,8 +159,8 @@ export function ScheduleExportAction({ rows, calendarItems, selectedMonth }: Sch
 
   return (
     <>
-      <button type="button" className="button secondary" onClick={openDialog}>
-        <Download size={18} />
+      <button type="button" className={menuItem ? "action-dropdown-item" : "button secondary"} role={menuItem ? "menuitem" : undefined} onClick={openDialog}>
+        <Download size={menuItem ? 16 : 18} />
         {t("schedule.exportXlsx")}
       </button>
 
