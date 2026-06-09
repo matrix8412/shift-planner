@@ -13,6 +13,9 @@ type ScheduleExportActionProps = {
   selectedMonth: string;
   menuItem?: boolean;
   onOpen?: () => void;
+  isOpen?: boolean;
+  onOpenChange?: (isOpen: boolean) => void;
+  renderTrigger?: boolean;
 };
 
 type ExportColumn = {
@@ -37,18 +40,36 @@ type XlsxFile = {
 const encoder = new TextEncoder();
 const crcTable = createCrcTable();
 
-export function ScheduleExportAction({ rows, calendarItems, selectedMonth, menuItem = false, onOpen }: ScheduleExportActionProps) {
+export function ScheduleExportAction({
+  rows,
+  calendarItems,
+  selectedMonth,
+  menuItem = false,
+  onOpen,
+  isOpen: controlledIsOpen,
+  onOpenChange,
+  renderTrigger = true,
+}: ScheduleExportActionProps) {
   const { t } = useI18n();
   const { notify } = useBrowserNotifications();
   const exportData = useMemo(() => buildScheduleExportData(rows, calendarItems, selectedMonth), [calendarItems, rows, selectedMonth]);
   const defaultExportFileName = buildMonthFileName(t("schedule.exportDefaultFileName"), selectedMonth);
   const defaultSheetName = t("schedule.exportDefaultSheetName");
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
   const [fileName, setFileName] = useState(defaultExportFileName);
   const [sheetName, setSheetName] = useState(defaultSheetName);
   const [columns, setColumns] = useState<ExportColumn[]>(exportData.columns);
   const [draggedColumnId, setDraggedColumnId] = useState<string | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const isOpen = controlledIsOpen ?? internalIsOpen;
+
+  function setIsOpen(nextValue: boolean) {
+    if (controlledIsOpen === undefined) {
+      setInternalIsOpen(nextValue);
+    }
+
+    onOpenChange?.(nextValue);
+  }
 
   useEffect(() => {
     setColumns(exportData.columns);
@@ -159,10 +180,12 @@ export function ScheduleExportAction({ rows, calendarItems, selectedMonth, menuI
 
   return (
     <>
-      <button type="button" className={menuItem ? "action-dropdown-item" : "button secondary"} role={menuItem ? "menuitem" : undefined} onClick={openDialog}>
-        <Download size={menuItem ? 16 : 18} />
-        {t("schedule.exportXlsx")}
-      </button>
+      {renderTrigger ? (
+        <button type="button" className={menuItem ? "action-dropdown-item" : "button secondary"} role={menuItem ? "menuitem" : undefined} onClick={openDialog}>
+          <Download size={menuItem ? 16 : 18} />
+          {t("schedule.exportXlsx")}
+        </button>
+      ) : null}
 
       {isOpen ? (
         <div className="confirm-layer" role="presentation">

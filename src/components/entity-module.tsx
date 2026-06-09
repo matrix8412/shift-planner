@@ -1592,6 +1592,7 @@ export function EntityModule({
   const [passwordPromptState, setPasswordPromptState] = useState<PasswordPromptState | null>(null);
   const [auditRow, setAuditRow] = useState<EntityRow | null>(null);
   const [actionMenuOpen, setActionMenuOpen] = useState(false);
+  const [isScheduleExportDialogOpen, setIsScheduleExportDialogOpen] = useState(false);
   const [createPrefillValues, setCreatePrefillValues] = useState<Record<string, FormValue>>({});
   const [activeSheetTabId, setActiveSheetTabId] = useState<string | null>(null);
   const [searchValue, setSearchValue] = useState("");
@@ -2970,6 +2971,16 @@ export function EntityModule({
           ) : null}
 
           <div className="module-header-actions">
+            {scheduleExportEnabled ? (
+              <ScheduleExportAction
+                rows={rows}
+                calendarItems={calendar?.items ?? []}
+                selectedMonth={selectedMonth}
+                isOpen={isScheduleExportDialogOpen}
+                onOpenChange={setIsScheduleExportDialogOpen}
+                renderTrigger={false}
+              />
+            ) : null}
             {headerActions}
 
             {primaryAction || canCreate || hasActionDropdown ? (
@@ -3015,13 +3026,18 @@ export function EntityModule({
                       </button>
                     ) : null}
                     {scheduleExportEnabled ? (
-                      <ScheduleExportAction
-                        rows={rows}
-                        calendarItems={calendar?.items ?? []}
-                        selectedMonth={selectedMonth}
-                        menuItem
-                        onOpen={() => setActionMenuOpen(false)}
-                      />
+                      <button
+                        type="button"
+                        className="action-dropdown-item"
+                        role="menuitem"
+                        onClick={() => {
+                          setActionMenuOpen(false);
+                          setIsScheduleExportDialogOpen(true);
+                        }}
+                      >
+                        <Download size={16} />
+                        {t("schedule.exportXlsx")}
+                      </button>
                     ) : null}
 
                   </div>
