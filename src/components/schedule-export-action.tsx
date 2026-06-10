@@ -44,8 +44,18 @@ type XlsxFile = {
   content: Uint8Array;
 };
 
+type StoredExportPreferences = {
+  fileName?: string;
+  sheetName?: string;
+  groups?: Array<{
+    label: string;
+    shiftTypeIds: string[];
+  }>;
+};
+
 const encoder = new TextEncoder();
 const crcTable = createCrcTable();
+const exportPreferencesStorageKey = "pohotovosti.scheduleExportPreferences";
 
 export function ScheduleExportAction({
   rows,
@@ -73,6 +83,8 @@ export function ScheduleExportAction({
     () => exportData.shiftTypes.filter((shiftType) => !assignedShiftTypeIds.has(shiftType.id)),
     [assignedShiftTypeIds, exportData.shiftTypes],
   );
+  const [storedPreferences, setStoredPreferences] = useState<StoredExportPreferences | null>(null);
+  const [hasLoadedStoredPreferences, setHasLoadedStoredPreferences] = useState(false);
 
   function setIsOpen(nextValue: boolean) {
     if (controlledIsOpen === undefined) {
@@ -83,13 +95,33 @@ export function ScheduleExportAction({
   }
 
   useEffect(() => {
-    setGroups(buildInitialGroups(exportData.shiftTypes));
-  }, [exportData.shiftTypes]);
+    setStoredPreferences(readStoredExportPreferences());
+    setHasLoadedStoredPreferences(true);
+  }, []);
 
   useEffect(() => {
-    setFileName(defaultExportFileName);
-    setSheetName(defaultSheetName);
-  }, [defaultExportFileName, defaultSheetName]);
+    const nextPreferences = storedPreferences;
+    const nextGroups = reconcileStoredGroups(exportData.shiftTypes, nextPreferences?.groups);
+
+    setGroups(nextGroups);
+    setFileName(nextPreferences?.fileName?.trim() ? nextPreferences.fileName : defaultExportFileName);
+    setSheetName(nextPreferences?.sheetName?.trim() ? nextPreferences.sheetName : defaultSheetName);
+  }, [defaultExportFileName, defaultSheetName, exportData.shiftTypes, storedPreferences]);
+
+  useEffect(() => {
+    if (!hasLoadedStoredPreferences) {
+      return;
+    }
+
+    writeStoredExportPreferences({
+      fileName: fileName.trim() && fileName !== defaultExportFileName ? fileName : undefined,
+      sheetName: sheetName.trim() && sheetName !== defaultSheetName ? sheetName : undefined,
+      groups: groups.map((group) => ({
+        label: group.label,
+        shiftTypeIds: group.shiftTypeIds,
+      })),
+    });
+  }, [defaultExportFileName, defaultSheetName, fileName, groups, hasLoadedStoredPreferences, sheetName]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -112,9 +144,6 @@ export function ScheduleExportAction({
       return;
     }
 
-    setGroups(buildInitialGroups(exportData.shiftTypes));
-    setFileName(defaultExportFileName);
-    setSheetName(defaultSheetName);
     onOpen?.();
     setIsOpen(true);
   }
@@ -452,6 +481,88 @@ function buildScheduleExportData(rows: EntityRow[], selectedMonth: string): Expo
 
 function createGroupId() {
   return `group-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function readStoredExportPreferences(): StoredExportPreferences | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(exportPreferencesStorageKey);
+
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsed = JSON.parse(rawValue);
+
+    if (!parsed || typeof parsed !== "object") {
+      return null;
+    }
+
+    return {
+      fileName: typeof parsed.fileName === "string" ? parsed.fileName : undefined,
+      sheetName: typeof parsed.sheetName === "string" ? parsed.sheetName : undefined,
+      groups: Array.isArray(parsed.groups)
+        ? parsed.groups
+            .filter((group): group is { label?: unknown; shiftTypeIds?: unknown } => Boolean(group) && typeof group === "object")
+            .map((group) => ({
+              label: typeof group.label === "string" ? group.label : "",
+              shiftTypeIds: Array.isArray(group.shiftTypeIds)
+                ? group.shiftTypeIds.filter((shiftTypeId): shiftTypeId is string => typeof shiftTypeId === "string")
+                : [],
+            }))
+        : undefined,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredExportPreferences(preferences: StoredExportPreferences) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(exportPreferencesStorageKey, JSON.stringify(preferences));
+  } catch {
+    // Ignore storage write failures so XLSX export remains usable.
+  }
+}
+
+function reconcileStoredGroups(shiftTypes: ShiftTypeOption[], storedGroups?: StoredExportPreferences["groups"]) {
+  if (!storedGroups?.length) {
+    return buildInitialGroups(shiftTypes);
+  }
+
+  const availableShiftTypeIds = new Set(shiftTypes.map((shiftType) => shiftType.id));
+  const usedShiftTypeIds = new Set<string>();
+  const reconciledGroups = storedGroups
+    .map((group) => {
+      const shiftTypeIds = group.shiftTypeIds.filter((shiftTypeId) => {
+        if (!availableShiftTypeIds.has(shiftTypeId) || usedShiftTypeIds.has(shiftTypeId)) {
+          return false;
+        }
+
+        usedShiftTypeIds.add(shiftTypeId);
+        return true;
+      });
+
+      return {
+        id: createGroupId(),
+        label: group.label,
+        shiftTypeIds,
+      };
+    })
+    .filter((group) => group.label.trim() || group.shiftTypeIds.length > 0);
+
+  if (reconciledGroups.length > 0) {
+    return reconciledGroups;
+  }
+
+  return buildInitialGroups(shiftTypes);
 }
 
 function getCellText(cell: EntityCell | undefined) {
