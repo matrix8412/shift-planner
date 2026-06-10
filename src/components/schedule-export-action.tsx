@@ -417,7 +417,8 @@ function buildScheduleExportData(rows: EntityRow[], selectedMonth: string): Expo
     const dateLabel = getCellText(row.cells.date) || dateKey;
     const serviceLabel = getCellText(row.cells.service);
     const shiftLabel = getCellText(row.cells.shift);
-    const userLabel = getCellText(row.cells.user);
+    const userLabel =
+      (typeof row.formValues?.exportUserName === "string" ? row.formValues.exportUserName : "") || getCellText(row.cells.user);
     const note = typeof row.formValues?.note === "string" ? row.formValues.note.trim() : "";
     const shiftTypeLabel = serviceLabel && shiftLabel ? `${serviceLabel} / ${shiftLabel}` : shiftLabel || serviceLabel || shiftTypeId;
     const assignmentLabel = note ? `${userLabel} (${note})` : userLabel;

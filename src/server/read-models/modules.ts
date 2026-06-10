@@ -1778,6 +1778,7 @@ export async function getScheduleModule(): Promise<EntityModuleConfig> {
       formValues: {
         date: toIsoDate(entry.date),
         userId: entry.userId,
+        exportUserName: `${entry.user.lastName}, ${entry.user.firstName}`,
         shiftTypeId: entry.shiftTypeId,
         source: entry.source,
         locked: entry.locked,
