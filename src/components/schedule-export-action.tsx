@@ -501,13 +501,18 @@ function readStoredExportPreferences(): StoredExportPreferences | null {
       return null;
     }
 
+    const parsedGroups = Array.isArray(parsed.groups) ? (parsed.groups as unknown[]) : undefined;
+
     return {
       fileName: typeof parsed.fileName === "string" ? parsed.fileName : undefined,
       sheetName: typeof parsed.sheetName === "string" ? parsed.sheetName : undefined,
-      groups: Array.isArray(parsed.groups)
-        ? parsed.groups
-            .filter((group): group is { label?: unknown; shiftTypeIds?: unknown } => Boolean(group) && typeof group === "object")
-            .map((group) => ({
+      groups: parsedGroups
+        ? parsedGroups
+            .filter(
+              (group: unknown): group is { label?: unknown; shiftTypeIds?: unknown } =>
+                Boolean(group) && typeof group === "object",
+            )
+            .map((group: { label?: unknown; shiftTypeIds?: unknown }) => ({
               label: typeof group.label === "string" ? group.label : "",
               shiftTypeIds: Array.isArray(group.shiftTypeIds)
                 ? group.shiftTypeIds.filter((shiftTypeId): shiftTypeId is string => typeof shiftTypeId === "string")
